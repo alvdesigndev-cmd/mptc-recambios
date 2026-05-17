@@ -9,9 +9,9 @@ interface Props {
 
 const TABS = [
   { to: "/app", label: "Inicio", icon: Home, exact: true },
-  { to: "/app/historial", label: "Historial", icon: History },
-  { to: "/app/clientes", label: "Clientes", icon: Users },
-  { to: "/app/ajustes", label: "Ajustes", icon: Settings },
+  { to: "/app/historial", label: "Historial", icon: History, exact: false },
+  { to: "/app/clientes", label: "Clientes", icon: Users, exact: false },
+  { to: "/app/ajustes", label: "Ajustes", icon: Settings, exact: false },
 ] as const;
 
 export function AppShell({ children }: Props) {

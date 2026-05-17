@@ -9,38 +9,153 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PenaRouteImport } from './routes/pena'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
+import { Route as AppNuevaRouteImport } from './routes/app.nueva'
+import { Route as AppHistorialRouteImport } from './routes/app.historial'
+import { Route as AppClientesRouteImport } from './routes/app.clientes'
+import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
 
+const PenaRoute = PenaRouteImport.update({
+  id: '/pena',
+  path: '/pena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
+  id: '/confirmar/$token',
+  path: '/confirmar/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppNuevaRoute = AppNuevaRouteImport.update({
+  id: '/nueva',
+  path: '/nueva',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistorialRoute = AppHistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppClientesRoute = AppClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAjustesRoute = AppAjustesRouteImport.update({
+  id: '/ajustes',
+  path: '/ajustes',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/pena': typeof PenaRoute
+  '/app/ajustes': typeof AppAjustesRoute
+  '/app/clientes': typeof AppClientesRoute
+  '/app/historial': typeof AppHistorialRoute
+  '/app/nueva': typeof AppNuevaRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/pena': typeof PenaRoute
+  '/app/ajustes': typeof AppAjustesRoute
+  '/app/clientes': typeof AppClientesRoute
+  '/app/historial': typeof AppHistorialRoute
+  '/app/nueva': typeof AppNuevaRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/pena': typeof PenaRoute
+  '/app/ajustes': typeof AppAjustesRoute
+  '/app/clientes': typeof AppClientesRoute
+  '/app/historial': typeof AppHistorialRoute
+  '/app/nueva': typeof AppNuevaRoute
+  '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/pena'
+    | '/app/ajustes'
+    | '/app/clientes'
+    | '/app/historial'
+    | '/app/nueva'
+    | '/confirmar/$token'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/pena'
+    | '/app/ajustes'
+    | '/app/clientes'
+    | '/app/historial'
+    | '/app/nueva'
+    | '/confirmar/$token'
+    | '/app'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/pena'
+    | '/app/ajustes'
+    | '/app/clientes'
+    | '/app/historial'
+    | '/app/nueva'
+    | '/confirmar/$token'
+    | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  PenaRoute: typeof PenaRoute
+  ConfirmarTokenRoute: typeof ConfirmarTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pena': {
+      id: '/pena'
+      path: '/pena'
+      fullPath: '/pena'
+      preLoaderRoute: typeof PenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +163,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/confirmar/$token': {
+      id: '/confirmar/$token'
+      path: '/confirmar/$token'
+      fullPath: '/confirmar/$token'
+      preLoaderRoute: typeof ConfirmarTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/nueva': {
+      id: '/app/nueva'
+      path: '/nueva'
+      fullPath: '/app/nueva'
+      preLoaderRoute: typeof AppNuevaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/historial': {
+      id: '/app/historial'
+      path: '/historial'
+      fullPath: '/app/historial'
+      preLoaderRoute: typeof AppHistorialRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/clientes': {
+      id: '/app/clientes'
+      path: '/clientes'
+      fullPath: '/app/clientes'
+      preLoaderRoute: typeof AppClientesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/ajustes': {
+      id: '/app/ajustes'
+      path: '/ajustes'
+      fullPath: '/app/ajustes'
+      preLoaderRoute: typeof AppAjustesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppAjustesRoute: typeof AppAjustesRoute
+  AppClientesRoute: typeof AppClientesRoute
+  AppHistorialRoute: typeof AppHistorialRoute
+  AppNuevaRoute: typeof AppNuevaRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAjustesRoute: AppAjustesRoute,
+  AppClientesRoute: AppClientesRoute,
+  AppHistorialRoute: AppHistorialRoute,
+  AppNuevaRoute: AppNuevaRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  PenaRoute: PenaRoute,
+  ConfirmarTokenRoute: ConfirmarTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
