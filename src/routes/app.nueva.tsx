@@ -23,6 +23,7 @@ import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
+import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -259,16 +260,18 @@ function NuevaPage() {
 
   const upsertCliente = async () => {
     if (!matricula.trim() && !telefono.trim()) return;
+    const matN = normalizeMatricula(matricula);
+    const telN = normalizeTelefono(telefono);
     const { data: existing } = await supabase
       .from("clientes")
       .select("id,total_gestiones")
       .eq("taller_id", settings.tallerId)
-      .eq("matricula", matricula.trim() || "__none__")
+      .eq("matricula", matN || "__none__")
       .maybeSingle();
     const payload = {
       taller_id: settings.tallerId,
       taller_nombre: settings.tallerName,
-      nombre, telefono, matricula, vehiculo, km,
+      nombre, telefono: telN, matricula: matN, vehiculo, km,
       ultima_gestion: new Date().toISOString(),
     };
     if (existing?.id) {
@@ -291,8 +294,8 @@ function NuevaPage() {
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
         cliente_nombre: nombre,
-        cliente_telefono: telefono,
-        matricula, vehiculo, km,
+        cliente_telefono: normalizeTelefono(telefono),
+        matricula: normalizeMatricula(matricula), vehiculo, km,
         categoria, subfamilia,
         descripcion, piezas, importe,
         estado,
