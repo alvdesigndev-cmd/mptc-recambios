@@ -1,7 +1,9 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Bell, Home, History, Users, Settings, Plus, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { loadSettings, clearSettings, type AppSettings } from "@/lib/mptc/profiles";
+import { loadSettings, type AppSettings } from "@/lib/mptc/profiles";
+import { signOut, syncProfileToSettings } from "@/lib/mptc/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   children: React.ReactNode;
@@ -20,22 +22,24 @@ export function AppShell({ children }: Props) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   useEffect(() => {
-    const s = loadSettings();
-    if (!s) {
-      navigate({ to: "/" });
-      return;
-    }
-    setSettings(s);
-    if (s.theme === "light") document.documentElement.classList.add("light");
-    else document.documentElement.classList.remove("light");
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) { navigate({ to: "/login" }); return; }
+      let s = loadSettings();
+      if (!s) { await syncProfileToSettings(); s = loadSettings(); }
+      if (!s) { navigate({ to: "/login" }); return; }
+      setSettings(s);
+      if (s.theme === "light") document.documentElement.classList.add("light");
+      else document.documentElement.classList.remove("light");
+    })();
   }, [navigate]);
 
   if (!settings) return null;
   const isPena = settings.role === "pena";
 
-  const onExit = () => {
-    clearSettings();
-    navigate({ to: "/" });
+  const onExit = async () => {
+    await signOut();
+    navigate({ to: "/login" });
   };
 
   return (

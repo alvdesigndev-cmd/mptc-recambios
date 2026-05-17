@@ -170,15 +170,62 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          ciudad: string
+          created_at: string
+          mecanico: string
+          role: Database["public"]["Enums"]["app_role"]
+          taller_id: string
+          taller_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ciudad?: string
+          created_at?: string
+          mecanico?: string
+          role: Database["public"]["Enums"]["app_role"]
+          taller_id: string
+          taller_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ciudad?: string
+          created_at?: string
+          mecanico?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          taller_id?: string
+          taller_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      confirmar_gestion: {
+        Args: { _token: string }
+        Returns: {
+          estado: string
+          id: string
+          matricula: string
+          previous_estado: string
+        }[]
+      }
+      get_user_role: {
+        Args: { _uid: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_taller_id: { Args: { _uid: string }; Returns: string }
+      is_pena: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "taller-1" | "taller-2" | "pena"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -305,6 +352,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["taller-1", "taller-2", "pena"],
+    },
   },
 } as const
