@@ -18,7 +18,8 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { loadSettings, PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
-import { CATS_PRIMARY, FAMILIES, findFamily, findSubfamily } from "@/lib/mptc/families";
+import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
+import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
@@ -139,8 +140,9 @@ function NuevaPage() {
     };
   }, [buscador, settings]);
 
-  const fam = useMemo(() => findFamily(categoria), [categoria]);
-  const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
+  const { data: FAMILIES_DATA = [] } = useFamilias();
+  const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, categoria), [FAMILIES_DATA, categoria]);
+  const sub = useMemo(() => findSubfamilyBySlug(FAMILIES_DATA, categoria, subfamilia), [FAMILIES_DATA, categoria, subfamilia]);
 
   const confirmUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -201,23 +203,28 @@ function NuevaPage() {
   useEffect(() => {
     if (mensajeTouched || !settings) return;
     setMensaje(
-      buildMessage({
-        cliente: nombre || "",
-        vehiculo: vehiculo || "",
-        matricula: matricula || "",
-        km: km || "",
-        categoria,
-        subfamilia,
-        importe,
-        taller: settings.tallerName,
-        mecanico: settings.mecanico || "",
-        confirmUrl,
-        rejectUrl,
-        fotos: fotosUrlsOk,
-      }),
+      buildMessage(
+        {
+          cliente: nombre || "",
+          vehiculo: vehiculo || "",
+          matricula: matricula || "",
+          km: km || "",
+          importe,
+          taller: settings.tallerName,
+          mecanico: settings.mecanico || "",
+          confirmUrl,
+          rejectUrl,
+          fotos: fotosUrlsOk,
+        },
+        {
+          template: sub?.mensaje,
+          subfamiliaNombre: sub?.name,
+          familiaNombre: fam?.name,
+        },
+      ),
     );
   }, [
-    nombre, vehiculo, matricula, km, categoria, subfamilia, importe,
+    nombre, vehiculo, matricula, km, sub, fam, importe,
     settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
 
@@ -407,9 +414,7 @@ function NuevaPage() {
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
 
-  const visibleFamilies = showMore
-    ? FAMILIES
-    : FAMILIES.filter((f) => CATS_PRIMARY.includes(f.id));
+  const visibleFamilies = showMore ? FAMILIES_DATA : FAMILIES_DATA.slice(0, 7);
 
   return (
     <div className="space-y-5">
@@ -753,12 +758,12 @@ function NuevaPage() {
         <section className="space-y-4">
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {visibleFamilies.map((f) => {
-              const active = categoria === f.id;
+              const active = categoria === f.slug;
               return (
                 <button
                   key={f.id}
                   type="button"
-                  onClick={() => { setCategoria(f.id); setSubfamilia(null); }}
+                  onClick={() => { setCategoria(f.slug); setSubfamilia(null); }}
                   className={
                     "flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition " +
                     (active
@@ -790,12 +795,12 @@ function NuevaPage() {
               </div>
               <div className="grid gap-1.5">
                 {fam.subs.map((s) => {
-                  const active = subfamilia === s.id;
+                  const active = subfamilia === s.slug;
                   return (
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setSubfamilia(s.id)}
+                      onClick={() => setSubfamilia(s.slug)}
                       className={
                         "flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition " +
                         (active

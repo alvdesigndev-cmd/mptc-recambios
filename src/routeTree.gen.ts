@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as AppNuevaRouteImport } from './routes/app.nueva'
 import { Route as AppHistorialRouteImport } from './routes/app.historial'
+import { Route as AppFamiliasRouteImport } from './routes/app.familias'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
 
@@ -54,6 +55,11 @@ const AppHistorialRoute = AppHistorialRouteImport.update({
   path: '/historial',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFamiliasRoute = AppFamiliasRouteImport.update({
+  id: '/familias',
+  path: '/familias',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientesRoute = AppClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
+  '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
+    | '/app/familias'
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
+    | '/app/familias'
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
+    | '/app/familias'
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
@@ -191,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHistorialRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/familias': {
+      id: '/app/familias'
+      path: '/familias'
+      fullPath: '/app/familias'
+      preLoaderRoute: typeof AppFamiliasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/clientes': {
       id: '/app/clientes'
       path: '/clientes'
@@ -211,6 +230,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAjustesRoute: typeof AppAjustesRoute
   AppClientesRoute: typeof AppClientesRoute
+  AppFamiliasRoute: typeof AppFamiliasRoute
   AppHistorialRoute: typeof AppHistorialRoute
   AppNuevaRoute: typeof AppNuevaRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -219,6 +239,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAjustesRoute: AppAjustesRoute,
   AppClientesRoute: AppClientesRoute,
+  AppFamiliasRoute: AppFamiliasRoute,
   AppHistorialRoute: AppHistorialRoute,
   AppNuevaRoute: AppNuevaRoute,
   AppIndexRoute: AppIndexRoute,

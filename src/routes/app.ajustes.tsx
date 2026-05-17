@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogOut } from "lucide-react";
+import { ChevronRight, LogOut } from "lucide-react";
 import { clearSettings, loadSettings, saveSettings, type AppSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/app/ajustes")({
@@ -73,6 +73,17 @@ function AjustesPage() {
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-5">
+        <h2 className="mb-3 text-sm font-semibold">Catálogo</h2>
+        <Link
+          to="/app/familias"
+          className="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-medium hover:border-primary hover:text-primary"
+        >
+          <span>Gestionar familias y mensajes</span>
+          <ChevronRight className="h-4 w-4" />
+        </Link>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5">
