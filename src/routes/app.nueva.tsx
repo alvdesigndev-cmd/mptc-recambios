@@ -39,6 +39,7 @@ interface ClienteRow {
 
 function NuevaPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [step, setStep] = useState<Step>(1);
 
@@ -49,6 +50,8 @@ function NuevaPage() {
   const [vehiculo, setVehiculo] = useState("");
   const [km, setKm] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
+  const [fotosUrls, setFotosUrls] = useState<string[]>([]);
+  const [uploadingFotos, setUploadingFotos] = useState(false);
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
@@ -66,6 +69,7 @@ function NuevaPage() {
   const [mensaje, setMensaje] = useState("");
   const [mensajeTouched, setMensajeTouched] = useState(false);
   const [confirmToken] = useState(() => generateToken());
+  const [gestionFolder] = useState(() => generateToken());
   const [pedirPena, setPedirPena] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
@@ -79,6 +83,21 @@ function NuevaPage() {
     }
     setSettings(s);
   }, [navigate]);
+
+  // Pre-cargar cliente desde query param ?clienteId=...
+  useEffect(() => {
+    const id = (search as { clienteId?: string }).clienteId;
+    if (!id || !settings) return;
+    (async () => {
+      const { data } = await supabase
+        .from("clientes")
+        .select("id,nombre,telefono,matricula,vehiculo,km")
+        .eq("id", id)
+        .maybeSingle();
+      if (data) pickCliente(data as ClienteRow);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
 
   // Búsqueda de clientes guardados — SÓLO usa el buscador dedicado.
   useEffect(() => {
