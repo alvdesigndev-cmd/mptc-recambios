@@ -375,8 +375,7 @@ function NuevaPage() {
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
-                onChange={(e) => { setNombre(e.target.value); setShowSuggest(true); }}
-                onFocus={() => setShowSuggest(true)}
+                onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej. Juan García"
                 className={inputCls}
               />
@@ -386,7 +385,6 @@ function NuevaPage() {
                 <input
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  onFocus={() => setShowSuggest(true)}
                   inputMode="tel"
                   placeholder="6XX XXX XXX"
                   className={inputCls}
@@ -396,7 +394,7 @@ function NuevaPage() {
                 <div className="flex gap-2">
                   <input
                     value={matricula}
-                    onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
+                    onChange={(e) => setMatricula(e.target.value.toUpperCase())}
                     placeholder="1234 ABC"
                     className={inputCls + " font-mono uppercase"}
                   />
