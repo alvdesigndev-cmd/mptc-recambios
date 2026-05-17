@@ -243,7 +243,12 @@ function ClienteModal({
     if (err) { setError(err); return; }
     setError(null);
     setSaving(true);
-    await supabase.from("clientes").update(f).eq("id", cliente.id);
+    const payload = {
+      ...f,
+      telefono: normalizeTelefono(f.telefono),
+      matricula: normalizeMatricula(f.matricula),
+    };
+    await supabase.from("clientes").update(payload).eq("id", cliente.id);
     setSaving(false);
     onChanged();
   };
