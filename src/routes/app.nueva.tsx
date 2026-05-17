@@ -745,16 +745,6 @@ function NuevaPage() {
             )}
           </div>
 
-          <BottomBar>
-            <button
-              type="button"
-              disabled={!canNext1}
-              onClick={onContinuarPaso1}
-              className={primaryBtn}
-            >
-              Continuar <ArrowRight className="h-4 w-4" />
-            </button>
-          </BottomBar>
         </section>
       )}
 
