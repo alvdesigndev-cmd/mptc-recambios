@@ -1,9 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
-import { loadSettings, saveSettings, type AppSettings } from "@/lib/mptc/profiles";
-import { signOut } from "@/lib/mptc/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { clearSettings, loadSettings, saveSettings, type AppSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/app/ajustes")({
   component: AjustesPage,
@@ -16,38 +14,26 @@ function AjustesPage() {
 
   useEffect(() => {
     const loaded = loadSettings();
-    if (!loaded) navigate({ to: "/login" });
+    if (!loaded) navigate({ to: "/" });
     else setS(loaded);
   }, [navigate]);
 
   if (!s) return null;
 
-  const update = async (patch: Partial<AppSettings>) => {
+  const update = (patch: Partial<AppSettings>) => {
     const next = { ...s, ...patch };
     setS(next);
     saveSettings(next);
     if (patch.theme === "light") document.documentElement.classList.add("light");
     if (patch.theme === "dark") document.documentElement.classList.remove("light");
-    // Persist profile fields to DB
     if ("tallerName" in patch || "ciudad" in patch || "mecanico" in patch) {
-      const { data: sess } = await supabase.auth.getSession();
-      if (sess.session) {
-        await supabase
-          .from("profiles")
-          .update({
-            taller_name: next.tallerName,
-            ciudad: next.ciudad,
-            mecanico: next.mecanico,
-          })
-          .eq("user_id", sess.session.user.id);
-        setSavedAt(Date.now());
-      }
+      setSavedAt(Date.now());
     }
   };
 
-  const onLogout = async () => {
-    await signOut();
-    navigate({ to: "/login" });
+  const onLogout = () => {
+    clearSettings();
+    navigate({ to: "/" });
   };
 
   return (
