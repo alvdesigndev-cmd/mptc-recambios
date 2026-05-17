@@ -102,7 +102,7 @@ const THEME_INIT = `try{var s=localStorage.getItem('mptc_settings_v1');if(s&&JSO
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <HeadContent />
