@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  Search,
   Check,
   Loader2,
   MessageCircle,
@@ -50,6 +51,7 @@ function NuevaPage() {
   const [fotos, setFotos] = useState<File[]>([]);
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [buscador, setBuscador] = useState("");
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -77,10 +79,10 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Autocomplete clientes (matrícula, teléfono o nombre)
+  // Búsqueda de clientes guardados (por nombre, teléfono o matrícula)
   useEffect(() => {
     if (!settings) return;
-    const q = matricula.trim() || telefono.trim() || nombre.trim();
+    const q = buscador.trim() || matricula.trim() || telefono.trim() || nombre.trim();
     if (q.length < 2) {
       setSuggest([]);
       return;
@@ -92,14 +94,14 @@ function NuevaPage() {
         .select("id,nombre,telefono,matricula,vehiculo,km")
         .eq("taller_id", settings.tallerId)
         .or(`matricula.ilike.%${q}%,telefono.ilike.%${q}%,nombre.ilike.%${q}%`)
-        .limit(5);
+        .limit(8);
       if (!cancelled) setSuggest((data as ClienteRow[]) || []);
     }, 220);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [matricula, telefono, nombre, settings]);
+  }, [buscador, matricula, telefono, nombre, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
@@ -140,6 +142,7 @@ function NuevaPage() {
     setVehiculo(c.vehiculo || "");
     setKm(c.km || "");
     setShowSuggest(false);
+    setBuscador("");
   };
 
   const onFiles = (files: FileList | null) => {
@@ -346,6 +349,28 @@ function NuevaPage() {
       {step === 1 && (
         <section className="space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <Field label="Buscar cliente guardado">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={buscador}
+                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                  onFocus={() => setShowSuggest(true)}
+                  placeholder="Nombre, teléfono o matrícula…"
+                  className={inputCls + " pl-9"}
+                />
+                {buscador && (
+                  <button
+                    type="button"
+                    onClick={() => { setBuscador(""); setSuggest([]); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </Field>
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
