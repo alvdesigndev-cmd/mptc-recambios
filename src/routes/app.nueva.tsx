@@ -52,6 +52,7 @@ function NuevaPage() {
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
+  const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(null);
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(null);
@@ -154,6 +155,11 @@ function NuevaPage() {
     setKm(c.km || "");
     setShowSuggest(false);
     setBuscador("");
+    setClienteBloqueado(c);
+  };
+
+  const desbloquearCliente = () => {
+    setClienteBloqueado(null);
   };
 
   const onFiles = (files: FileList | null) => {
@@ -359,28 +365,56 @@ function NuevaPage() {
       {step === 1 && (
         <section className="space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
-            <Field label="Buscar cliente guardado">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={buscador}
-                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
-                  onFocus={() => setShowSuggest(true)}
-                  placeholder="Nombre, teléfono o matrícula…"
-                  className={inputCls + " pl-9"}
-                />
-                {buscador && (
-                  <button
-                    type="button"
-                    onClick={() => { setBuscador(""); setSuggest([]); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
-                    aria-label="Limpiar búsqueda"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+            {clienteBloqueado ? (
+              <div className="flex items-start gap-3 rounded-xl border border-success/40 bg-success/10 p-3">
+                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-success">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-success">
+                    Cliente seleccionado
+                  </div>
+                  <div className="truncate text-sm font-semibold text-foreground">
+                    {clienteBloqueado.nombre || "(sin nombre)"}
+                  </div>
+                  <div className="truncate text-[12px] text-muted-foreground">
+                    {[clienteBloqueado.matricula, clienteBloqueado.telefono]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={desbloquearCliente}
+                  className="shrink-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-surface-2"
+                >
+                  Cambiar
+                </button>
               </div>
-            </Field>
+            ) : (
+              <Field label="Buscar cliente guardado">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={buscador}
+                    onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                    onFocus={() => setShowSuggest(true)}
+                    placeholder="Nombre, teléfono o matrícula…"
+                    className={inputCls + " pl-9"}
+                  />
+                  {buscador && (
+                    <button
+                      type="button"
+                      onClick={() => { setBuscador(""); setSuggest([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                      aria-label="Limpiar búsqueda"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </Field>
+            )}
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
