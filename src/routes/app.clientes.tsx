@@ -1,18 +1,260 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { Search, UserPlus, X, Phone, Car, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSettings } from "@/lib/mptc/useSettings";
 
 export const Route = createFileRoute("/app/clientes")({
   component: ClientesPage,
 });
 
+interface Cliente {
+  id: string;
+  nombre: string | null;
+  telefono: string | null;
+  matricula: string | null;
+  vehiculo: string | null;
+  km: string | null;
+  notas: string | null;
+  total_gestiones: number;
+  ultima_gestion: string | null;
+  created_at: string;
+}
+
 function ClientesPage() {
+  const settings = useSettings({ requireTaller: true });
+  const navigate = useNavigate();
+  const [items, setItems] = useState<Cliente[]>([]);
+  const [q, setQ] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [open, setOpen] = useState<Cliente | null>(null);
+
+  const load = useCallback(async () => {
+    if (!settings) return;
+    const { data } = await supabase
+      .from("clientes")
+      .select("*")
+      .eq("taller_id", settings.tallerId)
+      .order("ultima_gestion", { ascending: false, nullsFirst: false });
+    setItems((data as Cliente[]) || []);
+  }, [settings]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = useMemo(() => {
+    const qq = q.trim().toLowerCase();
+    if (!qq) return items;
+    return items.filter((c) =>
+      (c.nombre || "").toLowerCase().includes(qq) ||
+      (c.telefono || "").toLowerCase().includes(qq) ||
+      (c.matricula || "").toLowerCase().includes(qq) ||
+      (c.vehiculo || "").toLowerCase().includes(qq),
+    );
+  }, [items, q]);
+
+  if (!settings) return null;
+
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
-        <p className="text-sm text-muted-foreground">Ficha y gestiones de cada cliente.</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+          <p className="text-sm text-muted-foreground">{items.length} clientes registrados.</p>
+        </div>
+        <button
+          onClick={() => setCreating(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95"
+        >
+          <UserPlus className="h-4 w-4" /> Nuevo
+        </button>
       </header>
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
-        Próximamente — Fase 3.
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar por nombre, matrícula, teléfono…"
+          className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
+          No hay clientes que coincidan.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setOpen(c)}
+              className="flex w-full items-start gap-3 rounded-2xl border border-border bg-surface p-3.5 text-left hover:bg-surface-2"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 font-bold text-primary">
+                {(c.nombre || "?").charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {c.total_gestiones} {c.total_gestiones === 1 ? "gestión" : "gestiones"}
+                  </span>
+                </div>
+                <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                  <span className="font-mono">{c.matricula || "—"}</span> · {c.vehiculo || "—"}
+                </div>
+                {c.telefono && (
+                  <div className="mt-0.5 truncate text-[12px] text-text-2">
+                    <Phone className="mr-1 inline h-3 w-3" />{c.telefono}
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {creating && (
+        <NuevoClienteModal
+          tallerId={settings.tallerId}
+          tallerNombre={settings.tallerName}
+          onClose={() => setCreating(false)}
+          onSaved={() => { setCreating(false); load(); }}
+        />
+      )}
+
+      {open && (
+        <ClienteModal
+          cliente={open}
+          onClose={() => setOpen(null)}
+          onNuevaGestion={() => navigate({ to: "/app/nueva" })}
+          onChanged={() => { setOpen(null); load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function NuevoClienteModal({
+  tallerId, tallerNombre, onClose, onSaved,
+}: { tallerId: string; tallerNombre: string; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({ nombre: "", telefono: "", matricula: "", vehiculo: "", km: "", notas: "" });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!f.nombre.trim()) return;
+    setSaving(true);
+    await supabase.from("clientes").insert({
+      taller_id: tallerId,
+      taller_nombre: tallerNombre,
+      ...f,
+      total_gestiones: 0,
+    });
+    setSaving(false);
+    onSaved();
+  };
+
+  return (
+    <ModalShell onClose={onClose} title="Nuevo cliente">
+      <div className="space-y-3">
+        {(["nombre", "telefono", "matricula", "vehiculo", "km"] as const).map((k) => (
+          <label key={k} className="block space-y-1">
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground">{k}</span>
+            <input
+              value={f[k]}
+              onChange={(e) => setF({ ...f, [k]: k === "matricula" ? e.target.value.toUpperCase() : e.target.value })}
+              className={"w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none " + (k === "matricula" ? "font-mono uppercase" : "")}
+            />
+          </label>
+        ))}
+        <label className="block space-y-1">
+          <span className="text-[11px] font-semibold uppercase text-muted-foreground">Notas</span>
+          <textarea
+            value={f.notas}
+            onChange={(e) => setF({ ...f, notas: e.target.value })}
+            rows={3}
+            className="w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none"
+          />
+        </label>
+      </div>
+      <div className="mt-5 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-xl border border-border-strong bg-surface px-4 py-2 text-sm font-semibold">Cancelar</button>
+        <button
+          onClick={save}
+          disabled={saving || !f.nombre.trim()}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-50"
+        >
+          Guardar
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function ClienteModal({
+  cliente, onClose, onNuevaGestion, onChanged,
+}: { cliente: Cliente; onClose: () => void; onNuevaGestion: () => void; onChanged: () => void }) {
+  const remove = async () => {
+    if (!confirm("¿Eliminar este cliente? (no afecta a sus gestiones)")) return;
+    await supabase.from("clientes").delete().eq("id", cliente.id);
+    onChanged();
+  };
+
+  return (
+    <ModalShell onClose={onClose} title={cliente.nombre || "Cliente"}>
+      <div className="space-y-3 text-sm">
+        <Row label="Teléfono" value={cliente.telefono || "—"} />
+        <Row label="Matrícula" value={cliente.matricula || "—"} />
+        <Row label="Vehículo" value={cliente.vehiculo || "—"} />
+        <Row label="Km" value={cliente.km || "—"} />
+        <Row label="Gestiones" value={String(cliente.total_gestiones)} />
+        {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+      </div>
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        {cliente.telefono && (
+          <a href={`tel:${cliente.telefono}`} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+            <Phone className="h-4 w-4" /> Llamar
+          </a>
+        )}
+        <button onClick={remove} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-destructive">
+          Eliminar
+        </button>
+        <button onClick={onNuevaGestion} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95">
+          <Plus className="h-4 w-4" /> Nueva gestión
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function Row({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-border pb-2 last:border-b-0">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className={"text-right " + (multiline ? "whitespace-pre-wrap" : "truncate")}>{value}</span>
+    </div>
+  );
+}
+
+function ModalShell({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: string }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <h2 className="truncate text-lg font-bold flex items-center gap-2">
+            <Car className="h-5 w-5 text-primary" /> {title}
+          </h2>
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
       </div>
     </div>
   );
