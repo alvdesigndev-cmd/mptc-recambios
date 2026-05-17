@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, UserPlus, X, Phone, Car, Plus } from "lucide-react";
+import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 
@@ -128,7 +128,7 @@ function ClientesPage() {
         <ClienteModal
           cliente={open}
           onClose={() => setOpen(null)}
-          onNuevaGestion={() => navigate({ to: "/app/nueva" })}
+          onNuevaGestion={(id) => { navigate({ to: "/app/nueva", search: { clienteId: id } }); }}
           onChanged={() => { setOpen(null); load(); }}
         />
       )}
@@ -194,35 +194,95 @@ function NuevoClienteModal({
 
 function ClienteModal({
   cliente, onClose, onNuevaGestion, onChanged,
-}: { cliente: Cliente; onClose: () => void; onNuevaGestion: () => void; onChanged: () => void }) {
+}: { cliente: Cliente; onClose: () => void; onNuevaGestion: (id: string) => void; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [f, setF] = useState({
+    nombre: cliente.nombre || "",
+    telefono: cliente.telefono || "",
+    matricula: cliente.matricula || "",
+    vehiculo: cliente.vehiculo || "",
+    km: cliente.km || "",
+    notas: cliente.notas || "",
+  });
+  const [saving, setSaving] = useState(false);
+
   const remove = async () => {
     if (!confirm("¿Eliminar este cliente? (no afecta a sus gestiones)")) return;
     await supabase.from("clientes").delete().eq("id", cliente.id);
     onChanged();
   };
 
+  const save = async () => {
+    setSaving(true);
+    await supabase.from("clientes").update(f).eq("id", cliente.id);
+    setSaving(false);
+    onChanged();
+  };
+
   return (
-    <ModalShell onClose={onClose} title={cliente.nombre || "Cliente"}>
-      <div className="space-y-3 text-sm">
-        <Row label="Teléfono" value={cliente.telefono || "—"} />
-        <Row label="Matrícula" value={cliente.matricula || "—"} />
-        <Row label="Vehículo" value={cliente.vehiculo || "—"} />
-        <Row label="Km" value={cliente.km || "—"} />
-        <Row label="Gestiones" value={String(cliente.total_gestiones)} />
-        {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
-      </div>
+    <ModalShell onClose={onClose} title={editing ? "Editar cliente" : (cliente.nombre || "Cliente")}>
+      {editing ? (
+        <div className="space-y-3">
+          {(["nombre", "telefono", "matricula", "vehiculo", "km"] as const).map((k) => (
+            <label key={k} className="block space-y-1">
+              <span className="text-[11px] font-semibold uppercase text-muted-foreground">{k}</span>
+              <input
+                value={f[k]}
+                onChange={(e) => setF({ ...f, [k]: k === "matricula" ? e.target.value.toUpperCase() : e.target.value })}
+                className={"w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none " + (k === "matricula" ? "font-mono uppercase" : "")}
+              />
+            </label>
+          ))}
+          <label className="block space-y-1">
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground">Notas</span>
+            <textarea
+              value={f.notas}
+              onChange={(e) => setF({ ...f, notas: e.target.value })}
+              rows={3}
+              className="w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none"
+            />
+          </label>
+        </div>
+      ) : (
+        <div className="space-y-3 text-sm">
+          <Row label="Teléfono" value={cliente.telefono || "—"} />
+          <Row label="Matrícula" value={cliente.matricula || "—"} />
+          <Row label="Vehículo" value={cliente.vehiculo || "—"} />
+          <Row label="Km" value={cliente.km || "—"} />
+          <Row label="Gestiones" value={String(cliente.total_gestiones)} />
+          {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+        </div>
+      )}
       <div className="mt-5 flex flex-wrap justify-end gap-2">
-        {cliente.telefono && (
-          <a href={`tel:${cliente.telefono}`} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
-            <Phone className="h-4 w-4" /> Llamar
-          </a>
+        {editing ? (
+          <>
+            <button onClick={() => setEditing(false)} className="rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">Cancelar</button>
+            <button
+              onClick={save}
+              disabled={saving || !f.nombre.trim()}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" /> Guardar
+            </button>
+          </>
+        ) : (
+          <>
+            {cliente.telefono && (
+              <a href={`tel:${cliente.telefono}`} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+                <Phone className="h-4 w-4" /> Llamar
+              </a>
+            )}
+            <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+              <Pencil className="h-4 w-4" /> Editar
+            </button>
+            <button onClick={remove} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-destructive">
+              Eliminar
+            </button>
+            <button onClick={() => onNuevaGestion(cliente.id)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95">
+              <Plus className="h-4 w-4" /> Nueva gestión
+            </button>
+          </>
         )}
-        <button onClick={remove} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-destructive">
-          Eliminar
-        </button>
-        <button onClick={onNuevaGestion} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95">
-          <Plus className="h-4 w-4" /> Nueva gestión
-        </button>
       </div>
     </ModalShell>
   );
