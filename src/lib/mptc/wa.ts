@@ -5,21 +5,13 @@ function normalizePhone(phone: string) {
   return digits.length === 9 ? "34" + digits : digits;
 }
 
-function isMobile() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
 export function buildWAUrl(phone: string, msg: string) {
   const final = normalizePhone(phone);
   const text = encodeURIComponent(msg);
-  // En escritorio, wa.me redirige a api.whatsapp.com que a veces responde con
-  // cabeceras que el navegador bloquea (ERR_BLOCKED_BY_RESPONSE). Vamos
-  // directos a web.whatsapp.com en desktop y a wa.me en móvil.
-  if (isMobile()) {
-    return `https://wa.me/${final}?text=${text}`;
-  }
-  return `https://web.whatsapp.com/send?phone=${final}&text=${text}`;
+  // wa.me funciona tanto en móvil como en escritorio y redirige según el
+  // dispositivo. Evitamos api.whatsapp.com y web.whatsapp.com porque algunos
+  // navegadores los bloquean con ERR_BLOCKED_BY_RESPONSE al abrirlos así.
+  return `https://wa.me/${final}?text=${text}`;
 }
 
 export function openWA(phone: string, msg: string) {
