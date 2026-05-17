@@ -47,7 +47,7 @@ export interface ProfileRow {
   mecanico: string;
 }
 
-export function settingsFromProfile(p: ProfileRow, theme: "dark" | "light" = "dark"): AppSettings {
+export function settingsFromProfile(p: ProfileRow, theme: "dark" | "light" = "light"): AppSettings {
   return {
     role: p.role,
     tallerId: p.taller_id,
