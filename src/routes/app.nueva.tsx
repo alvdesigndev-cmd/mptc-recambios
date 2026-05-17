@@ -224,22 +224,36 @@ function NuevaPage() {
       alert("Falta el teléfono del cliente");
       return;
     }
-    await saveGestion("enviado");
-    window.open(buildWAUrl(telefono, mensaje), "_blank", "noopener,noreferrer");
-    navigate({ to: "/app" });
+    // Abrir la ventana SINCRÓNICAMENTE dentro del gesto del usuario para evitar
+    // que el navegador bloquee el popup tras el await.
+    const win = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const url = buildWAUrl(telefono, mensaje);
+    try {
+      await saveGestion("enviado");
+    } finally {
+      if (win) win.location.href = url;
+      else window.location.href = url;
+      navigate({ to: "/app" });
+    }
   };
 
   const onPedirPena = async () => {
     setPedirPena(true);
-    await saveGestion("en-curso");
     const msg = buildPenaMessage({
       taller: settings.tallerName,
       vehiculo, matricula,
       piezas: piezas || (sub ? sub.name : "—"),
       notas: descripcion,
     });
-    window.open(buildWAUrl(PENA_PHONE, msg), "_blank", "noopener,noreferrer");
-    navigate({ to: "/app" });
+    const url = buildWAUrl(PENA_PHONE, msg);
+    const win = window.open("about:blank", "_blank", "noopener,noreferrer");
+    try {
+      await saveGestion("en-curso");
+    } finally {
+      if (win) win.location.href = url;
+      else window.location.href = url;
+      navigate({ to: "/app" });
+    }
   };
 
   const onGuardar = async () => {
