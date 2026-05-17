@@ -54,7 +54,8 @@ function NuevaPage() {
   const [vehiculo, setVehiculo] = useState("");
   const [km, setKm] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
-  const [fotosUrls, setFotosUrls] = useState<string[]>([]);
+  const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
+  const [fotosError, setFotosError] = useState<boolean[]>([]);
   const [uploadingFotos, setUploadingFotos] = useState(false);
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
