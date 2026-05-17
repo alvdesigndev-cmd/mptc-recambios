@@ -476,9 +476,10 @@ function NuevaPage() {
                       <span className="shrink-0 text-[11px] text-primary">Usar</span>
                     </button>
                   );
-                })}
-              </div>
-            )}
+                  })}
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Vehículo">
