@@ -55,7 +55,7 @@ export function AppShell({ children }: Props) {
                 : "bg-primary/15 text-primary")
             }
           >
-            {isPena ? "Proveedor" : "Taller"}
+            {settings.role === "taller-1" ? "Taller 1" : settings.role === "taller-2" ? "Taller 2" : "Grupo Peña"}
           </span>
           <button
             type="button"
