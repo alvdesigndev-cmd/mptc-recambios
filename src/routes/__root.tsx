@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "MPTC RECAMBIOS" },
+      { name: "description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "MPTC RECAMBIOS" },
+      { property: "og:description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MPTC RECAMBIOS" },
+      { name: "twitter:description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/I4CrMSAEv8QlZk8DZhpFTimKdKB2/social-images/social-1779039552040-logo.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/I4CrMSAEv8QlZk8DZhpFTimKdKB2/social-images/social-1779039552040-logo.webp" },
     ],
     links: [
       {
