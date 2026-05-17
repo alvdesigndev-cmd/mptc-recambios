@@ -8,6 +8,13 @@ export const Route = createFileRoute("/app/clientes")({
   component: ClientesPage,
 });
 
+// Normalizadores: limpian entrada para mostrar y guardar de forma consistente.
+const normalizeMatricula = (v: string) => v.replace(/[\s-]/g, "").toUpperCase();
+const normalizeTelefono = (v: string) => {
+  const t = v.replace(/[\s\-().]/g, "");
+  return t.startsWith("+") ? "+" + t.slice(1).replace(/\D/g, "") : t.replace(/\D/g, "");
+};
+
 interface Cliente {
   id: string;
   nombre: string | null;
