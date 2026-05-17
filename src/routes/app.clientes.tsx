@@ -262,6 +262,7 @@ function ClienteModal({
               className="w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none"
             />
           </label>
+          {error && <p className="text-xs font-semibold text-destructive">{error}</p>}
         </div>
       ) : (
         <div className="space-y-3 text-sm">
