@@ -109,11 +109,11 @@ function ClientesPage() {
                   </span>
                 </div>
                 <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  <span className="font-mono">{c.matricula || "—"}</span> · {c.vehiculo || "—"}
+                  <span className="font-mono">{c.matricula ? normalizeMatricula(c.matricula) : "—"}</span> · {c.vehiculo || "—"}
                 </div>
                 {c.telefono && (
                   <div className="mt-0.5 truncate text-[12px] text-text-2">
-                    <Phone className="mr-1 inline h-3 w-3" />{c.telefono}
+                    <Phone className="mr-1 inline h-3 w-3" />{normalizeTelefono(c.telefono)}
                   </div>
                 )}
               </div>
