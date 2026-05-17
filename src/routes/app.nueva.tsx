@@ -260,16 +260,18 @@ function NuevaPage() {
 
   const upsertCliente = async () => {
     if (!matricula.trim() && !telefono.trim()) return;
+    const matN = normalizeMatricula(matricula);
+    const telN = normalizeTelefono(telefono);
     const { data: existing } = await supabase
       .from("clientes")
       .select("id,total_gestiones")
       .eq("taller_id", settings.tallerId)
-      .eq("matricula", matricula.trim() || "__none__")
+      .eq("matricula", matN || "__none__")
       .maybeSingle();
     const payload = {
       taller_id: settings.tallerId,
       taller_nombre: settings.tallerName,
-      nombre, telefono, matricula, vehiculo, km,
+      nombre, telefono: telN, matricula: matN, vehiculo, km,
       ultima_gestion: new Date().toISOString(),
     };
     if (existing?.id) {
