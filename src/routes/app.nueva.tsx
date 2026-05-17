@@ -79,12 +79,13 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Búsqueda de clientes guardados (por nombre, teléfono o matrícula)
+  // Búsqueda de clientes guardados — SÓLO usa el buscador dedicado.
   useEffect(() => {
     if (!settings) return;
-    const q = buscador.trim() || matricula.trim() || telefono.trim() || nombre.trim();
+    const q = buscador.trim();
     if (q.length < 2) {
       setSuggest([]);
+      setShowSuggest(false);
       return;
     }
     let cancelled = false;
@@ -101,7 +102,7 @@ function NuevaPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [buscador, matricula, telefono, nombre, settings]);
+  }, [buscador, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
@@ -282,7 +283,6 @@ function NuevaPage() {
       const res = await runOcr({ data: { imageDataUrl: dataUrl } });
       if (res?.matricula) {
         setMatricula(res.matricula);
-        setShowSuggest(true);
       } else {
         alert("No se detectó ninguna matrícula en la imagen.");
       }
@@ -374,8 +374,7 @@ function NuevaPage() {
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
-                onChange={(e) => { setNombre(e.target.value); setShowSuggest(true); }}
-                onFocus={() => setShowSuggest(true)}
+                onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej. Juan García"
                 className={inputCls}
               />
@@ -385,7 +384,6 @@ function NuevaPage() {
                 <input
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  onFocus={() => setShowSuggest(true)}
                   inputMode="tel"
                   placeholder="6XX XXX XXX"
                   className={inputCls}
@@ -395,7 +393,7 @@ function NuevaPage() {
                 <div className="flex gap-2">
                   <input
                     value={matricula}
-                    onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
+                    onChange={(e) => setMatricula(e.target.value.toUpperCase())}
                     placeholder="1234 ABC"
                     className={inputCls + " font-mono uppercase"}
                   />
