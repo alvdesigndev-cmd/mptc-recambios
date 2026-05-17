@@ -203,23 +203,28 @@ function NuevaPage() {
   useEffect(() => {
     if (mensajeTouched || !settings) return;
     setMensaje(
-      buildMessage({
-        cliente: nombre || "",
-        vehiculo: vehiculo || "",
-        matricula: matricula || "",
-        km: km || "",
-        categoria,
-        subfamilia,
-        importe,
-        taller: settings.tallerName,
-        mecanico: settings.mecanico || "",
-        confirmUrl,
-        rejectUrl,
-        fotos: fotosUrlsOk,
-      }),
+      buildMessage(
+        {
+          cliente: nombre || "",
+          vehiculo: vehiculo || "",
+          matricula: matricula || "",
+          km: km || "",
+          importe,
+          taller: settings.tallerName,
+          mecanico: settings.mecanico || "",
+          confirmUrl,
+          rejectUrl,
+          fotos: fotosUrlsOk,
+        },
+        {
+          template: sub?.mensaje,
+          subfamiliaNombre: sub?.name,
+          familiaNombre: fam?.name,
+        },
+      ),
     );
   }, [
-    nombre, vehiculo, matricula, km, categoria, subfamilia, importe,
+    nombre, vehiculo, matricula, km, sub, fam, importe,
     settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
 
