@@ -885,19 +885,41 @@ function NuevaPage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Guardar
               </button>
-              <button type="button" onClick={onPedirPena} disabled={busy} className={accentBtn}>
+              <button
+                type="button"
+                onClick={onPedirPena}
+                disabled={busy || fotosBloquean}
+                className={accentBtn}
+                title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
+              >
                 <Truck className="h-4 w-4" />
                 Pedir a Peña
               </button>
-              <button type="button" onClick={onEnviarCliente} disabled={busy} className={primaryBtn}>
+              <button
+                type="button"
+                onClick={onEnviarCliente}
+                disabled={busy || fotosBloquean}
+                className={primaryBtn}
+                title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
+              >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar al cliente
               </button>
             </div>
           </BottomBar>
           <div className="pb-2 text-center text-[11px] text-muted-foreground">
-            <MessageCircle className="mr-1 inline h-3 w-3" />
-            Se abrirá WhatsApp en una pestaña nueva.
+            {fotosBloquean ? (
+              <span className="text-warning">
+                {fotosFallidas > 0
+                  ? `Hay ${fotosFallidas} foto${fotosFallidas > 1 ? "s" : ""} con error. Quítalas para poder enviar.`
+                  : "Subiendo fotos… espera unos segundos para enviar."}
+              </span>
+            ) : (
+              <>
+                <MessageCircle className="mr-1 inline h-3 w-3" />
+                Se abrirá WhatsApp en una pestaña nueva.
+              </>
+            )}
           </div>
         </section>
       )}
