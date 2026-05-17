@@ -62,6 +62,36 @@ export type Database = {
         }
         Relationships: []
       }
+      familias: {
+        Row: {
+          created_at: string
+          icono: string
+          id: string
+          nombre: string
+          orden: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icono?: string
+          id?: string
+          nombre: string
+          orden?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icono?: string
+          id?: string
+          nombre?: string
+          orden?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gestiones: {
         Row: {
           categoria: string | null
@@ -205,6 +235,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subfamilias: {
+        Row: {
+          created_at: string
+          familia_id: string
+          id: string
+          mensaje: string
+          nombre: string
+          orden: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          familia_id: string
+          id?: string
+          mensaje?: string
+          nombre: string
+          orden?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          familia_id?: string
+          id?: string
+          mensaje?: string
+          nombre?: string
+          orden?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subfamilias_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
