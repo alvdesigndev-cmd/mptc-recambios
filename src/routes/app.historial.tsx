@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
-import { ESTADO_META, type Gestion } from "@/lib/mptc/types";
+import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
   component: HistorialPage,
