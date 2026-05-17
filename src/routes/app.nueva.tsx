@@ -153,6 +153,7 @@ function NuevaPage() {
   }, [confirmToken]);
 
   // Subir fotos en cuanto se añaden para que estén listas al enviar.
+  // Mantenemos un slot por foto: string = subida, null = pendiente/fallida (ver fotosError).
   useEffect(() => {
     if (!settings) return;
     const pendientes = fotos.length - fotosUrls.length;
@@ -161,26 +162,40 @@ function NuevaPage() {
     (async () => {
       setUploadingFotos(true);
       const startIdx = fotosUrls.length;
-      const nuevas: string[] = [];
+      // Reservar slots para las nuevas fotos.
+      setFotosUrls((prev) => [...prev, ...new Array(pendientes).fill(null) as null[]]);
+      setFotosError((prev) => [...prev, ...new Array(pendientes).fill(false) as boolean[]]);
       for (let i = startIdx; i < fotos.length; i++) {
+        if (cancelled) return;
         const f = fotos[i];
         const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${settings.tallerId}/${gestionFolder}/${Date.now()}-${i}.${ext}`;
         const { error } = await supabase.storage
           .from("fotos-gestiones")
           .upload(path, f, { contentType: f.type, upsert: false });
-        if (error) continue;
+        if (cancelled) return;
+        if (error) {
+          setFotosError((prev) => { const n = [...prev]; n[i] = true; return n; });
+          continue;
+        }
         const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
-        nuevas.push(data.publicUrl);
-      }
-      if (!cancelled && nuevas.length) {
-        setFotosUrls((prev) => [...prev, ...nuevas]);
+        setFotosUrls((prev) => { const n = [...prev]; n[i] = data.publicUrl; return n; });
+        setFotosError((prev) => { const n = [...prev]; n[i] = false; return n; });
       }
       if (!cancelled) setUploadingFotos(false);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fotos, settings]);
+
+  // URLs subidas con éxito (sin slots nulos).
+  const fotosUrlsOk = useMemo(
+    () => fotosUrls.filter((u): u is string => typeof u === "string"),
+    [fotosUrls],
+  );
+  const fotosFallidas = fotosError.filter(Boolean).length;
+  const fotosPendientes = fotos.length - fotosUrlsOk.length - fotosFallidas;
+  const fotosBloquean = uploadingFotos || fotosPendientes > 0 || fotosFallidas > 0;
 
   // Regenerar mensaje cuando cambian datos (si el usuario no lo ha tocado)
   useEffect(() => {
@@ -198,12 +213,12 @@ function NuevaPage() {
         mecanico: settings.mecanico || "",
         confirmUrl,
         rejectUrl,
-        fotos: fotosUrls,
+        fotos: fotosUrlsOk,
       }),
     );
   }, [
     nombre, vehiculo, matricula, km, categoria, subfamilia, importe,
-    settings, confirmUrl, rejectUrl, fotosUrls, mensajeTouched,
+    settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
 
   if (!settings) return null;
