@@ -816,14 +816,6 @@ function NuevaPage() {
             <button type="button" onClick={() => setStep(1)} className={ghostBtn}>
               <ArrowLeft className="h-4 w-4" /> Atrás
             </button>
-            <button
-              type="button"
-              disabled={!canNext2}
-              onClick={() => setStep(3)}
-              className={primaryBtn}
-            >
-              Continuar <ArrowRight className="h-4 w-4" />
-            </button>
           </BottomBar>
         </section>
       )}
