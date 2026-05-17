@@ -646,28 +646,52 @@ function NuevaPage() {
           <div className="rounded-2xl border border-border bg-surface p-4">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-semibold">Fotos del problema</div>
-              {uploadingFotos && (
+              {uploadingFotos ? (
                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" /> Subiendo…
                 </span>
-              )}
+              ) : fotosFallidas > 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
+                  <X className="h-3 w-3" /> {fotosFallidas} fallida{fotosFallidas > 1 ? "s" : ""}
+                </span>
+              ) : null}
             </div>
 
             {fotos.length > 0 && (
               <div className="mb-3 grid grid-cols-3 gap-2">
-                {fotos.map((f, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
-                    <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeFoto(i)}
-                      className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
-                      aria-label="Quitar"
+                {fotos.map((f, i) => {
+                  const failed = fotosError[i];
+                  const uploaded = typeof fotosUrls[i] === "string";
+                  return (
+                    <div
+                      key={i}
+                      className={
+                        "relative aspect-square overflow-hidden rounded-xl bg-surface-2 " +
+                        (failed ? "ring-2 ring-destructive" : "")
+                      }
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
+                      {!uploaded && !failed && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+                          <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                        </div>
+                      )}
+                      {failed && (
+                        <div className="absolute inset-x-0 bottom-0 bg-destructive/90 px-1 py-0.5 text-center text-[10px] font-semibold text-destructive-foreground">
+                          Error
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFoto(i)}
+                        className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
+                        aria-label="Quitar"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
