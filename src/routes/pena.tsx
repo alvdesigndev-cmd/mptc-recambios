@@ -38,15 +38,10 @@ function PenaPage() {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) { navigate({ to: "/login" }); return; }
-      let s = loadSettings();
-      if (!s) { await syncProfileToSettings(); s = loadSettings(); }
-      if (!s) { navigate({ to: "/login" }); return; }
-      if (s.role !== "pena") { navigate({ to: "/app" }); return; }
-      setReady(true);
-    })();
+    const s = loadSettings();
+    if (!s) { navigate({ to: "/" }); return; }
+    if (s.role !== "pena") { navigate({ to: "/app" }); return; }
+    setReady(true);
   }, [navigate]);
 
   const load = useCallback(async () => {
@@ -74,7 +69,7 @@ function PenaPage() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [ready, load]);
 
-  const onExit = async () => { await signOut(); navigate({ to: "/login" }); };
+  const onExit = () => { clearSettings(); navigate({ to: "/" }); };
 
   const filteredGestiones = useMemo(() => {
     const qq = q.trim().toLowerCase();
