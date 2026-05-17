@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  Image as ImageIcon,
   Search,
   Check,
   Loader2,
