@@ -311,6 +311,14 @@ function NuevaPage() {
       alert("Falta el teléfono del cliente");
       return;
     }
+    if (fotosBloquean) {
+      alert(
+        fotosFallidas > 0
+          ? "Hay fotos que no se han podido subir. Quítalas o vuelve a intentarlo antes de enviar."
+          : "Espera a que terminen de subirse las fotos antes de enviar.",
+      );
+      return;
+    }
     const url = buildWAUrl(telefono, mensaje);
     const win = window.open(url, "_blank");
     try {
@@ -325,13 +333,21 @@ function NuevaPage() {
   };
 
   const onPedirPena = async () => {
+    if (fotosBloquean) {
+      alert(
+        fotosFallidas > 0
+          ? "Hay fotos que no se han podido subir. Quítalas o vuelve a intentarlo antes de enviar."
+          : "Espera a que terminen de subirse las fotos antes de enviar.",
+      );
+      return;
+    }
     setPedirPena(true);
     const msg = buildPenaMessage({
       taller: settings.tallerName,
       vehiculo, matricula,
       piezas: piezas || (sub ? sub.name : "—"),
       notas: descripcion,
-      fotos: fotosUrls,
+      fotos: fotosUrlsOk,
     });
     const url = buildWAUrl(PENA_PHONE, msg);
     const win = window.open(url, "_blank");
