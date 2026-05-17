@@ -78,10 +78,10 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Autocomplete clientes (matrícula, teléfono o nombre)
+  // Búsqueda de clientes guardados (por nombre, teléfono o matrícula)
   useEffect(() => {
     if (!settings) return;
-    const q = matricula.trim() || telefono.trim() || nombre.trim();
+    const q = buscador.trim() || matricula.trim() || telefono.trim() || nombre.trim();
     if (q.length < 2) {
       setSuggest([]);
       return;
@@ -93,14 +93,14 @@ function NuevaPage() {
         .select("id,nombre,telefono,matricula,vehiculo,km")
         .eq("taller_id", settings.tallerId)
         .or(`matricula.ilike.%${q}%,telefono.ilike.%${q}%,nombre.ilike.%${q}%`)
-        .limit(5);
+        .limit(8);
       if (!cancelled) setSuggest((data as ClienteRow[]) || []);
     }, 220);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [matricula, telefono, nombre, settings]);
+  }, [buscador, matricula, telefono, nombre, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
