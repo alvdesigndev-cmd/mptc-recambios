@@ -63,6 +63,6 @@ export function buildPenaMessage(opts: {
   notas: string;
   fotos?: string[];
 }): string {
-  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${opts.fotos.join("\n")}\n` : "";
+  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${opts.fotos.map((u) => `<${u}>`).join("\n")}\n` : "";
   return `🔧 *Pedido ${opts.taller}*\n\n🚗 ${opts.vehiculo} — ${opts.matricula}\n\n📦 Piezas:\n${opts.piezas}\n${fotos}\n${opts.notas ? `📝 ${opts.notas}\n\n` : ""}Gracias 🙌`;
 }
