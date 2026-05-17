@@ -77,10 +77,10 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Autocomplete clientes (matrícula o teléfono)
+  // Autocomplete clientes (matrícula, teléfono o nombre)
   useEffect(() => {
     if (!settings) return;
-    const q = matricula.trim() || telefono.trim();
+    const q = matricula.trim() || telefono.trim() || nombre.trim();
     if (q.length < 2) {
       setSuggest([]);
       return;
@@ -99,7 +99,7 @@ function NuevaPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [matricula, telefono, settings]);
+  }, [matricula, telefono, nombre, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
