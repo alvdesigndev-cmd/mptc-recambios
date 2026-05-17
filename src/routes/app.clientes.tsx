@@ -280,8 +280,8 @@ function ClienteModal({
         </div>
       ) : (
         <div className="space-y-3 text-sm">
-          <Row label="Teléfono" value={cliente.telefono || "—"} />
-          <Row label="Matrícula" value={cliente.matricula || "—"} />
+          <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
+          <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
           <Row label="Vehículo" value={cliente.vehiculo || "—"} />
           <Row label="Km" value={cliente.km || "—"} />
           <Row label="Gestiones" value={String(cliente.total_gestiones)} />
