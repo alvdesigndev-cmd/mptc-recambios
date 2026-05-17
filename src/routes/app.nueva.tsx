@@ -414,26 +414,48 @@ function NuevaPage() {
   return (
     <div className="space-y-5">
       {/* Header + stepper */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Cancelar
         </Link>
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-          {[1, 2, 3].map((n) => (
-            <span
-              key={n}
-              className={
-                "flex h-6 w-6 items-center justify-center rounded-full " +
-                (step === n
-                  ? "bg-primary text-primary-foreground"
-                  : n < step
-                  ? "bg-success/20 text-success"
-                  : "bg-surface-2")
-              }
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            {[1, 2, 3].map((n) => (
+              <span
+                key={n}
+                className={
+                  "flex h-6 w-6 items-center justify-center rounded-full " +
+                  (step === n
+                    ? "bg-primary text-primary-foreground"
+                    : n < step
+                    ? "bg-success/20 text-success"
+                    : "bg-surface-2")
+                }
+              >
+                {n < step ? <Check className="h-3.5 w-3.5" /> : n}
+              </span>
+            ))}
+          </div>
+          {step === 1 && (
+            <button
+              type="button"
+              disabled={!canNext1}
+              onClick={onContinuarPaso1}
+              className={primaryBtn}
             >
-              {n < step ? <Check className="h-3.5 w-3.5" /> : n}
-            </span>
-          ))}
+              Continuar <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+          {step === 2 && (
+            <button
+              type="button"
+              disabled={!canNext2}
+              onClick={() => setStep(3)}
+              className={primaryBtn}
+            >
+              Continuar <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
