@@ -205,6 +205,7 @@ function ClienteModal({
     notas: cliente.notas || "",
   });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const remove = async () => {
     if (!confirm("¿Eliminar este cliente? (no afecta a sus gestiones)")) return;
@@ -212,7 +213,26 @@ function ClienteModal({
     onChanged();
   };
 
+  const validate = (): string | null => {
+    if (!f.nombre.trim()) return "El nombre es obligatorio.";
+    const tel = f.telefono.trim();
+    if (tel) {
+      const digits = tel.replace(/[\s\-().]/g, "");
+      if (!/^(\+?\d{9,15})$/.test(digits)) return "Teléfono no válido (9–15 dígitos, opcional +).";
+    }
+    const mat = f.matricula.trim().toUpperCase();
+    if (mat) {
+      // Acepta formatos ES comunes: 1234ABC, 1234-ABC, 1234 ABC, B1234CD, etc.
+      const clean = mat.replace(/[\s-]/g, "");
+      if (!/^[A-Z0-9]{6,8}$/.test(clean)) return "Matrícula no válida (6–8 caracteres alfanuméricos).";
+    }
+    return null;
+  };
+
   const save = async () => {
+    const err = validate();
+    if (err) { setError(err); return; }
+    setError(null);
     setSaving(true);
     await supabase.from("clientes").update(f).eq("id", cliente.id);
     setSaving(false);
@@ -242,6 +262,7 @@ function ClienteModal({
               className="w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none"
             />
           </label>
+          {error && <p className="text-xs font-semibold text-destructive">{error}</p>}
         </div>
       ) : (
         <div className="space-y-3 text-sm">
