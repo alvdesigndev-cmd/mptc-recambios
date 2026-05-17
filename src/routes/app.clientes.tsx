@@ -156,6 +156,8 @@ function NuevoClienteModal({
       taller_id: tallerId,
       taller_nombre: tallerNombre,
       ...f,
+      telefono: normalizeTelefono(f.telefono),
+      matricula: normalizeMatricula(f.matricula),
       total_gestiones: 0,
     });
     setSaving(false);
