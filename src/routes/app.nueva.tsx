@@ -247,6 +247,7 @@ function NuevaPage() {
   const removeFoto = (idx: number) => {
     setFotos((prev) => prev.filter((_, j) => j !== idx));
     setFotosUrls((prev) => prev.filter((_, j) => j !== idx));
+    setFotosError((prev) => prev.filter((_, j) => j !== idx));
   };
 
   const upsertCliente = async () => {
