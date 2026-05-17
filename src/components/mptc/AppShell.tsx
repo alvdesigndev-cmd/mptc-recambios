@@ -23,8 +23,8 @@ export function AppShell({ children }: Props) {
     const s = loadSettings();
     if (!s) { navigate({ to: "/" }); return; }
     setSettings(s);
-    if (s.theme === "light") document.documentElement.classList.add("light");
-    else document.documentElement.classList.remove("light");
+    if (s.theme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   }, [navigate]);
 
   if (!settings) return null;

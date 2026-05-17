@@ -98,10 +98,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const THEME_INIT = `try{var s=localStorage.getItem('mptc_settings_v1');if(s&&JSON.parse(s).theme==='dark'){document.documentElement.classList.add('dark')}}catch(e){}`;
+
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <HeadContent />
       </head>
       <body>

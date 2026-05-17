@@ -24,8 +24,8 @@ function AjustesPage() {
     const next = { ...s, ...patch };
     setS(next);
     saveSettings(next);
-    if (patch.theme === "light") document.documentElement.classList.add("light");
-    if (patch.theme === "dark") document.documentElement.classList.remove("light");
+    if (patch.theme === "dark") document.documentElement.classList.add("dark");
+    if (patch.theme === "light") document.documentElement.classList.remove("dark");
     if ("tallerName" in patch || "ciudad" in patch || "mecanico" in patch) {
       setSavedAt(Date.now());
     }
