@@ -35,9 +35,10 @@ export const FAMILIES: Family[] = [
   {
     id: "frenos", name: "Frenos", icon: "🛑",
     subs: [
-      { id: "pastillas-del", name: "Pastillas delanteras" },
-      { id: "discos-pastillas", name: "Discos y pastillas" },
+      { id: "pastillas-del", name: "Pastillas de freno delanteras" },
+      { id: "discos-pastillas-del", name: "Discos y pastillas delanteras" },
       { id: "kit-freno-tras", name: "Kit freno trasero" },
+      { id: "liquido-frenos", name: "Líquido de frenos" },
     ],
   },
   {
@@ -65,8 +66,8 @@ export const FAMILIES: Family[] = [
   {
     id: "neumaticos", name: "Neumáticos", icon: "🛞",
     subs: [
-      { id: "pareja", name: "Pareja" },
-      { id: "cuatro", name: "Cuatro neumáticos" },
+      { id: "neumaticos-del", name: "Neumáticos delanteros" },
+      { id: "neumaticos-x4", name: "Neumáticos x4 — Desgaste y cristalización" },
     ],
   },
   {
