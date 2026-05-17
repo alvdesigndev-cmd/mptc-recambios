@@ -50,6 +50,7 @@ function NuevaPage() {
   const [fotos, setFotos] = useState<File[]>([]);
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [buscador, setBuscador] = useState("");
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(null);
