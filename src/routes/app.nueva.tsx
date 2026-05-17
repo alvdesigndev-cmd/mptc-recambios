@@ -7,16 +7,19 @@ import {
   Check,
   Loader2,
   MessageCircle,
+  ScanLine,
   Save,
   Send,
   Truck,
   X,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { loadSettings, PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
 import { CATS_PRIMARY, FAMILIES, findFamily, findSubfamily } from "@/lib/mptc/families";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
+import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 
 export const Route = createFileRoute("/app/nueva")({
   component: NuevaPage,
@@ -62,6 +65,8 @@ function NuevaPage() {
   const [confirmToken] = useState(() => generateToken());
   const [pedirPena, setPedirPena] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const runOcr = useServerFn(ocrMatricula);
 
   useEffect(() => {
     const s = loadSettings();
@@ -72,10 +77,10 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Autocomplete clientes (matrícula o teléfono)
+  // Autocomplete clientes (matrícula, teléfono o nombre)
   useEffect(() => {
     if (!settings) return;
-    const q = matricula.trim() || telefono.trim();
+    const q = matricula.trim() || telefono.trim() || nombre.trim();
     if (q.length < 2) {
       setSuggest([]);
       return;
@@ -94,7 +99,7 @@ function NuevaPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [matricula, telefono, settings]);
+  }, [matricula, telefono, nombre, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
@@ -261,6 +266,38 @@ function NuevaPage() {
     navigate({ to: "/app" });
   };
 
+  const onScanMatricula = async (file: File | null) => {
+    if (!file) return;
+    setOcrBusy(true);
+    try {
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const res = await runOcr({ data: { imageDataUrl: dataUrl } });
+      if (res?.matricula) {
+        setMatricula(res.matricula);
+        setShowSuggest(true);
+      } else {
+        alert("No se detectó ninguna matrícula en la imagen.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al escanear la matrícula.");
+    } finally {
+      setOcrBusy(false);
+    }
+  };
+
+  const onContinuarPaso1 = async () => {
+    // Guardar/actualizar cliente al avanzar para que quede disponible
+    // en futuras gestiones aunque la gestión actual no se llegue a enviar.
+    try { await upsertCliente(); } catch (e) { console.warn("upsertCliente", e); }
+    setStep(2);
+  };
+
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
 
@@ -312,7 +349,8 @@ function NuevaPage() {
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => { setNombre(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
                 placeholder="Ej. Juan García"
                 className={inputCls}
               />
@@ -329,12 +367,34 @@ function NuevaPage() {
                 />
               </Field>
               <Field label="Matrícula">
-                <input
-                  value={matricula}
-                  onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
-                  placeholder="1234 ABC"
-                  className={inputCls + " font-mono uppercase"}
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={matricula}
+                    onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
+                    placeholder="1234 ABC"
+                    className={inputCls + " font-mono uppercase"}
+                  />
+                  <label
+                    title="Escanear matrícula con la cámara"
+                    className={
+                      "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
+                      (ocrBusy ? "pointer-events-none opacity-60" : "")
+                    }
+                  >
+                    {ocrBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ScanLine className="h-4 w-4" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
               </Field>
             </div>
 
@@ -418,7 +478,7 @@ function NuevaPage() {
             <button
               type="button"
               disabled={!canNext1}
-              onClick={() => setStep(2)}
+              onClick={onContinuarPaso1}
               className={primaryBtn}
             >
               Continuar <ArrowRight className="h-4 w-4" />
