@@ -155,6 +155,11 @@ function NuevaPage() {
     setKm(c.km || "");
     setShowSuggest(false);
     setBuscador("");
+    setClienteBloqueado(c);
+  };
+
+  const desbloquearCliente = () => {
+    setClienteBloqueado(null);
   };
 
   const onFiles = (files: FileList | null) => {
