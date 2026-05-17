@@ -266,6 +266,38 @@ function NuevaPage() {
     navigate({ to: "/app" });
   };
 
+  const onScanMatricula = async (file: File | null) => {
+    if (!file) return;
+    setOcrBusy(true);
+    try {
+      const reader = new FileReader();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const res = await runOcr({ data: { imageDataUrl: dataUrl } });
+      if (res?.matricula) {
+        setMatricula(res.matricula);
+        setShowSuggest(true);
+      } else {
+        alert("No se detectó ninguna matrícula en la imagen.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al escanear la matrícula.");
+    } finally {
+      setOcrBusy(false);
+    }
+  };
+
+  const onContinuarPaso1 = async () => {
+    // Guardar/actualizar cliente al avanzar para que quede disponible
+    // en futuras gestiones aunque la gestión actual no se llegue a enviar.
+    try { await upsertCliente(); } catch (e) { console.warn("upsertCliente", e); }
+    setStep(2);
+  };
+
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
 
