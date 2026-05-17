@@ -4,7 +4,8 @@ import {
   LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadSettings, clearSettings } from "@/lib/mptc/profiles";
+import { loadSettings } from "@/lib/mptc/profiles";
+import { signOut, syncProfileToSettings } from "@/lib/mptc/auth";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 
@@ -38,10 +39,15 @@ function PenaPage() {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    const s = loadSettings();
-    if (!s) { navigate({ to: "/" }); return; }
-    if (s.role !== "pena") { navigate({ to: "/app" }); return; }
-    setReady(true);
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) { navigate({ to: "/login" }); return; }
+      let s = loadSettings();
+      if (!s) { await syncProfileToSettings(); s = loadSettings(); }
+      if (!s) { navigate({ to: "/login" }); return; }
+      if (s.role !== "pena") { navigate({ to: "/app" }); return; }
+      setReady(true);
+    })();
   }, [navigate]);
 
   const load = useCallback(async () => {
@@ -69,7 +75,7 @@ function PenaPage() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [ready, load]);
 
-  const onExit = () => { clearSettings(); navigate({ to: "/" }); };
+  const onExit = async () => { await signOut(); navigate({ to: "/login" }); };
 
   const filteredGestiones = useMemo(() => {
     const qq = q.trim().toLowerCase();
