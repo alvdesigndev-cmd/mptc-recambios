@@ -283,7 +283,6 @@ function NuevaPage() {
       const res = await runOcr({ data: { imageDataUrl: dataUrl } });
       if (res?.matricula) {
         setMatricula(res.matricula);
-        setShowSuggest(true);
       } else {
         alert("No se detectó ninguna matrícula en la imagen.");
       }
