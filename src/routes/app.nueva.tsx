@@ -271,7 +271,7 @@ function NuevaPage() {
       notas: descripcion,
     });
     const url = buildWAUrl(PENA_PHONE, msg);
-    const win = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const win = window.open("about:blank", "_blank");
     try {
       await saveGestion("en-curso");
     } finally {
