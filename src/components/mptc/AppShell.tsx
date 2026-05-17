@@ -20,24 +20,11 @@ export function AppShell({ children }: Props) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const s = loadSettings();
-      if (!s) { navigate({ to: "/" }); return; }
-      // Verifica sesión real en Supabase — sin sesión, todos los INSERT
-      // fallarían silenciosamente por RLS (auth.uid() null).
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        clearSettings();
-        navigate({ to: "/login" });
-        return;
-      }
-      if (cancelled) return;
-      setSettings(s);
-      if (s.theme === "light") document.documentElement.classList.add("light");
-      else document.documentElement.classList.remove("light");
-    })();
-    return () => { cancelled = true; };
+    const s = loadSettings();
+    if (!s) { navigate({ to: "/" }); return; }
+    setSettings(s);
+    if (s.theme === "light") document.documentElement.classList.add("light");
+    else document.documentElement.classList.remove("light");
   }, [navigate]);
 
   if (!settings) return null;
