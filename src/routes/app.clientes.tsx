@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, UserPlus, X, Phone, Car, Plus } from "lucide-react";
+import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 
