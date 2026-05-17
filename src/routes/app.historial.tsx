@@ -5,14 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
-import { ESTADO_META, type Gestion } from "@/lib/mptc/types";
+import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
   component: HistorialPage,
 });
 
-const FILTROS = ["todas", "en-curso", "enviado", "aceptado", "rechazado", "completado"] as const;
+const FILTROS = ["todas", "en-curso", "enviado", "aceptado", "rechazado", "completado", "pedido-pena"] as const;
 type Filtro = (typeof FILTROS)[number];
+
+const FILTRO_LABEL: Record<Filtro, string> = {
+  "todas": "Todas",
+  "en-curso": "En curso",
+  "enviado": "Enviado",
+  "aceptado": "Aceptado",
+  "rechazado": "Rechazado",
+  "completado": "Completado",
+  "pedido-pena": "Pedido a Peña",
+};
 
 function HistorialPage() {
   const settings = useSettings({ requireTaller: true });
@@ -36,7 +46,11 @@ function HistorialPage() {
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
     return items.filter((g) => {
-      if (filtro !== "todas" && g.estado !== filtro) return false;
+      if (filtro === "pedido-pena") {
+        if (!g.pedido_pena) return false;
+      } else if (filtro !== "todas" && g.estado !== filtro) {
+        return false;
+      }
       if (!qq) return true;
       return (
         (g.cliente_nombre || "").toLowerCase().includes(qq) ||
@@ -70,8 +84,10 @@ function HistorialPage() {
         <div className="flex gap-2">
           {FILTROS.map((f) => {
             const active = filtro === f;
-            const count = f === "todas" ? items.length : items.filter((g) => g.estado === f).length;
-            const label = f === "todas" ? "Todas" : ESTADO_META[f]?.label || f;
+            const count =
+              f === "todas" ? items.length
+              : f === "pedido-pena" ? items.filter((g) => g.pedido_pena).length
+              : items.filter((g) => g.estado === f).length;
             return (
               <button
                 key={f}
@@ -81,7 +97,7 @@ function HistorialPage() {
                   (active ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground")
                 }
               >
-                {label} <span className="opacity-70">· {count}</span>
+                {FILTRO_LABEL[f]} <span className="opacity-70">· {count}</span>
               </button>
             );
           })}

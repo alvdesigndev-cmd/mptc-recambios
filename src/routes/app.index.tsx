@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { Plus, ArrowRight, Inbox } from "lucide-react";
+import { Plus, ArrowRight, Inbox, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
+import { PedidoDirectoModal } from "@/components/mptc/PedidoDirectoModal";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/")({
@@ -16,7 +17,7 @@ function Dashboard() {
   const [items, setItems] = useState<Gestion[]>([]);
   const [open, setOpen] = useState<Gestion | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [pedidoPenaOpen, setPedidoPenaOpen] = useState(false);
   const load = useCallback(async () => {
     if (!settings) return;
     setLoading(true);
@@ -62,6 +63,34 @@ function Dashboard() {
         ))}
       </section>
 
+      <section className="grid gap-2 sm:grid-cols-2">
+        <Link
+          to="/app/nueva"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40 hover:bg-surface-2"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Plus className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Nueva gestión</span>
+            <span className="block truncate text-[11px] text-muted-foreground">Cliente · avería · presupuesto</span>
+          </span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => setPedidoPenaOpen(true)}
+          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-left transition hover:border-accent/40 hover:bg-surface-2"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <Truck className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Hacer pedido a Grupo Peña</span>
+            <span className="block truncate text-[11px] text-muted-foreground">Pedido directo, sin gestión</span>
+          </span>
+        </button>
+      </section>
+
       {pendientes.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
@@ -102,6 +131,13 @@ function Dashboard() {
       </section>
 
       <GestionModal gestion={open} onClose={() => setOpen(null)} onChanged={load} />
+      {pedidoPenaOpen && (
+        <PedidoDirectoModal
+          settings={settings}
+          onClose={() => setPedidoPenaOpen(false)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
