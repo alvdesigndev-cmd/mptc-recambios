@@ -7,16 +7,19 @@ import {
   Check,
   Loader2,
   MessageCircle,
+  ScanLine,
   Save,
   Send,
   Truck,
   X,
 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { loadSettings, PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
 import { CATS_PRIMARY, FAMILIES, findFamily, findSubfamily } from "@/lib/mptc/families";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
+import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 
 export const Route = createFileRoute("/app/nueva")({
   component: NuevaPage,
