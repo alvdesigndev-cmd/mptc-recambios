@@ -14,7 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clientes: {
+        Row: {
+          created_at: string
+          id: string
+          km: string | null
+          matricula: string | null
+          nombre: string | null
+          notas: string | null
+          taller_id: string | null
+          taller_nombre: string | null
+          telefono: string | null
+          total_gestiones: number
+          ultima_gestion: string | null
+          updated_at: string
+          vehiculo: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          km?: string | null
+          matricula?: string | null
+          nombre?: string | null
+          notas?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          telefono?: string | null
+          total_gestiones?: number
+          ultima_gestion?: string | null
+          updated_at?: string
+          vehiculo?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          km?: string | null
+          matricula?: string | null
+          nombre?: string | null
+          notas?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          telefono?: string | null
+          total_gestiones?: number
+          ultima_gestion?: string | null
+          updated_at?: string
+          vehiculo?: string | null
+        }
+        Relationships: []
+      }
+      gestiones: {
+        Row: {
+          categoria: string | null
+          cliente_nombre: string | null
+          cliente_telefono: string | null
+          confirm_token: string | null
+          created_at: string
+          descripcion: string | null
+          estado: string
+          fotos: string[] | null
+          id: string
+          importe: string | null
+          km: string | null
+          matricula: string | null
+          objecion: string | null
+          pedido_pena: boolean
+          piezas: string | null
+          subfamilia: string | null
+          taller_id: string | null
+          taller_nombre: string | null
+          vehiculo: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          confirm_token?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fotos?: string[] | null
+          id?: string
+          importe?: string | null
+          km?: string | null
+          matricula?: string | null
+          objecion?: string | null
+          pedido_pena?: boolean
+          piezas?: string | null
+          subfamilia?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          vehiculo?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
+          confirm_token?: string | null
+          created_at?: string
+          descripcion?: string | null
+          estado?: string
+          fotos?: string[] | null
+          id?: string
+          importe?: string | null
+          km?: string | null
+          matricula?: string | null
+          objecion?: string | null
+          pedido_pena?: boolean
+          piezas?: string | null
+          subfamilia?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          vehiculo?: string | null
+        }
+        Relationships: []
+      }
+      pedidos_pena: {
+        Row: {
+          created_at: string
+          estado: string
+          fotos: string[] | null
+          id: string
+          matricula: string | null
+          notas: string | null
+          pedido_numero: number | null
+          piezas: string | null
+          taller_id: string | null
+          taller_nombre: string | null
+          vehiculo: string | null
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          fotos?: string[] | null
+          id?: string
+          matricula?: string | null
+          notas?: string | null
+          pedido_numero?: number | null
+          piezas?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          vehiculo?: string | null
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          fotos?: string[] | null
+          id?: string
+          matricula?: string | null
+          notas?: string | null
+          pedido_numero?: number | null
+          piezas?: string | null
+          taller_id?: string | null
+          taller_nombre?: string | null
+          vehiculo?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
