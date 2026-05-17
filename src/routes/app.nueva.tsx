@@ -291,7 +291,7 @@ function NuevaPage() {
         pedido_pena: opts?.pedirPena ?? pedirPena,
         wa_abierto: opts?.waAbierto ?? false,
         confirm_token: confirmToken,
-        fotos: fotosUrls,
+        fotos: fotosUrlsOk,
       };
       const { data, error } = await supabase
         .from("gestiones")
