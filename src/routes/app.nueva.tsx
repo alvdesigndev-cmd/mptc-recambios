@@ -63,8 +63,9 @@ function NuevaPage() {
   const [mensaje, setMensaje] = useState("");
   const [mensajeTouched, setMensajeTouched] = useState(false);
   const [confirmToken] = useState(() => generateToken());
-  const [pedirPena, setPedirPena] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const runOcr = useServerFn(ocrMatricula);
 
   useEffect(() => {
     const s = loadSettings();
