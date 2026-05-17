@@ -141,6 +141,7 @@ function NuevaPage() {
     setVehiculo(c.vehiculo || "");
     setKm(c.km || "");
     setShowSuggest(false);
+    setBuscador("");
   };
 
   const onFiles = (files: FileList | null) => {
