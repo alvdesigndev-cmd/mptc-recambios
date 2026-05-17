@@ -758,12 +758,12 @@ function NuevaPage() {
         <section className="space-y-4">
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {visibleFamilies.map((f) => {
-              const active = categoria === f.id;
+              const active = categoria === f.slug;
               return (
                 <button
                   key={f.id}
                   type="button"
-                  onClick={() => { setCategoria(f.id); setSubfamilia(null); }}
+                  onClick={() => { setCategoria(f.slug); setSubfamilia(null); }}
                   className={
                     "flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition " +
                     (active
