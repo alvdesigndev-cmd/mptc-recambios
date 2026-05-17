@@ -25,23 +25,16 @@ function ConfirmarPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("gestiones")
-          .select("id,estado,taller_nombre,matricula")
-          .eq("confirm_token", token)
-          .maybeSingle();
+        const { data, error } = await supabase.rpc("confirmar_gestion", { _token: token });
         if (error) { setStatus("error"); return; }
-        if (!data) { setStatus("notfound"); return; }
-        setInfo({ taller: data.taller_nombre || "", matricula: data.matricula || "" });
-        if (data.estado === "aceptado" || data.estado === "completado") {
-          setStatus("already"); return;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row) { setStatus("notfound"); return; }
+        setInfo({ matricula: row.matricula || "" });
+        if (row.previous_estado === "aceptado" || row.previous_estado === "completado") {
+          setStatus("already");
+        } else {
+          setStatus("ok");
         }
-        const { error: upErr } = await supabase
-          .from("gestiones")
-          .update({ estado: "aceptado" })
-          .eq("id", data.id);
-        if (upErr) { setStatus("error"); return; }
-        setStatus("ok");
       } catch {
         setStatus("error");
       }
