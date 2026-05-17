@@ -63,6 +63,34 @@ function Dashboard() {
         ))}
       </section>
 
+      <section className="grid gap-2 sm:grid-cols-2">
+        <Link
+          to="/app/nueva"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40 hover:bg-surface-2"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Plus className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Nueva gestión</span>
+            <span className="block truncate text-[11px] text-muted-foreground">Cliente · avería · presupuesto</span>
+          </span>
+        </Link>
+        <button
+          type="button"
+          onClick={() => setPedidoPenaOpen(true)}
+          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-left transition hover:border-accent/40 hover:bg-surface-2"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <Truck className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Hacer pedido a Grupo Peña</span>
+            <span className="block truncate text-[11px] text-muted-foreground">Pedido directo, sin gestión</span>
+          </span>
+        </button>
+      </section>
+
       {pendientes.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
