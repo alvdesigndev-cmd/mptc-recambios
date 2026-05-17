@@ -1,60 +1,58 @@
+## Objetivo
 
-# MPTC — Plan de reconstrucción
+Permitir gestionar familias y subfamilias desde la propia app (crear, editar, eliminar con confirmación y ver el mensaje asociado), en lugar de tenerlo hardcodeado en `src/lib/mptc/families.ts` y `src/lib/mptc/messages.ts`.
 
-Reconstruimos la app **MPTC - Taller Conectado** en este stack (TanStack Start + React + Lovable Cloud/Supabase). Como son ~4700 líneas en el original, lo dividimos en **5 fases** entregables. Cada fase queda funcional antes de pasar a la siguiente.
+## Cambios
 
----
+### 1. Base de datos (migración)
 
-## Fase 1 — Cimientos (esta entrega)
+Crear dos tablas nuevas:
 
-- Activar **Lovable Cloud** (Supabase gestionado).
-- Crear tablas `gestiones`, `clientes`, `pedidos_pena` con RLS abierta al rol anónimo (como en el original; añadiremos auth real en Fase 5).
-- **Design system** en `src/styles.css`: tema oscuro por defecto, claro opcional, paleta azul `#3B82F6` + rojo `#E51A2B`, mono JetBrains.
-- **Splash de selección de rol**: Taller / Grupo Peña, con sub-selector Taller 1 / Taller 2. Persistencia del perfil en `localStorage`.
-- **Shell de app**: topbar + tabbar inferior (oculto para Peña) + FAB azul.
-- Rutas vacías: `/`, `/app`, `/app/historial`, `/app/clientes`, `/app/ajustes`, `/app/nueva`, `/pena`, `/confirmar/$token`.
-- Constantes: `TALLER_PROFILES`, `PENA_PHONE`, familias/subfamilias (catálogo completo de reparaciones).
+- `familias`: `id` (uuid), `slug` (text único), `nombre`, `icono`, `orden` (int), `created_at`, `updated_at`.
+- `subfamilias`: `id` (uuid), `familia_id` (uuid → familias), `slug` (text único), `nombre`, `mensaje` (text con el guion EXACTO, puede usar `___` como marcador del importe), `orden`, `created_at`, `updated_at`.
 
-## Fase 2 — Nueva gestión (3 pasos)
+RLS abierto (igual que `clientes`/`gestiones`) para mantener consistencia con el resto del proyecto. Trigger de `updated_at`.
 
-- Paso 1: datos del cliente + autocompletado desde `clientes` + cámara/galería + OCR de matrícula con Google Vision.
-- Paso 2: grid de familias (7 primarias + “ver más”), subfamilias inline.
-- Paso 3: mensaje generado editable con `MSG_TEMPLATES` (guiones por subfamilia con onomatopeyas), botones Enviar al cliente / Pedir a Peña / Guardar.
-- Subida de fotos a Supabase Storage (`fotos-gestiones`).
-- Generación de `confirm_token` + URL de confirmación.
+Seed inicial con TODAS las familias y subfamilias actuales y sus mensajes literales (los mismos que ya están en `messages.ts`).
 
-## Fase 3 — Dashboard, Historial, Clientes
+### 2. Lectura de datos
 
-- Dashboard con KPIs y “pendientes de respuesta”.
-- Historial con filtros por estado y buscador.
-- Pantalla Clientes con buscador, filtros, alta manual, ficha y “nueva gestión con este cliente”.
-- Modal de detalle de gestión con acciones según estado (`renderModalActions`).
+- Nuevo hook `useFamilias()` (React Query) que carga familias + subfamilias desde Supabase.
+- `findFamily` / `findSubfamily` siguen exponiéndose pero leyendo desde el cache de React Query.
+- `buildMessage` recibe el `mensaje` (template) como argumento en vez de buscarlo en un map estático. Sustituye `___` por el importe y añade al final `actions(c)` + `fotosBlock(c)`. El array `SPECIFIC` se elimina.
+- `app.nueva.tsx` pasa el template del mensaje (obtenido de la subfamilia seleccionada) a `buildMessage`.
 
-## Fase 4 — Panel Grupo Peña + Confirmación cliente
+### 3. Pantalla de administración
 
-- Ruta `/pena`: KPIs, filtros (gestión / aceptado / directo), cards con botones Preparado + WhatsApp.
-- Formulario de pedido directo con fotos y OCR.
-- Ruta `/confirmar/$token`: marca la gestión como `aceptado`, pantalla de confirmación al cliente.
-- Polling `pollConfirmations` cada 90s + `visibilitychange`.
+Nueva ruta `src/routes/app.familias.tsx` (enlazada desde Ajustes y desde el menú lateral si existe). Layout:
 
-## Fase 5 — Pulido, PWA y seguridad
+- Lista de familias a la izquierda (en móvil, arriba) con botón “+ Nueva familia”.
+- Al seleccionar una familia: cabecera editable (nombre + icono) con botones Guardar / Eliminar; debajo, lista de subfamilias con su nombre y, plegado, el mensaje. Cada subfamilia tiene Editar / Eliminar y un botón “+ Nueva subfamilia”.
+- Editor de subfamilia (Sheet o Dialog): campos `nombre` y `mensaje` (textarea grande, multilinea, ayuda “usa `___` donde irá el importe”).
+- Eliminaciones siempre con `AlertDialog` de confirmación. Eliminar familia avisa que se eliminarán también sus subfamilias.
+- Toasts con sonner para éxito/error.
 
-- Manifest PWA + iconos + `display: standalone`.
-- Toasts, ajustes (tema claro/oscuro, datos del taller).
-- Sustitución de RLS abierta por **Supabase Auth por taller** con `auth.uid()` (mejora real de seguridad vs. la app actual).
-- QA general en móvil y desktop.
+### 4. Detalles técnicos
 
----
+```text
+src/
+  lib/mptc/
+    families.ts          # types + helpers (sin datos)
+    messages.ts          # buildMessage(template, ctx) + buildPenaMessage
+    useFamilias.ts       # hook con React Query + mutaciones CRUD
+  routes/
+    app.familias.tsx     # nueva pantalla de admin
+    app.nueva.tsx        # adaptado a la nueva firma de buildMessage
+    app.ajustes.tsx      # enlace a "Gestionar familias"
+```
 
-## Detalles técnicos clave
+Acceso desde Ajustes con un botón “Gestionar familias y mensajes”.
 
-- **Stack**: TanStack Start (file routing en `src/routes/`), React 19, Tailwind v4, shadcn, Lovable Cloud.
-- **Cliente Supabase**: `@/integrations/supabase/client` desde componentes; server functions con `requireSupabaseAuth` cuando metamos auth real.
-- **OCR Google Vision**: la API key se guarda como **secret** (`GOOGLE_VISION_API_KEY`) y se llama desde un `createServerFn` para no exponerla en el cliente.
-- **WhatsApp**: helper `buildWAUrl(phone, msg)` idéntico al original, abriendo `https://wa.me/...` en nueva pestaña.
-- **Identidades fijas de taller**: `taller-1-mtc-recambios`, `taller-2-mtc-recambios` (no UUIDs aleatorios), igual que el original.
-- **PWA**: la añadimos en Fase 5 con manifest simple (sin service worker) para que funcione instalable sin romper la preview de Lovable.
+### 5. Compatibilidad
 
----
+Las gestiones ya guardadas referencian `categoria` y `subfamilia` por slug; mantenemos los slugs actuales en el seed para no romper el historial existente.
 
-¿Tiro con la **Fase 1** tal cual está descrita?
+### Fuera de alcance
+
+- Reordenar familias/subfamilias por drag & drop (se podrá editar `orden` manualmente más adelante).
+- Importar/exportar en lote.
