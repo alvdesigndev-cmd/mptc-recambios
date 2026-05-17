@@ -8,6 +8,13 @@ export const Route = createFileRoute("/app/clientes")({
   component: ClientesPage,
 });
 
+// Normalizadores: limpian entrada para mostrar y guardar de forma consistente.
+const normalizeMatricula = (v: string) => v.replace(/[\s-]/g, "").toUpperCase();
+const normalizeTelefono = (v: string) => {
+  const t = v.replace(/[\s\-().]/g, "");
+  return t.startsWith("+") ? "+" + t.slice(1).replace(/\D/g, "") : t.replace(/\D/g, "");
+};
+
 interface Cliente {
   id: string;
   nombre: string | null;
@@ -102,11 +109,11 @@ function ClientesPage() {
                   </span>
                 </div>
                 <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  <span className="font-mono">{c.matricula || "—"}</span> · {c.vehiculo || "—"}
+                  <span className="font-mono">{c.matricula ? normalizeMatricula(c.matricula) : "—"}</span> · {c.vehiculo || "—"}
                 </div>
                 {c.telefono && (
                   <div className="mt-0.5 truncate text-[12px] text-text-2">
-                    <Phone className="mr-1 inline h-3 w-3" />{c.telefono}
+                    <Phone className="mr-1 inline h-3 w-3" />{normalizeTelefono(c.telefono)}
                   </div>
                 )}
               </div>
@@ -149,6 +156,8 @@ function NuevoClienteModal({
       taller_id: tallerId,
       taller_nombre: tallerNombre,
       ...f,
+      telefono: normalizeTelefono(f.telefono),
+      matricula: normalizeMatricula(f.matricula),
       total_gestiones: 0,
     });
     setSaving(false);
@@ -234,7 +243,12 @@ function ClienteModal({
     if (err) { setError(err); return; }
     setError(null);
     setSaving(true);
-    await supabase.from("clientes").update(f).eq("id", cliente.id);
+    const payload = {
+      ...f,
+      telefono: normalizeTelefono(f.telefono),
+      matricula: normalizeMatricula(f.matricula),
+    };
+    await supabase.from("clientes").update(payload).eq("id", cliente.id);
     setSaving(false);
     onChanged();
   };
@@ -266,8 +280,8 @@ function ClienteModal({
         </div>
       ) : (
         <div className="space-y-3 text-sm">
-          <Row label="Teléfono" value={cliente.telefono || "—"} />
-          <Row label="Matrícula" value={cliente.matricula || "—"} />
+          <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
+          <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
           <Row label="Vehículo" value={cliente.vehiculo || "—"} />
           <Row label="Km" value={cliente.km || "—"} />
           <Row label="Gestiones" value={String(cliente.total_gestiones)} />
