@@ -423,22 +423,43 @@ function NuevaPage() {
 
             {showSuggest && suggest.length > 0 && (
               <div className="rounded-xl border border-border-strong bg-surface-2">
-                {suggest.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => pickCliente(c)}
-                    className="flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
-                      <div className="truncate text-[12px] text-muted-foreground">
-                        {c.matricula} · {c.vehiculo}
+                {suggest.map((c) => {
+                  const q = buscador.trim().toLowerCase();
+                  const matches: string[] = [];
+                  if (q.length >= 2) {
+                    if (c.nombre?.toLowerCase().includes(q)) matches.push("Nombre");
+                    if (c.telefono?.toLowerCase().includes(q)) matches.push("Teléfono");
+                    if (c.matricula?.toLowerCase().includes(q)) matches.push("Matrícula");
+                  }
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => pickCliente(c)}
+                      className="flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
+                        <div className="truncate text-[12px] text-muted-foreground">
+                          {c.matricula} · {c.vehiculo}
+                        </div>
+                        {matches.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {matches.map((m) => (
+                              <span
+                                key={m}
+                                className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
+                              >
+                                {m}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <span className="text-[11px] text-primary">Usar</span>
-                  </button>
-                ))}
+                      <span className="shrink-0 text-[11px] text-primary">Usar</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
