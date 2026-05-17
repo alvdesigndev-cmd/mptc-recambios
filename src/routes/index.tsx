@@ -13,9 +13,9 @@ export const Route = createFileRoute("/")({
 });
 
 const DEFAULTS: Record<Role, AppSettings> = {
-  "taller-1": { role: "taller-1", tallerId: "taller-1-mtc-recambios", tallerName: "Taller 1", ciudad: "", mecanico: "", theme: "dark" },
-  "taller-2": { role: "taller-2", tallerId: "taller-2-mtc-recambios", tallerName: "Taller 2", ciudad: "", mecanico: "", theme: "dark" },
-  "pena": { role: "pena", tallerId: "grupo-pena", tallerName: "Grupo Peña", ciudad: "", mecanico: "", theme: "dark" },
+  "taller-1": { role: "taller-1", tallerId: "taller-1-mtc-recambios", tallerName: "Taller 1", ciudad: "", mecanico: "", theme: "light" },
+  "taller-2": { role: "taller-2", tallerId: "taller-2-mtc-recambios", tallerName: "Taller 2", ciudad: "", mecanico: "", theme: "light" },
+  "pena": { role: "pena", tallerId: "grupo-pena", tallerName: "Grupo Peña", ciudad: "", mecanico: "", theme: "light" },
 };
 
 function SplashPicker() {
