@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { Plus, ArrowRight, Inbox } from "lucide-react";
+import { Plus, ArrowRight, Inbox, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
+import { PedidoDirectoModal } from "@/components/mptc/PedidoDirectoModal";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/")({
@@ -16,7 +17,7 @@ function Dashboard() {
   const [items, setItems] = useState<Gestion[]>([]);
   const [open, setOpen] = useState<Gestion | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [pedidoPenaOpen, setPedidoPenaOpen] = useState(false);
   const load = useCallback(async () => {
     if (!settings) return;
     setLoading(true);
