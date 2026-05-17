@@ -795,12 +795,12 @@ function NuevaPage() {
               </div>
               <div className="grid gap-1.5">
                 {fam.subs.map((s) => {
-                  const active = subfamilia === s.id;
+                  const active = subfamilia === s.slug;
                   return (
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setSubfamilia(s.id)}
+                      onClick={() => setSubfamilia(s.slug)}
                       className={
                         "flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition " +
                         (active
