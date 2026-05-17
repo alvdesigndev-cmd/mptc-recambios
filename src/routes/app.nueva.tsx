@@ -349,6 +349,28 @@ function NuevaPage() {
       {step === 1 && (
         <section className="space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <Field label="Buscar cliente guardado">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={buscador}
+                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                  onFocus={() => setShowSuggest(true)}
+                  placeholder="Nombre, teléfono o matrícula…"
+                  className={inputCls + " pl-9"}
+                />
+                {buscador && (
+                  <button
+                    type="button"
+                    onClick={() => { setBuscador(""); setSuggest([]); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </Field>
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
