@@ -208,7 +208,7 @@ function NuevaPage() {
     }
   };
 
-  const saveGestion = async (estado: "en-curso" | "enviado") => {
+  const saveGestion = async (estado: "en-curso" | "enviado", opts?: { pedirPena?: boolean }) => {
     setBusy(true);
     try {
       const insertPayload = {
@@ -220,7 +220,7 @@ function NuevaPage() {
         categoria, subfamilia,
         descripcion, piezas, importe,
         estado,
-        pedido_pena: pedirPena,
+        pedido_pena: opts?.pedirPena ?? pedirPena,
         confirm_token: confirmToken,
         fotos: [] as string[],
       };
@@ -255,9 +255,12 @@ function NuevaPage() {
     const win = window.open(url, "_blank");
     try {
       await saveGestion("enviado");
+      navigate({ to: "/app/historial" });
+    } catch (e: any) {
+      console.error("saveGestion enviado", e);
+      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido") + "\n\nVuelve a iniciar sesión e inténtalo de nuevo.");
     } finally {
       if (!win) window.location.href = url;
-      navigate({ to: "/app" });
     }
   };
 
@@ -272,16 +275,24 @@ function NuevaPage() {
     const url = buildWAUrl(PENA_PHONE, msg);
     const win = window.open(url, "_blank");
     try {
-      await saveGestion("en-curso");
+      await saveGestion("en-curso", { pedirPena: true });
+      navigate({ to: "/app/historial" });
+    } catch (e: any) {
+      console.error("saveGestion pena", e);
+      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido") + "\n\nVuelve a iniciar sesión e inténtalo de nuevo.");
     } finally {
       if (!win) window.location.href = url;
-      navigate({ to: "/app" });
     }
   };
 
   const onGuardar = async () => {
-    await saveGestion("en-curso");
-    navigate({ to: "/app" });
+    try {
+      await saveGestion("en-curso");
+      navigate({ to: "/app" });
+    } catch (e: any) {
+      console.error("saveGestion guardar", e);
+      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido"));
+    }
   };
 
   const onScanMatricula = async (file: File | null) => {
