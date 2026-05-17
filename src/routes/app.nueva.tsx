@@ -90,12 +90,22 @@ function NuevaPage() {
     }
     let cancelled = false;
     const t = setTimeout(async () => {
+      // Variante sin separadores para fuzzy match de matrícula/teléfono.
+      const qn = q.replace(/[\s\-_.]/g, "");
+      const filters = [
+        `matricula.ilike.%${q}%`,
+        `telefono.ilike.%${q}%`,
+        `nombre.ilike.%${q}%`,
+      ];
+      if (qn && qn !== q) {
+        filters.push(`matricula.ilike.%${qn}%`, `telefono.ilike.%${qn}%`);
+      }
       const { data } = await supabase
         .from("clientes")
         .select("id,nombre,telefono,matricula,vehiculo,km")
         .eq("taller_id", settings.tallerId)
-        .or(`matricula.ilike.%${q}%,telefono.ilike.%${q}%,nombre.ilike.%${q}%`)
-        .limit(8);
+        .or(filters.join(","))
+        .limit(12);
       if (!cancelled) setSuggest((data as ClienteRow[]) || []);
     }, 220);
     return () => {
@@ -423,19 +433,28 @@ function NuevaPage() {
 
             {showSuggest && suggest.length > 0 && (() => {
               const q = buscador.trim().toLowerCase();
+              const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, "");
+              const qn = norm(q);
               // Puntuación: matrícula > teléfono > nombre.
-              // Dentro de cada campo: empieza-por gana sobre contiene.
+              // Dentro de cada campo: empieza-por > contiene > fuzzy (sin espacios/guiones).
               const score = (c: ClienteRow) => {
                 const m = (c.matricula || "").toLowerCase();
                 const t = (c.telefono || "").toLowerCase();
                 const n = (c.nombre || "").toLowerCase();
+                const mn = norm(m);
+                const tn = norm(t);
+                const nn = norm(n);
                 if (m.startsWith(q)) return 0;
                 if (m.includes(q)) return 1;
-                if (t.startsWith(q)) return 2;
-                if (t.includes(q)) return 3;
-                if (n.startsWith(q)) return 4;
-                if (n.includes(q)) return 5;
-                return 6;
+                if (qn && mn.startsWith(qn)) return 2;
+                if (qn && mn.includes(qn)) return 3;
+                if (t.startsWith(q)) return 4;
+                if (t.includes(q)) return 5;
+                if (qn && tn.includes(qn)) return 6;
+                if (n.startsWith(q)) return 7;
+                if (n.includes(q)) return 8;
+                if (qn && nn.includes(qn)) return 9;
+                return 10;
               };
               const ordered = [...suggest].sort((a, b) => score(a) - score(b));
               return (
