@@ -145,6 +145,41 @@ function NuevaPage() {
     return `${window.location.origin}/confirmar/${confirmToken}`;
   }, [confirmToken]);
 
+  const rejectUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/confirmar/${confirmToken}?action=rechazar`;
+  }, [confirmToken]);
+
+  // Subir fotos en cuanto se añaden para que estén listas al enviar.
+  useEffect(() => {
+    if (!settings) return;
+    const pendientes = fotos.length - fotosUrls.length;
+    if (pendientes <= 0) return;
+    let cancelled = false;
+    (async () => {
+      setUploadingFotos(true);
+      const startIdx = fotosUrls.length;
+      const nuevas: string[] = [];
+      for (let i = startIdx; i < fotos.length; i++) {
+        const f = fotos[i];
+        const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${settings.tallerId}/${gestionFolder}/${Date.now()}-${i}.${ext}`;
+        const { error } = await supabase.storage
+          .from("fotos-gestiones")
+          .upload(path, f, { contentType: f.type, upsert: false });
+        if (error) continue;
+        const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
+        nuevas.push(data.publicUrl);
+      }
+      if (!cancelled && nuevas.length) {
+        setFotosUrls((prev) => [...prev, ...nuevas]);
+      }
+      if (!cancelled) setUploadingFotos(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fotos, settings]);
+
   // Regenerar mensaje cuando cambian datos (si el usuario no lo ha tocado)
   useEffect(() => {
     if (mensajeTouched || !settings) return;
@@ -160,11 +195,13 @@ function NuevaPage() {
         taller: settings.tallerName,
         mecanico: settings.mecanico || "",
         confirmUrl,
+        rejectUrl,
+        fotos: fotosUrls,
       }),
     );
   }, [
     nombre, vehiculo, matricula, km, categoria, subfamilia, importe,
-    settings, confirmUrl, mensajeTouched,
+    settings, confirmUrl, rejectUrl, fotosUrls, mensajeTouched,
   ]);
 
   if (!settings) return null;
@@ -190,20 +227,9 @@ function NuevaPage() {
     setFotos(next);
   };
 
-  const uploadFotos = async (gestionId: string): Promise<string[]> => {
-    const urls: string[] = [];
-    for (let i = 0; i < fotos.length; i++) {
-      const f = fotos[i];
-      const ext = f.name.split(".").pop() || "jpg";
-      const path = `${settings.tallerId}/${gestionId}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage
-        .from("fotos-gestiones")
-        .upload(path, f, { contentType: f.type, upsert: false });
-      if (error) continue;
-      const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
-      urls.push(data.publicUrl);
-    }
-    return urls;
+  const removeFoto = (idx: number) => {
+    setFotos((prev) => prev.filter((_, j) => j !== idx));
+    setFotosUrls((prev) => prev.filter((_, j) => j !== idx));
   };
 
   const upsertCliente = async () => {
@@ -230,7 +256,10 @@ function NuevaPage() {
     }
   };
 
-  const saveGestion = async (estado: "en-curso" | "enviado", opts?: { pedirPena?: boolean }) => {
+  const saveGestion = async (
+    estado: "en-curso" | "enviado",
+    opts?: { pedirPena?: boolean; waAbierto?: boolean },
+  ) => {
     setBusy(true);
     try {
       const insertPayload = {
@@ -243,8 +272,9 @@ function NuevaPage() {
         descripcion, piezas, importe,
         estado,
         pedido_pena: opts?.pedirPena ?? pedirPena,
+        wa_abierto: opts?.waAbierto ?? false,
         confirm_token: confirmToken,
-        fotos: [] as string[],
+        fotos: fotosUrls,
       };
       const { data, error } = await supabase
         .from("gestiones")
@@ -252,13 +282,6 @@ function NuevaPage() {
         .select("id")
         .single();
       if (error || !data) throw error || new Error("insert failed");
-
-      if (fotos.length) {
-        const urls = await uploadFotos(data.id);
-        if (urls.length) {
-          await supabase.from("gestiones").update({ fotos: urls }).eq("id", data.id);
-        }
-      }
       await upsertCliente();
       return data.id as string;
     } finally {
@@ -271,16 +294,14 @@ function NuevaPage() {
       alert("Falta el teléfono del cliente");
       return;
     }
-    // Abrir WhatsApp SINCRÓNICAMENTE dentro del gesto del usuario para evitar
-    // bloqueos de popup.
     const url = buildWAUrl(telefono, mensaje);
     const win = window.open(url, "_blank");
     try {
-      await saveGestion("enviado");
+      await saveGestion("enviado", { waAbierto: true });
       navigate({ to: "/app/historial" });
     } catch (e: any) {
       console.error("saveGestion enviado", e);
-      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido") + "\n\nVuelve a iniciar sesión e inténtalo de nuevo.");
+      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido"));
     } finally {
       if (!win) window.location.href = url;
     }
@@ -293,15 +314,16 @@ function NuevaPage() {
       vehiculo, matricula,
       piezas: piezas || (sub ? sub.name : "—"),
       notas: descripcion,
+      fotos: fotosUrls,
     });
     const url = buildWAUrl(PENA_PHONE, msg);
     const win = window.open(url, "_blank");
     try {
-      await saveGestion("en-curso", { pedirPena: true });
+      await saveGestion("en-curso", { pedirPena: true, waAbierto: true });
       navigate({ to: "/app/historial" });
     } catch (e: any) {
       console.error("saveGestion pena", e);
-      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido") + "\n\nVuelve a iniciar sesión e inténtalo de nuevo.");
+      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido"));
     } finally {
       if (!win) window.location.href = url;
     }
