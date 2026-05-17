@@ -418,57 +418,126 @@ function NuevaPage() {
       {/* STEP 1 */}
       {step === 1 && (
         <section className="space-y-4">
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
-            {clienteBloqueado ? (
-              <div className="flex items-start gap-3 rounded-xl border border-success/40 bg-success/10 p-3">
-                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-success">
-                  <Check className="h-3.5 w-3.5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-success">
-                    Cliente seleccionado
-                  </div>
-                  <div className="truncate text-sm font-semibold text-foreground">
-                    {clienteBloqueado.nombre || "(sin nombre)"}
-                  </div>
-                  <div className="truncate text-[12px] text-muted-foreground">
-                    {[clienteBloqueado.matricula, clienteBloqueado.telefono]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </div>
+          {/* Buscador encima */}
+          {clienteBloqueado ? (
+            <div className="flex items-start gap-3 rounded-2xl border border-success/40 bg-success/10 p-3">
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-success">
+                <Check className="h-3.5 w-3.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-success">
+                  Cliente seleccionado
                 </div>
-                <button
-                  type="button"
-                  onClick={desbloquearCliente}
-                  className="shrink-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-surface-2"
-                >
-                  Cambiar
-                </button>
+                <div className="truncate text-sm font-semibold text-foreground">
+                  {clienteBloqueado.nombre || "(sin nombre)"}
+                </div>
+                <div className="truncate text-[12px] text-muted-foreground">
+                  {[clienteBloqueado.matricula, clienteBloqueado.telefono]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </div>
               </div>
-            ) : (
-              <Field label="Buscar cliente guardado">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    value={buscador}
-                    onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
-                    onFocus={() => setShowSuggest(true)}
-                    placeholder="Nombre, teléfono o matrícula…"
-                    className={inputCls + " pl-9"}
-                  />
-                  {buscador && (
-                    <button
-                      type="button"
-                      onClick={() => { setBuscador(""); setSuggest([]); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
-                      aria-label="Limpiar búsqueda"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </Field>
-            )}
+              <button
+                type="button"
+                onClick={desbloquearCliente}
+                className="shrink-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-surface-2"
+              >
+                Cambiar
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={buscador}
+                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                  onFocus={() => setShowSuggest(true)}
+                  placeholder="Buscar cliente guardado: nombre, teléfono o matrícula…"
+                  className={inputCls + " pl-9"}
+                />
+                {buscador && (
+                  <button
+                    type="button"
+                    onClick={() => { setBuscador(""); setSuggest([]); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {showSuggest && suggest.length > 0 && (() => {
+                const q = buscador.trim().toLowerCase();
+                const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, "");
+                const qn = norm(q);
+                const score = (c: ClienteRow) => {
+                  const m = (c.matricula || "").toLowerCase();
+                  const t = (c.telefono || "").toLowerCase();
+                  const n = (c.nombre || "").toLowerCase();
+                  const mn = norm(m);
+                  const tn = norm(t);
+                  const nn = norm(n);
+                  if (m.startsWith(q)) return 0;
+                  if (m.includes(q)) return 1;
+                  if (qn && mn.startsWith(qn)) return 2;
+                  if (qn && mn.includes(qn)) return 3;
+                  if (t.startsWith(q)) return 4;
+                  if (t.includes(q)) return 5;
+                  if (qn && tn.includes(qn)) return 6;
+                  if (n.startsWith(q)) return 7;
+                  if (n.includes(q)) return 8;
+                  if (qn && nn.includes(qn)) return 9;
+                  return 10;
+                };
+                const ordered = [...suggest].sort((a, b) => score(a) - score(b));
+                return (
+                  <div className="rounded-xl border border-border-strong bg-surface-2">
+                    {ordered.map((c) => {
+                      const matches: string[] = [];
+                      if (q.length >= 2) {
+                        if (c.nombre?.toLowerCase().includes(q)) matches.push("Nombre");
+                        if (c.telefono?.toLowerCase().includes(q)) matches.push("Teléfono");
+                        if (c.matricula?.toLowerCase().includes(q)) matches.push("Matrícula");
+                      }
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => pickCliente(c)}
+                          className="flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
+                            <div className="truncate text-[12px] text-muted-foreground">
+                              {c.matricula} · {c.vehiculo}
+                            </div>
+                            {matches.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {matches.map((m) => (
+                                  <span
+                                    key={m}
+                                    className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
+                                  >
+                                    {m}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <span className="shrink-0 text-[11px] text-primary">Usar</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Datos cliente */}
+          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
@@ -519,75 +588,6 @@ function NuevaPage() {
               </Field>
             </div>
 
-            {showSuggest && suggest.length > 0 && (() => {
-              const q = buscador.trim().toLowerCase();
-              const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, "");
-              const qn = norm(q);
-              // Puntuación: matrícula > teléfono > nombre.
-              // Dentro de cada campo: empieza-por > contiene > fuzzy (sin espacios/guiones).
-              const score = (c: ClienteRow) => {
-                const m = (c.matricula || "").toLowerCase();
-                const t = (c.telefono || "").toLowerCase();
-                const n = (c.nombre || "").toLowerCase();
-                const mn = norm(m);
-                const tn = norm(t);
-                const nn = norm(n);
-                if (m.startsWith(q)) return 0;
-                if (m.includes(q)) return 1;
-                if (qn && mn.startsWith(qn)) return 2;
-                if (qn && mn.includes(qn)) return 3;
-                if (t.startsWith(q)) return 4;
-                if (t.includes(q)) return 5;
-                if (qn && tn.includes(qn)) return 6;
-                if (n.startsWith(q)) return 7;
-                if (n.includes(q)) return 8;
-                if (qn && nn.includes(qn)) return 9;
-                return 10;
-              };
-              const ordered = [...suggest].sort((a, b) => score(a) - score(b));
-              return (
-                <div className="rounded-xl border border-border-strong bg-surface-2">
-                  {ordered.map((c) => {
-                  const q = buscador.trim().toLowerCase();
-                  const matches: string[] = [];
-                  if (q.length >= 2) {
-                    if (c.nombre?.toLowerCase().includes(q)) matches.push("Nombre");
-                    if (c.telefono?.toLowerCase().includes(q)) matches.push("Teléfono");
-                    if (c.matricula?.toLowerCase().includes(q)) matches.push("Matrícula");
-                  }
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => pickCliente(c)}
-                      className="flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
-                        <div className="truncate text-[12px] text-muted-foreground">
-                          {c.matricula} · {c.vehiculo}
-                        </div>
-                        {matches.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {matches.map((m) => (
-                              <span
-                                key={m}
-                                className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
-                              >
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-[11px] text-primary">Usar</span>
-                    </button>
-                  );
-                  })}
-                </div>
-              );
-            })()}
-
             <div className="grid grid-cols-2 gap-3">
               <Field label="Vehículo">
                 <input
@@ -611,36 +611,59 @@ function NuevaPage() {
 
           {/* Fotos */}
           <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="mb-2 text-sm font-semibold">Fotos del problema</div>
-            <div className="grid grid-cols-3 gap-2">
-              {fotos.map((f, i) => (
-                <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
-                  <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
-                    className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
-                    aria-label="Quitar"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              {fotos.length < 6 && (
-                <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border-strong text-muted-foreground hover:bg-surface-2">
-                  <Camera className="h-6 w-6" />
-                  <span className="text-[11px]">Añadir</span>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-semibold">Fotos del problema</div>
+              {uploadingFotos && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Subiendo…
+                </span>
+              )}
+            </div>
+
+            {fotos.length > 0 && (
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                {fotos.map((f, i) => (
+                  <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
+                    <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeFoto(i)}
+                      className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
+                      aria-label="Quitar"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {fotos.length < 6 && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-surface-3">
+                  <ImageIcon className="h-4 w-4" />
+                  Galería
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => { onFiles(e.target.files); e.currentTarget.value = ""; }}
+                  />
+                </label>
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-surface-3">
+                  <Camera className="h-4 w-4" />
+                  Cámara
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    multiple
                     className="hidden"
-                    onChange={(e) => onFiles(e.target.files)}
+                    onChange={(e) => { onFiles(e.target.files); e.currentTarget.value = ""; }}
                   />
                 </label>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <BottomBar>
