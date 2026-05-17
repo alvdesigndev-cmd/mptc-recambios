@@ -259,15 +259,28 @@ function NuevaPage() {
   };
 
   const upsertCliente = async () => {
-    if (!matricula.trim() && !telefono.trim()) return;
     const matN = normalizeMatricula(matricula);
     const telN = normalizeTelefono(telefono);
-    const { data: existing } = await supabase
+    if (!matN && !telN) return;
+
+    // Buscar existente por matrícula O teléfono normalizados (evita duplicados).
+    const orFilter = [
+      matN ? `matricula.eq.${matN}` : null,
+      telN ? `telefono.eq.${telN}` : null,
+    ].filter(Boolean).join(",");
+
+    const { data: matches } = await supabase
       .from("clientes")
-      .select("id,total_gestiones")
+      .select("id,total_gestiones,matricula,telefono")
       .eq("taller_id", settings.tallerId)
-      .eq("matricula", matN || "__none__")
-      .maybeSingle();
+      .or(orFilter);
+
+    // Preferir match por matrícula; si no, por teléfono.
+    const existing =
+      (matN && matches?.find((c) => c.matricula === matN)) ||
+      (telN && matches?.find((c) => c.telefono === telN)) ||
+      null;
+
     const payload = {
       taller_id: settings.tallerId,
       taller_nombre: settings.tallerName,
