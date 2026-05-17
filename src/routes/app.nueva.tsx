@@ -140,8 +140,9 @@ function NuevaPage() {
     };
   }, [buscador, settings]);
 
-  const fam = useMemo(() => findFamily(categoria), [categoria]);
-  const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
+  const { data: FAMILIES_DATA = [] } = useFamilias();
+  const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, categoria), [FAMILIES_DATA, categoria]);
+  const sub = useMemo(() => findSubfamilyBySlug(FAMILIES_DATA, categoria, subfamilia), [FAMILIES_DATA, categoria, subfamilia]);
 
   const confirmUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
