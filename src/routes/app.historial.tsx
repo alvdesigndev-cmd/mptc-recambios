@@ -11,8 +11,18 @@ export const Route = createFileRoute("/app/historial")({
   component: HistorialPage,
 });
 
-const FILTROS = ["todas", "en-curso", "enviado", "aceptado", "rechazado", "completado"] as const;
+const FILTROS = ["todas", "en-curso", "enviado", "aceptado", "rechazado", "completado", "pedido-pena"] as const;
 type Filtro = (typeof FILTROS)[number];
+
+const FILTRO_LABEL: Record<Filtro, string> = {
+  "todas": "Todas",
+  "en-curso": "En curso",
+  "enviado": "Enviado",
+  "aceptado": "Aceptado",
+  "rechazado": "Rechazado",
+  "completado": "Completado",
+  "pedido-pena": "Pedido a Peña",
+};
 
 function HistorialPage() {
   const settings = useSettings({ requireTaller: true });
@@ -36,7 +46,11 @@ function HistorialPage() {
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
     return items.filter((g) => {
-      if (filtro !== "todas" && g.estado !== filtro) return false;
+      if (filtro === "pedido-pena") {
+        if (!g.pedido_pena) return false;
+      } else if (filtro !== "todas" && g.estado !== filtro) {
+        return false;
+      }
       if (!qq) return true;
       return (
         (g.cliente_nombre || "").toLowerCase().includes(qq) ||
