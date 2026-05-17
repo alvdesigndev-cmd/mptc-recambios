@@ -90,12 +90,22 @@ function NuevaPage() {
     }
     let cancelled = false;
     const t = setTimeout(async () => {
+      // Variante sin separadores para fuzzy match de matrícula/teléfono.
+      const qn = q.replace(/[\s\-_.]/g, "");
+      const filters = [
+        `matricula.ilike.%${q}%`,
+        `telefono.ilike.%${q}%`,
+        `nombre.ilike.%${q}%`,
+      ];
+      if (qn && qn !== q) {
+        filters.push(`matricula.ilike.%${qn}%`, `telefono.ilike.%${qn}%`);
+      }
       const { data } = await supabase
         .from("clientes")
         .select("id,nombre,telefono,matricula,vehiculo,km")
         .eq("taller_id", settings.tallerId)
-        .or(`matricula.ilike.%${q}%,telefono.ilike.%${q}%,nombre.ilike.%${q}%`)
-        .limit(8);
+        .or(filters.join(","))
+        .limit(12);
       if (!cancelled) setSuggest((data as ClienteRow[]) || []);
     }, 220);
     return () => {
