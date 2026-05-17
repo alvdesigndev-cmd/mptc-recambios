@@ -84,8 +84,10 @@ function HistorialPage() {
         <div className="flex gap-2">
           {FILTROS.map((f) => {
             const active = filtro === f;
-            const count = f === "todas" ? items.length : items.filter((g) => g.estado === f).length;
-            const label = f === "todas" ? "Todas" : ESTADO_META[f]?.label || f;
+            const count =
+              f === "todas" ? items.length
+              : f === "pedido-pena" ? items.filter((g) => g.pedido_pena).length
+              : items.filter((g) => g.estado === f).length;
             return (
               <button
                 key={f}
@@ -95,7 +97,7 @@ function HistorialPage() {
                   (active ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground")
                 }
               >
-                {label} <span className="opacity-70">· {count}</span>
+                {FILTRO_LABEL[f]} <span className="opacity-70">· {count}</span>
               </button>
             );
           })}
