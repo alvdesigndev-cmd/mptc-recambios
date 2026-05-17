@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  Search,
   Check,
   Loader2,
   MessageCircle,
