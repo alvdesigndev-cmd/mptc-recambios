@@ -14,6 +14,8 @@ export interface MsgContext {
   taller: string;
   mecanico: string;
   confirmUrl: string;
+  rejectUrl?: string;
+  fotos?: string[];
 }
 
 const SPECIFIC: Record<string, (c: MsgContext) => string> = {
