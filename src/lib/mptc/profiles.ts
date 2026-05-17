@@ -1,33 +1,9 @@
-// Identidades fijas de taller — coinciden con la app HTML original.
-// No son UUIDs aleatorios: cualquier dispositivo que entra como un mismo
-// taller ve los mismos datos en Supabase.
+// Perfil del taller — la fuente de verdad vive ahora en la tabla `profiles`
+// de Supabase. Aquí mantenemos una caché en localStorage (poblada tras login)
+// para que el resto de la app pueda leer `tallerId`, `tallerName`, etc. de
+// forma síncrona, igual que antes.
 
 export type Role = "taller-1" | "taller-2" | "pena";
-
-export interface TallerProfile {
-  role: Role;
-  tallerId: string;
-  tallerName: string;
-  ciudad: string;
-  mecanico: string;
-}
-
-export const TALLER_PROFILES: Record<Exclude<Role, "pena">, TallerProfile> = {
-  "taller-1": {
-    role: "taller-1",
-    tallerId: "taller-1-mtc-recambios",
-    tallerName: "Taller 1",
-    ciudad: "",
-    mecanico: "",
-  },
-  "taller-2": {
-    role: "taller-2",
-    tallerId: "taller-2-mtc-recambios",
-    tallerName: "Taller 2",
-    ciudad: "",
-    mecanico: "",
-  },
-};
 
 export const PENA_PHONE = "34634954491";
 
@@ -63,24 +39,21 @@ export function clearSettings() {
   localStorage.removeItem(SETTINGS_KEY);
 }
 
-export function settingsFromRole(role: Role): AppSettings {
-  if (role === "pena") {
-    return {
-      role,
-      tallerId: "grupo-pena",
-      tallerName: "Grupo Peña",
-      ciudad: "",
-      mecanico: "",
-      theme: "dark",
-    };
-  }
-  const p = TALLER_PROFILES[role];
+export interface ProfileRow {
+  role: Role;
+  taller_id: string;
+  taller_name: string;
+  ciudad: string;
+  mecanico: string;
+}
+
+export function settingsFromProfile(p: ProfileRow, theme: "dark" | "light" = "dark"): AppSettings {
   return {
     role: p.role,
-    tallerId: p.tallerId,
-    tallerName: p.tallerName,
-    ciudad: p.ciudad,
-    mecanico: p.mecanico,
-    theme: "dark",
+    tallerId: p.taller_id,
+    tallerName: p.taller_name,
+    ciudad: p.ciudad ?? "",
+    mecanico: p.mecanico ?? "",
+    theme,
   };
 }
