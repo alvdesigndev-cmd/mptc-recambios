@@ -1,9 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Bell, Home, History, Users, Settings, Plus, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { loadSettings, type AppSettings } from "@/lib/mptc/profiles";
-import { signOut, syncProfileToSettings } from "@/lib/mptc/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { clearSettings, loadSettings, type AppSettings } from "@/lib/mptc/profiles";
 
 interface Props {
   children: React.ReactNode;
