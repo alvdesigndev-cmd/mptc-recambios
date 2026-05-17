@@ -14,15 +14,28 @@ export interface MsgContext {
   taller: string;
   mecanico: string;
   confirmUrl: string;
+  rejectUrl?: string;
+  fotos?: string[];
+}
+
+function actions(c: MsgContext): string {
+  const lines = [`✅ Confirma aquí: ${c.confirmUrl}`];
+  if (c.rejectUrl) lines.push(`❌ Rechazar aquí: ${c.rejectUrl}`);
+  return lines.join("\n");
+}
+
+function fotosBlock(c: MsgContext): string {
+  if (!c.fotos?.length) return "";
+  return `\n\n📸 Fotos:\n${c.fotos.join("\n")}`;
 }
 
 const SPECIFIC: Record<string, (c: MsgContext) => string> = {
   "pastillas-del": (c) =>
-    `Hola ${c.cliente} 👋\n\nHe revisado tu ${c.vehiculo} (${c.matricula}) y las *pastillas delanteras* están al límite. Conviene cambiarlas ya para evitar dañar los discos.\n\n💰 Presupuesto: *${c.importe} €* (piezas + mano de obra, IVA incluido).\n\n✅ Confirma aquí: ${c.confirmUrl}\n\nUn saludo,\n${c.mecanico} — ${c.taller}`,
+    `Hola ${c.cliente} 👋\n\nHe revisado tu ${c.vehiculo} (${c.matricula}) y las *pastillas delanteras* están al límite. Conviene cambiarlas ya para evitar dañar los discos.\n\n💰 Presupuesto: *${c.importe} €* (piezas + mano de obra, IVA incluido).\n\n${actions(c)}${fotosBlock(c)}\n\nUn saludo,\n${c.mecanico} — ${c.taller}`,
   "aceite-filtro": (c) =>
-    `Hola ${c.cliente} 👋\n\nToca el *mantenimiento de aceite y filtro* de tu ${c.vehiculo} (${c.matricula}, ${c.km} km).\n\n💰 Presupuesto: *${c.importe} €*.\n\n✅ Confirma aquí: ${c.confirmUrl}\n\nGracias,\n${c.mecanico} — ${c.taller}`,
+    `Hola ${c.cliente} 👋\n\nToca el *mantenimiento de aceite y filtro* de tu ${c.vehiculo} (${c.matricula}, ${c.km} km).\n\n💰 Presupuesto: *${c.importe} €*.\n\n${actions(c)}${fotosBlock(c)}\n\nGracias,\n${c.mecanico} — ${c.taller}`,
   "bateria-v1": (c) =>
-    `Hola ${c.cliente} 👋\n\nTu ${c.vehiculo} (${c.matricula}) necesita *batería nueva* — la actual ya no aguanta la carga.\n\n💰 Presupuesto: *${c.importe} €* (batería + montaje).\n\n✅ Confirma aquí: ${c.confirmUrl}\n\nUn saludo,\n${c.mecanico} — ${c.taller}`,
+    `Hola ${c.cliente} 👋\n\nTu ${c.vehiculo} (${c.matricula}) necesita *batería nueva* — la actual ya no aguanta la carga.\n\n💰 Presupuesto: *${c.importe} €* (batería + montaje).\n\n${actions(c)}${fotosBlock(c)}\n\nUn saludo,\n${c.mecanico} — ${c.taller}`,
 };
 
 export function buildMessage(c: MsgContext): string {
@@ -34,7 +47,7 @@ export function buildMessage(c: MsgContext): string {
     ? `He revisado tu ${c.vehiculo} (${c.matricula}) y hay que actuar sobre *${sub.name}*${fam ? ` (${fam.name})` : ""}.`
     : `He revisado tu ${c.vehiculo} (${c.matricula}) y te paso presupuesto de la reparación.`;
 
-  return `Hola ${c.cliente} 👋\n\n${repairLine}\n\n💰 Presupuesto: *${c.importe || "—"} €* (IVA incluido).\n\n✅ Confirma aquí: ${c.confirmUrl}\n\nUn saludo,\n${c.mecanico || c.taller}`;
+  return `Hola ${c.cliente} 👋\n\n${repairLine}\n\n💰 Presupuesto: *${c.importe || "—"} €* (IVA incluido).\n\n${actions(c)}${fotosBlock(c)}\n\nUn saludo,\n${c.mecanico || c.taller}`;
 }
 
 export function buildPenaMessage(opts: {
@@ -43,6 +56,8 @@ export function buildPenaMessage(opts: {
   matricula: string;
   piezas: string;
   notas: string;
+  fotos?: string[];
 }): string {
-  return `🔧 *Pedido ${opts.taller}*\n\n🚗 ${opts.vehiculo} — ${opts.matricula}\n\n📦 Piezas:\n${opts.piezas}\n\n${opts.notas ? `📝 ${opts.notas}\n\n` : ""}Gracias 🙌`;
+  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${opts.fotos.join("\n")}\n` : "";
+  return `🔧 *Pedido ${opts.taller}*\n\n🚗 ${opts.vehiculo} — ${opts.matricula}\n\n📦 Piezas:\n${opts.piezas}\n${fotos}\n${opts.notas ? `📝 ${opts.notas}\n\n` : ""}Gracias 🙌`;
 }

@@ -83,6 +83,7 @@ export type Database = {
           taller_id: string | null
           taller_nombre: string | null
           vehiculo: string | null
+          wa_abierto: boolean
         }
         Insert: {
           categoria?: string | null
@@ -104,6 +105,7 @@ export type Database = {
           taller_id?: string | null
           taller_nombre?: string | null
           vehiculo?: string | null
+          wa_abierto?: boolean
         }
         Update: {
           categoria?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           taller_id?: string | null
           taller_nombre?: string | null
           vehiculo?: string | null
+          wa_abierto?: boolean
         }
         Relationships: []
       }
@@ -223,6 +226,15 @@ export type Database = {
       }
       get_user_taller_id: { Args: { _uid: string }; Returns: string }
       is_pena: { Args: { _uid: string }; Returns: boolean }
+      rechazar_gestion: {
+        Args: { _token: string }
+        Returns: {
+          estado: string
+          id: string
+          matricula: string
+          previous_estado: string
+        }[]
+      }
     }
     Enums: {
       app_role: "taller-1" | "taller-2" | "pena"

@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
-import { Plus, ArrowRight, Inbox, Truck } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { ArrowRight, Inbox, Truck, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
@@ -12,12 +12,24 @@ export const Route = createFileRoute("/app/")({
   component: Dashboard,
 });
 
+interface ClienteRow {
+  id: string;
+  nombre: string | null;
+  telefono: string | null;
+  matricula: string | null;
+  vehiculo: string | null;
+}
+
 function Dashboard() {
+  const navigate = useNavigate();
   const settings = useSettings({ requireTaller: true });
   const [items, setItems] = useState<Gestion[]>([]);
   const [open, setOpen] = useState<Gestion | null>(null);
   const [loading, setLoading] = useState(true);
   const [pedidoPenaOpen, setPedidoPenaOpen] = useState(false);
+  const [buscador, setBuscador] = useState("");
+  const [suggest, setSuggest] = useState<ClienteRow[]>([]);
+
   const load = useCallback(async () => {
     if (!settings) return;
     setLoading(true);
@@ -33,63 +45,100 @@ function Dashboard() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Buscador de clientes guardados
+  useEffect(() => {
+    if (!settings) return;
+    const q = buscador.trim();
+    if (q.length < 2) { setSuggest([]); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const qn = q.replace(/[\s\-_.]/g, "");
+      const filters = [
+        `matricula.ilike.%${q}%`,
+        `telefono.ilike.%${q}%`,
+        `nombre.ilike.%${q}%`,
+      ];
+      if (qn && qn !== q) filters.push(`matricula.ilike.%${qn}%`, `telefono.ilike.%${qn}%`);
+      const { data } = await supabase
+        .from("clientes")
+        .select("id,nombre,telefono,matricula,vehiculo")
+        .eq("taller_id", settings.tallerId)
+        .or(filters.join(","))
+        .limit(8);
+      if (!cancelled) setSuggest((data as ClienteRow[]) || []);
+    }, 220);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [buscador, settings]);
+
+  const pendientes = useMemo(() => items.filter((g) => g.estado === "enviado").slice(0, 5), [items]);
+  const recientes = useMemo(() => items.slice(0, 6), [items]);
+
   if (!settings) return null;
-
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const isToday = (iso: string) => new Date(iso) >= today;
-  const kpis = [
-    { label: "Hoy",       value: items.filter((g) => isToday(g.created_at)).length },
-    { label: "En curso",  value: items.filter((g) => g.estado === "en-curso").length },
-    { label: "Enviadas",  value: items.filter((g) => g.estado === "enviado").length },
-    { label: "Aceptadas", value: items.filter((g) => g.estado === "aceptado").length },
-  ];
-
-  const pendientes = items.filter((g) => g.estado === "enviado").slice(0, 5);
-  const recientes = items.slice(0, 6);
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Inicio</h1>
-        <p className="text-sm text-muted-foreground">Resumen de tu actividad reciente.</p>
+        <p className="text-sm text-muted-foreground">Busca un cliente o continúa una gestión.</p>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-border bg-surface p-4">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
-            <div className="mt-1 text-2xl font-bold">{k.value}</div>
+      {/* Buscador de clientes */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={buscador}
+            onChange={(e) => setBuscador(e.target.value)}
+            placeholder="Buscar cliente: nombre, teléfono o matrícula…"
+            className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-9 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-surface-3"
+          />
+          {buscador && (
+            <button
+              type="button"
+              onClick={() => { setBuscador(""); setSuggest([]); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+              aria-label="Limpiar"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {suggest.length > 0 && (
+          <div className="rounded-xl border border-border-strong bg-surface-2">
+            {suggest.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => navigate({ to: "/app/nueva", search: { clienteId: c.id } })}
+                className="flex w-full items-center justify-between gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
+                  <div className="truncate text-[12px] text-muted-foreground">
+                    {c.matricula || "—"} · {c.vehiculo || "—"}
+                  </div>
+                </div>
+                <span className="shrink-0 text-[11px] text-primary">Nueva gestión</span>
+              </button>
+            ))}
           </div>
-        ))}
-      </section>
+        )}
+      </div>
 
-      <section className="grid gap-2 sm:grid-cols-2">
-        <Link
-          to="/app/nueva"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40 hover:bg-surface-2"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Plus className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">Nueva gestión</span>
-            <span className="block truncate text-[11px] text-muted-foreground">Cliente · avería · presupuesto</span>
-          </span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setPedidoPenaOpen(true)}
-          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-left transition hover:border-accent/40 hover:bg-surface-2"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
-            <Truck className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">Hacer pedido a Grupo Peña</span>
-            <span className="block truncate text-[11px] text-muted-foreground">Pedido directo, sin gestión</span>
-          </span>
-        </button>
-      </section>
+      {/* Pedido directo */}
+      <button
+        type="button"
+        onClick={() => setPedidoPenaOpen(true)}
+        className="flex w-full items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-left transition hover:border-accent/40 hover:bg-surface-2"
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+          <Truck className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Hacer pedido a Grupo Peña</span>
+          <span className="block truncate text-[11px] text-muted-foreground">Pedido directo, sin gestión</span>
+        </span>
+      </button>
 
       {pendientes.length > 0 && (
         <section className="space-y-2">
@@ -117,9 +166,6 @@ function Dashboard() {
             <p className="text-sm text-muted-foreground">
               Aún no hay gestiones. Crea la primera con el botón <span className="font-semibold text-foreground">+</span>.
             </p>
-            <Link to="/app/nueva" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95">
-              <Plus className="h-4 w-4" /> Nueva gestión
-            </Link>
           </div>
         ) : (
           <div className="space-y-2">
