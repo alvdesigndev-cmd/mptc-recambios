@@ -128,7 +128,7 @@ function ClientesPage() {
         <ClienteModal
           cliente={open}
           onClose={() => setOpen(null)}
-          onNuevaGestion={() => navigate({ to: "/app/nueva" })}
+          onNuevaGestion={(id) => navigate({ to: "/app/nueva", search: { clienteId: id } })}
           onChanged={() => { setOpen(null); load(); }}
         />
       )}
