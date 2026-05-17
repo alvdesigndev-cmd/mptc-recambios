@@ -251,7 +251,7 @@ function NuevaPage() {
     }
     // Abrir la ventana SINCRÓNICAMENTE dentro del gesto del usuario para evitar
     // que el navegador bloquee el popup tras el await.
-    const win = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const win = window.open("about:blank", "_blank");
     const url = buildWAUrl(telefono, mensaje);
     try {
       await saveGestion("enviado");
