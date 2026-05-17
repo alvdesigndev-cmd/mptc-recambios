@@ -131,6 +131,13 @@ function Dashboard() {
       </section>
 
       <GestionModal gestion={open} onClose={() => setOpen(null)} onChanged={load} />
+      {pedidoPenaOpen && (
+        <PedidoDirectoModal
+          settings={settings}
+          onClose={() => setPedidoPenaOpen(false)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
