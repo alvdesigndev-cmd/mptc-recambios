@@ -52,6 +52,7 @@ function NuevaPage() {
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
+  const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(null);
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(null);
