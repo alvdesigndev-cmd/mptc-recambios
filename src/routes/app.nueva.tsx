@@ -421,9 +421,26 @@ function NuevaPage() {
               </Field>
             </div>
 
-            {showSuggest && suggest.length > 0 && (
-              <div className="rounded-xl border border-border-strong bg-surface-2">
-                {suggest.map((c) => {
+            {showSuggest && suggest.length > 0 && (() => {
+              const q = buscador.trim().toLowerCase();
+              // Puntuación: matrícula > teléfono > nombre.
+              // Dentro de cada campo: empieza-por gana sobre contiene.
+              const score = (c: ClienteRow) => {
+                const m = (c.matricula || "").toLowerCase();
+                const t = (c.telefono || "").toLowerCase();
+                const n = (c.nombre || "").toLowerCase();
+                if (m.startsWith(q)) return 0;
+                if (m.includes(q)) return 1;
+                if (t.startsWith(q)) return 2;
+                if (t.includes(q)) return 3;
+                if (n.startsWith(q)) return 4;
+                if (n.includes(q)) return 5;
+                return 6;
+              };
+              const ordered = [...suggest].sort((a, b) => score(a) - score(b));
+              return (
+                <div className="rounded-xl border border-border-strong bg-surface-2">
+                  {ordered.map((c) => {
                   const q = buscador.trim().toLowerCase();
                   const matches: string[] = [];
                   if (q.length >= 2) {
