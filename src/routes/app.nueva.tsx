@@ -23,6 +23,7 @@ import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
+import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
