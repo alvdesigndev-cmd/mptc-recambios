@@ -54,7 +54,8 @@ function NuevaPage() {
   const [vehiculo, setVehiculo] = useState("");
   const [km, setKm] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
-  const [fotosUrls, setFotosUrls] = useState<string[]>([]);
+  const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
+  const [fotosError, setFotosError] = useState<boolean[]>([]);
   const [uploadingFotos, setUploadingFotos] = useState(false);
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
@@ -152,6 +153,7 @@ function NuevaPage() {
   }, [confirmToken]);
 
   // Subir fotos en cuanto se añaden para que estén listas al enviar.
+  // Mantenemos un slot por foto: string = subida, null = pendiente/fallida (ver fotosError).
   useEffect(() => {
     if (!settings) return;
     const pendientes = fotos.length - fotosUrls.length;
@@ -160,26 +162,40 @@ function NuevaPage() {
     (async () => {
       setUploadingFotos(true);
       const startIdx = fotosUrls.length;
-      const nuevas: string[] = [];
+      // Reservar slots para las nuevas fotos.
+      setFotosUrls((prev) => [...prev, ...new Array(pendientes).fill(null) as null[]]);
+      setFotosError((prev) => [...prev, ...new Array(pendientes).fill(false) as boolean[]]);
       for (let i = startIdx; i < fotos.length; i++) {
+        if (cancelled) return;
         const f = fotos[i];
         const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${settings.tallerId}/${gestionFolder}/${Date.now()}-${i}.${ext}`;
         const { error } = await supabase.storage
           .from("fotos-gestiones")
           .upload(path, f, { contentType: f.type, upsert: false });
-        if (error) continue;
+        if (cancelled) return;
+        if (error) {
+          setFotosError((prev) => { const n = [...prev]; n[i] = true; return n; });
+          continue;
+        }
         const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
-        nuevas.push(data.publicUrl);
-      }
-      if (!cancelled && nuevas.length) {
-        setFotosUrls((prev) => [...prev, ...nuevas]);
+        setFotosUrls((prev) => { const n = [...prev]; n[i] = data.publicUrl; return n; });
+        setFotosError((prev) => { const n = [...prev]; n[i] = false; return n; });
       }
       if (!cancelled) setUploadingFotos(false);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fotos, settings]);
+
+  // URLs subidas con éxito (sin slots nulos).
+  const fotosUrlsOk = useMemo(
+    () => fotosUrls.filter((u): u is string => typeof u === "string"),
+    [fotosUrls],
+  );
+  const fotosFallidas = fotosError.filter(Boolean).length;
+  const fotosPendientes = fotos.length - fotosUrlsOk.length - fotosFallidas;
+  const fotosBloquean = uploadingFotos || fotosPendientes > 0 || fotosFallidas > 0;
 
   // Regenerar mensaje cuando cambian datos (si el usuario no lo ha tocado)
   useEffect(() => {
@@ -197,12 +213,12 @@ function NuevaPage() {
         mecanico: settings.mecanico || "",
         confirmUrl,
         rejectUrl,
-        fotos: fotosUrls,
+        fotos: fotosUrlsOk,
       }),
     );
   }, [
     nombre, vehiculo, matricula, km, categoria, subfamilia, importe,
-    settings, confirmUrl, rejectUrl, fotosUrls, mensajeTouched,
+    settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
 
   if (!settings) return null;
@@ -231,6 +247,7 @@ function NuevaPage() {
   const removeFoto = (idx: number) => {
     setFotos((prev) => prev.filter((_, j) => j !== idx));
     setFotosUrls((prev) => prev.filter((_, j) => j !== idx));
+    setFotosError((prev) => prev.filter((_, j) => j !== idx));
   };
 
   const upsertCliente = async () => {
@@ -275,7 +292,7 @@ function NuevaPage() {
         pedido_pena: opts?.pedirPena ?? pedirPena,
         wa_abierto: opts?.waAbierto ?? false,
         confirm_token: confirmToken,
-        fotos: fotosUrls,
+        fotos: fotosUrlsOk,
       };
       const { data, error } = await supabase
         .from("gestiones")
@@ -295,6 +312,14 @@ function NuevaPage() {
       alert("Falta el teléfono del cliente");
       return;
     }
+    if (fotosBloquean) {
+      alert(
+        fotosFallidas > 0
+          ? "Hay fotos que no se han podido subir. Quítalas o vuelve a intentarlo antes de enviar."
+          : "Espera a que terminen de subirse las fotos antes de enviar.",
+      );
+      return;
+    }
     const url = buildWAUrl(telefono, mensaje);
     const win = window.open(url, "_blank");
     try {
@@ -309,13 +334,21 @@ function NuevaPage() {
   };
 
   const onPedirPena = async () => {
+    if (fotosBloquean) {
+      alert(
+        fotosFallidas > 0
+          ? "Hay fotos que no se han podido subir. Quítalas o vuelve a intentarlo antes de enviar."
+          : "Espera a que terminen de subirse las fotos antes de enviar.",
+      );
+      return;
+    }
     setPedirPena(true);
     const msg = buildPenaMessage({
       taller: settings.tallerName,
       vehiculo, matricula,
       piezas: piezas || (sub ? sub.name : "—"),
       notas: descripcion,
-      fotos: fotosUrls,
+      fotos: fotosUrlsOk,
     });
     const url = buildWAUrl(PENA_PHONE, msg);
     const win = window.open(url, "_blank");
@@ -613,28 +646,52 @@ function NuevaPage() {
           <div className="rounded-2xl border border-border bg-surface p-4">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-semibold">Fotos del problema</div>
-              {uploadingFotos && (
+              {uploadingFotos ? (
                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" /> Subiendo…
                 </span>
-              )}
+              ) : fotosFallidas > 0 ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive">
+                  <X className="h-3 w-3" /> {fotosFallidas} fallida{fotosFallidas > 1 ? "s" : ""}
+                </span>
+              ) : null}
             </div>
 
             {fotos.length > 0 && (
               <div className="mb-3 grid grid-cols-3 gap-2">
-                {fotos.map((f, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
-                    <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeFoto(i)}
-                      className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
-                      aria-label="Quitar"
+                {fotos.map((f, i) => {
+                  const failed = fotosError[i];
+                  const uploaded = typeof fotosUrls[i] === "string";
+                  return (
+                    <div
+                      key={i}
+                      className={
+                        "relative aspect-square overflow-hidden rounded-xl bg-surface-2 " +
+                        (failed ? "ring-2 ring-destructive" : "")
+                      }
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <img src={URL.createObjectURL(f)} alt="" className="h-full w-full object-cover" />
+                      {!uploaded && !failed && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+                          <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                        </div>
+                      )}
+                      {failed && (
+                        <div className="absolute inset-x-0 bottom-0 bg-destructive/90 px-1 py-0.5 text-center text-[10px] font-semibold text-destructive-foreground">
+                          Error
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFoto(i)}
+                        className="absolute right-1 top-1 rounded-full bg-background/80 p-1 text-foreground"
+                        aria-label="Quitar"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -828,19 +885,41 @@ function NuevaPage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Guardar
               </button>
-              <button type="button" onClick={onPedirPena} disabled={busy} className={accentBtn}>
+              <button
+                type="button"
+                onClick={onPedirPena}
+                disabled={busy || fotosBloquean}
+                className={accentBtn}
+                title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
+              >
                 <Truck className="h-4 w-4" />
                 Pedir a Peña
               </button>
-              <button type="button" onClick={onEnviarCliente} disabled={busy} className={primaryBtn}>
+              <button
+                type="button"
+                onClick={onEnviarCliente}
+                disabled={busy || fotosBloquean}
+                className={primaryBtn}
+                title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
+              >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar al cliente
               </button>
             </div>
           </BottomBar>
           <div className="pb-2 text-center text-[11px] text-muted-foreground">
-            <MessageCircle className="mr-1 inline h-3 w-3" />
-            Se abrirá WhatsApp en una pestaña nueva.
+            {fotosBloquean ? (
+              <span className="text-warning">
+                {fotosFallidas > 0
+                  ? `Hay ${fotosFallidas} foto${fotosFallidas > 1 ? "s" : ""} con error. Quítalas para poder enviar.`
+                  : "Subiendo fotos… espera unos segundos para enviar."}
+              </span>
+            ) : (
+              <>
+                <MessageCircle className="mr-1 inline h-3 w-3" />
+                Se abrirá WhatsApp en una pestaña nueva.
+              </>
+            )}
           </div>
         </section>
       )}
