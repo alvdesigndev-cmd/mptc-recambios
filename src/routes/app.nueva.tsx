@@ -249,15 +249,14 @@ function NuevaPage() {
       alert("Falta el teléfono del cliente");
       return;
     }
-    // Abrir la ventana SINCRÓNICAMENTE dentro del gesto del usuario para evitar
-    // que el navegador bloquee el popup tras el await.
-    const win = window.open("about:blank", "_blank");
+    // Abrir WhatsApp SINCRÓNICAMENTE dentro del gesto del usuario para evitar
+    // bloqueos de popup.
     const url = buildWAUrl(telefono, mensaje);
+    const win = window.open(url, "_blank");
     try {
       await saveGestion("enviado");
     } finally {
-      if (win) win.location.href = url;
-      else window.location.href = url;
+      if (!win) window.location.href = url;
       navigate({ to: "/app" });
     }
   };
@@ -271,12 +270,11 @@ function NuevaPage() {
       notas: descripcion,
     });
     const url = buildWAUrl(PENA_PHONE, msg);
-    const win = window.open("about:blank", "_blank");
+    const win = window.open(url, "_blank");
     try {
       await saveGestion("en-curso");
     } finally {
-      if (win) win.location.href = url;
-      else window.location.href = url;
+      if (!win) window.location.href = url;
       navigate({ to: "/app" });
     }
   };
