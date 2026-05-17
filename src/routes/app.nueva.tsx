@@ -79,12 +79,13 @@ function NuevaPage() {
     setSettings(s);
   }, [navigate]);
 
-  // Búsqueda de clientes guardados (por nombre, teléfono o matrícula)
+  // Búsqueda de clientes guardados — SÓLO usa el buscador dedicado.
   useEffect(() => {
     if (!settings) return;
-    const q = buscador.trim() || matricula.trim() || telefono.trim() || nombre.trim();
+    const q = buscador.trim();
     if (q.length < 2) {
       setSuggest([]);
+      setShowSuggest(false);
       return;
     }
     let cancelled = false;
@@ -101,7 +102,7 @@ function NuevaPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [buscador, matricula, telefono, nombre, settings]);
+  }, [buscador, settings]);
 
   const fam = useMemo(() => findFamily(categoria), [categoria]);
   const sub = useMemo(() => findSubfamily(categoria, subfamilia), [categoria, subfamilia]);
