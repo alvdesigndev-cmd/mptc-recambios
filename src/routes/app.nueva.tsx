@@ -317,7 +317,8 @@ function NuevaPage() {
             <Field label="Nombre del cliente">
               <input
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                onChange={(e) => { setNombre(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
                 placeholder="Ej. Juan García"
                 className={inputCls}
               />
@@ -334,12 +335,34 @@ function NuevaPage() {
                 />
               </Field>
               <Field label="Matrícula">
-                <input
-                  value={matricula}
-                  onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
-                  placeholder="1234 ABC"
-                  className={inputCls + " font-mono uppercase"}
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={matricula}
+                    onChange={(e) => { setMatricula(e.target.value.toUpperCase()); setShowSuggest(true); }}
+                    placeholder="1234 ABC"
+                    className={inputCls + " font-mono uppercase"}
+                  />
+                  <label
+                    title="Escanear matrícula con la cámara"
+                    className={
+                      "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
+                      (ocrBusy ? "pointer-events-none opacity-60" : "")
+                    }
+                  >
+                    {ocrBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ScanLine className="h-4 w-4" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
               </Field>
             </div>
 
