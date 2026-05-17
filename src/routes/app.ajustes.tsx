@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogOut } from "lucide-react";
+import { ChevronRight, LogOut } from "lucide-react";
 import { clearSettings, loadSettings, saveSettings, type AppSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/app/ajustes")({
