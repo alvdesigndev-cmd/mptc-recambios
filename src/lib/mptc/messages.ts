@@ -18,15 +18,20 @@ export interface MsgContext {
   fotos?: string[];
 }
 
+// WhatsApp genera una vista previa (rich preview) de la primera URL del
+// mensaje. Envolver las URLs con < > es la forma estándar de pedirle a
+// WhatsApp que NO genere preview, manteniéndolas clicables.
+const noPreview = (url: string) => `<${url}>`;
+
 function actions(c: MsgContext): string {
-  const lines = [`✅ Confirma aquí: ${c.confirmUrl}`];
-  if (c.rejectUrl) lines.push(`❌ Rechazar aquí: ${c.rejectUrl}`);
+  const lines = [`✅ Confirma aquí: ${noPreview(c.confirmUrl)}`];
+  if (c.rejectUrl) lines.push(`❌ Rechazar aquí: ${noPreview(c.rejectUrl)}`);
   return lines.join("\n");
 }
 
 function fotosBlock(c: MsgContext): string {
   if (!c.fotos?.length) return "";
-  return `\n\n📸 Fotos:\n${c.fotos.join("\n")}`;
+  return `\n\n📸 Fotos:\n${c.fotos.map(noPreview).join("\n")}`;
 }
 
 const SPECIFIC: Record<string, (c: MsgContext) => string> = {
