@@ -414,9 +414,7 @@ function NuevaPage() {
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
 
-  const visibleFamilies = showMore
-    ? FAMILIES
-    : FAMILIES.filter((f) => CATS_PRIMARY.includes(f.id));
+  const visibleFamilies = showMore ? FAMILIES_DATA : FAMILIES_DATA.slice(0, 7);
 
   return (
     <div className="space-y-5">
