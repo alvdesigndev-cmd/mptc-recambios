@@ -44,18 +44,37 @@ interface ClienteRow {
   km: string | null;
 }
 
+const DRAFT_KEY = "mptc:nueva:draft";
+
+interface Draft {
+  step?: Step;
+  nombre?: string; telefono?: string; matricula?: string; vehiculo?: string; km?: string;
+  clienteBloqueado?: ClienteRow | null;
+  categoria?: string | null; subfamilia?: string | null; averiaQuery?: string;
+  importe?: string; descripcion?: string; piezas?: string;
+  mensaje?: string; mensajeTouched?: boolean;
+  confirmToken?: string; gestionFolder?: string;
+  pedirPena?: boolean;
+}
+
+function loadDraft(): Draft {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}") as Draft; } catch { return {}; }
+}
+
 function NuevaPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [step, setStep] = useState<Step>(1);
+  const draft0 = useRef<Draft>(loadDraft()).current;
+  const [step, setStep] = useState<Step>(draft0.step ?? 1);
 
   // Step 1 — cliente
-  const [nombre, setNombre] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [matricula, setMatricula] = useState("");
-  const [vehiculo, setVehiculo] = useState("");
-  const [km, setKm] = useState("");
+  const [nombre, setNombre] = useState(draft0.nombre ?? "");
+  const [telefono, setTelefono] = useState(draft0.telefono ?? "");
+  const [matricula, setMatricula] = useState(draft0.matricula ?? "");
+  const [vehiculo, setVehiculo] = useState(draft0.vehiculo ?? "");
+  const [km, setKm] = useState(draft0.km ?? "");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
   const [fotosError, setFotosError] = useState<boolean[]>([]);
@@ -63,27 +82,45 @@ function NuevaPage() {
   const [suggest, setSuggest] = useState<ClienteRow[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
-  const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(null);
+  const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(draft0.clienteBloqueado ?? null);
 
   // Step 2 — avería
-  const [categoria, setCategoria] = useState<string | null>(null);
-  const [subfamilia, setSubfamilia] = useState<string | null>(null);
+  const [categoria, setCategoria] = useState<string | null>(draft0.categoria ?? null);
+  const [subfamilia, setSubfamilia] = useState<string | null>(draft0.subfamilia ?? null);
   const [showMore, setShowMore] = useState(false);
-  const [averiaQuery, setAveriaQuery] = useState("");
+  const [averiaQuery, setAveriaQuery] = useState(draft0.averiaQuery ?? "");
 
   // Step 3 — mensaje
-  const [importe, setImporte] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [piezas, setPiezas] = useState("");
-  const [mensaje, setMensaje] = useState("");
-  const [mensajeTouched, setMensajeTouched] = useState(false);
-  const mensajeBaseRef = useRef<string>("");
-  const [confirmToken] = useState(() => generateToken());
-  const [gestionFolder] = useState(() => generateToken());
-  const [pedirPena, setPedirPena] = useState(false);
+  const [importe, setImporte] = useState(draft0.importe ?? "");
+  const [descripcion, setDescripcion] = useState(draft0.descripcion ?? "");
+  const [piezas, setPiezas] = useState(draft0.piezas ?? "");
+  const [mensaje, setMensaje] = useState(draft0.mensaje ?? "");
+  const [mensajeTouched, setMensajeTouched] = useState(draft0.mensajeTouched ?? false);
+  const mensajeBaseRef = useRef<string>(draft0.mensaje ?? "");
+  const [confirmToken] = useState(() => draft0.confirmToken ?? generateToken());
+  const [gestionFolder] = useState(() => draft0.gestionFolder ?? generateToken());
+  const [pedirPena, setPedirPena] = useState(draft0.pedirPena ?? false);
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
   const runOcr = useServerFn(ocrMatricula);
+
+  // Persistir borrador en sessionStorage para no perder datos al volver atrás.
+  useEffect(() => {
+    const d: Draft = {
+      step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
+      categoria, subfamilia, averiaQuery,
+      importe, descripcion, piezas, mensaje, mensajeTouched,
+      confirmToken, gestionFolder, pedirPena,
+    };
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
+  }, [
+    step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
+    categoria, subfamilia, averiaQuery,
+    importe, descripcion, piezas, mensaje, mensajeTouched,
+    confirmToken, gestionFolder, pedirPena,
+  ]);
+
+  const clearDraft = () => { try { sessionStorage.removeItem(DRAFT_KEY); } catch {} };
 
   useEffect(() => {
     const s = loadSettings();
@@ -327,6 +364,7 @@ function NuevaPage() {
         .single();
       if (error || !data) throw error || new Error("insert failed");
       await upsertCliente();
+      clearDraft();
       return data.id as string;
     } finally {
       setBusy(false);
