@@ -8,6 +8,7 @@ import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
+import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
 export const Route = createFileRoute("/pena")({
   component: PenaPage,
