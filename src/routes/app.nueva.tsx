@@ -77,6 +77,7 @@ function NuevaPage() {
   const [piezas, setPiezas] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [mensajeTouched, setMensajeTouched] = useState(false);
+  const mensajeBaseRef = useRef<string>("");
   const [confirmToken] = useState(() => generateToken());
   const [gestionFolder] = useState(() => generateToken());
   const [pedirPena, setPedirPena] = useState(false);
