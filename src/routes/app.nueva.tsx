@@ -980,9 +980,14 @@ function NuevaPage() {
                 <MicButton
                   size="sm"
                   title="Dictar mensaje (añade al final)"
-                  onResult={(t) => {
-                    setMensaje((prev) => (prev ? prev.trimEnd() + " " + t : t));
+                  onStart={() => {
+                    mensajeBaseRef.current = mensaje ? mensaje.trimEnd() + " " : "";
                     setMensajeTouched(true);
+                  }}
+                  onInterim={(t) => setMensaje(mensajeBaseRef.current + t)}
+                  onFinal={(t) => {
+                    mensajeBaseRef.current = mensajeBaseRef.current + t + " ";
+                    setMensaje(mensajeBaseRef.current);
                   }}
                 />
                 <button
