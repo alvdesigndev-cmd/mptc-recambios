@@ -24,6 +24,8 @@ interface PedidoDirecto {
   notas: string | null;
   estado: string;
   fotos: string[] | null;
+  audio_url: string | null;
+  transcripcion: string | null;
   created_at: string;
 }
 
