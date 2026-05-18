@@ -364,6 +364,7 @@ function NuevaPage() {
         .single();
       if (error || !data) throw error || new Error("insert failed");
       await upsertCliente();
+      clearDraft();
       return data.id as string;
     } finally {
       setBusy(false);
