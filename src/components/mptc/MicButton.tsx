@@ -69,12 +69,11 @@ export function MicButton({
       if (finalChunk.trim()) {
         const t = finalChunk.trim();
         h.onFinal?.(t);
+        // Legado: si no hay handlers granulares, onResult sólo en final.
         if (!h.onFinal && !h.onInterim) h.onResult?.(t);
       }
-      if (interim.trim()) {
-        const t = interim.trim();
-        h.onInterim?.(t);
-        if (!h.onFinal && !h.onInterim) h.onResult?.(t);
+      if (interim.trim() && h.onInterim) {
+        h.onInterim(interim.trim());
       }
     };
     rec.onend = () => {
