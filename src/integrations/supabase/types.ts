@@ -163,6 +163,7 @@ export type Database = {
       }
       pedidos_pena: {
         Row: {
+          audio_url: string | null
           created_at: string
           estado: string
           fotos: string[] | null
@@ -173,9 +174,11 @@ export type Database = {
           piezas: string | null
           taller_id: string | null
           taller_nombre: string | null
+          transcripcion: string | null
           vehiculo: string | null
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
@@ -186,9 +189,11 @@ export type Database = {
           piezas?: string | null
           taller_id?: string | null
           taller_nombre?: string | null
+          transcripcion?: string | null
           vehiculo?: string | null
         }
         Update: {
+          audio_url?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
@@ -199,6 +204,7 @@ export type Database = {
           piezas?: string | null
           taller_id?: string | null
           taller_nombre?: string | null
+          transcripcion?: string | null
           vehiculo?: string | null
         }
         Relationships: []

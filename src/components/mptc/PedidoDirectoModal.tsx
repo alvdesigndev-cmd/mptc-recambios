@@ -12,6 +12,13 @@ interface Props {
   onSaved?: () => void;
 }
 
+type SR = any;
+function getRecognition(): SR | null {
+  if (typeof window === "undefined") return null;
+  const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  return Ctor ? new Ctor() : null;
+}
+
 export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
   const [f, setF] = useState({ matricula: "", vehiculo: "", piezas: "", notas: "" });
   const [saving, setSaving] = useState(false);
@@ -24,11 +31,17 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
   const [recError, setRecError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [playing, setPlaying] = useState(false);
+
+  // Transcripción del audio grabado
+  const [transcripcionFinal, setTranscripcionFinal] = useState("");
+  const [transcripcionInterim, setTranscripcionInterim] = useState("");
+
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const srRef = useRef<SR | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -36,10 +49,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Cleanup
+  // Cleanup al cerrar
   useEffect(() => {
     return () => {
       try { mediaRef.current?.stop(); } catch {}
+      try { srRef.current?.stop(); } catch {}
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (timerRef.current) window.clearInterval(timerRef.current);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -49,7 +63,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
 
   const pickMime = (): string => {
     const candidates = [
-      "audio/mp4;codecs=mp4a.40.2", // Safari iOS
+      "audio/mp4;codecs=mp4a.40.2",
       "audio/mp4",
       "audio/webm;codecs=opus",
       "audio/webm",
@@ -61,9 +75,43 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     return "";
   };
 
+  const startSR = () => {
+    const rec = getRecognition();
+    if (!rec) return;
+    rec.lang = "es-ES";
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => {
+      let interim = "";
+      let finalChunk = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        const txt = r[0]?.transcript || "";
+        if (r.isFinal) finalChunk += txt;
+        else interim += txt;
+      }
+      if (finalChunk.trim()) {
+        setTranscripcionFinal((prev) => (prev ? prev.trimEnd() + " " : "") + finalChunk.trim());
+      }
+      setTranscripcionInterim(interim.trim());
+    };
+    rec.onend = () => setTranscripcionInterim("");
+    rec.onerror = () => setTranscripcionInterim("");
+    try { rec.start(); srRef.current = rec; } catch {}
+  };
+
+  const stopSR = () => {
+    try { srRef.current?.stop(); } catch {}
+    srRef.current = null;
+    setTranscripcionInterim("");
+  };
+
   const startRecording = async () => {
     setRecError(null);
     if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); setAudioBlob(null); }
+    setTranscripcionFinal("");
+    setTranscripcionInterim("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -85,6 +133,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       setRecording(true);
       setElapsed(0);
       timerRef.current = window.setInterval(() => setElapsed((s) => s + 1), 1000);
+      startSR();
     } catch (err: any) {
       setRecError(err?.message || "No se pudo acceder al micrófono.");
     }
@@ -94,6 +143,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     try { mediaRef.current?.stop(); } catch {}
     if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
     setRecording(false);
+    stopSR();
   };
 
   const discardAudio = () => {
@@ -102,12 +152,16 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     setAudioBlob(null);
     setElapsed(0);
     setPlaying(false);
+    setTranscripcionFinal("");
+    setTranscripcionInterim("");
   };
 
+  const extFromMime = (m: string) =>
+    m.includes("mp4") ? "m4a" : m.includes("ogg") ? "ogg" : "webm";
+
   const audioFileName = () => {
-    const ext = audioMime.includes("mp4") ? "m4a" : audioMime.includes("ogg") ? "ogg" : "webm";
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    return `pedido-${settings.tallerId}-${ts}.${ext}`;
+    return `pedido-${settings.tallerId}-${ts}.${extFromMime(audioMime)}`;
   };
 
   const shareAudio = async () => {
@@ -123,10 +177,9 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         });
         return;
       } catch {
-        // usuario canceló o falló — caer a descarga
+        // usuario canceló — caer a descarga
       }
     }
-    // Fallback: descargar
     const a = document.createElement("a");
     a.href = audioUrl!;
     a.download = audioFileName();
@@ -143,43 +196,69 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
 
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
+  const uploadAudio = async (): Promise<string | null> => {
+    if (!audioBlob) return null;
+    const ext = extFromMime(audioMime);
+    const path = `${settings.tallerId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage
+      .from("audios-pedidos")
+      .upload(path, audioBlob, { contentType: audioMime, upsert: false });
+    if (error) {
+      console.error("upload audio", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("audios-pedidos").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const save = async () => {
-    if (!f.piezas.trim()) {
-      alert("Indica al menos las piezas que quieres pedir (puedes dictarlas con el micro).");
+    const tieneAudio = !!audioBlob;
+    if (!f.piezas.trim() && !tieneAudio) {
+      alert("Indica las piezas (puedes dictarlas) o graba un audio para el pedido.");
       return;
     }
-    const msg = buildPenaMessage({
-      taller: settings.tallerName,
-      vehiculo: f.vehiculo,
-      matricula: f.matricula,
-      piezas: f.piezas,
-      notas: f.notas,
-    });
-    const url = buildWAUrl(PENA_PHONE, msg);
-    const win = window.open(url, "_blank");
-
     setSaving(true);
     try {
+      const uploadedAudio = tieneAudio ? await uploadAudio() : null;
+      const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
+
+      // Si hay piezas vacías pero hay transcripción del audio, úsala como piezas.
+      const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
+
+      const msg = buildPenaMessage({
+        taller: settings.tallerName,
+        vehiculo: f.vehiculo,
+        matricula: f.matricula,
+        piezas: piezasFinal,
+        notas: f.notas,
+      });
+      const url = buildWAUrl(PENA_PHONE, msg);
+      const win = window.open(url, "_blank");
+
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
         matricula: f.matricula || null,
         vehiculo: f.vehiculo || null,
-        piezas: f.piezas,
+        piezas: piezasFinal,
         notas: f.notas || null,
         estado: "pendiente",
+        audio_url: uploadedAudio,
+        transcripcion,
       });
       if (error) throw error;
       onSaved?.();
       onClose();
+      if (!win) window.location.href = url;
     } catch (e: any) {
       console.error("pedidos_pena insert", e);
       alert("No se pudo guardar el pedido: " + (e?.message || "error desconocido"));
     } finally {
       setSaving(false);
-      if (!win) window.location.href = url;
     }
   };
+
+  const previewTrans = (transcripcionFinal + (transcripcionInterim ? " " + transcripcionInterim : "")).trim();
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
@@ -191,7 +270,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
             </span>
             <div>
               <h2 className="text-lg font-bold leading-tight">Pedido directo a Peña</h2>
-              <div className="text-[11px] text-muted-foreground">No genera gestión — sólo el pedido.</div>
+              <div className="text-[11px] text-muted-foreground">El audio y su transcripción se guardarán en el historial.</div>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2">
@@ -267,11 +346,27 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                   <Download className="h-4 w-4" /> Descargar
                 </a>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                «Enviar audio» abre WhatsApp en el móvil para adjuntarlo. También puedes dictar el texto abajo con el micro y enviar el pedido escrito.
-              </p>
             </div>
           )}
+
+          {/* Transcripción en vivo / final */}
+          {(previewTrans || recording) && (
+            <div className="mt-2 rounded-xl bg-surface px-3 py-2 text-[12px] text-foreground">
+              <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Transcripción {recording && <span className="text-destructive">· en vivo</span>}
+              </div>
+              <div className="whitespace-pre-wrap">
+                {transcripcionFinal}
+                {transcripcionInterim && (
+                  <span className="text-muted-foreground"> {transcripcionInterim}</span>
+                )}
+                {!previewTrans && recording && (
+                  <span className="text-muted-foreground italic">Escuchando…</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {recError && (
             <p className="mt-2 text-[11px] font-semibold text-destructive">{recError}</p>
           )}
@@ -305,7 +400,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
               value={f.piezas}
               onChange={(e) => setF({ ...f, piezas: e.target.value })}
               rows={3}
-              placeholder="Ej. 2x pastillas delanteras OEM"
+              placeholder={audioBlob ? "Opcional — el audio y su transcripción ya quedan guardados" : "Ej. 2x pastillas delanteras OEM"}
               className={inputCls}
             />
           </Label>
@@ -334,7 +429,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
           </button>
           <button
             onClick={save}
-            disabled={saving || !f.piezas.trim()}
+            disabled={saving || (!f.piezas.trim() && !audioBlob)}
             className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground active:scale-95 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
