@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
+import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 
 export const Route = createFileRoute("/pena")({
   component: PenaPage,
