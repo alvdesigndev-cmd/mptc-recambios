@@ -84,7 +84,7 @@ export function AudioPlayer({ src, className }: Props) {
           }}
           className="audio-range block w-full"
           style={{
-            background: `linear-gradient(to right, hsl(var(--primary)) ${pct}%, hsl(var(--border)) ${pct}%)`,
+            background: `linear-gradient(to right, var(--primary) ${pct}%, var(--border-strong) ${pct}%)`,
           }}
         />
         <div className="mt-0.5 flex justify-between font-mono text-[10px] tabular-nums text-muted-foreground">
