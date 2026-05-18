@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
+import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
@@ -262,6 +263,16 @@ function PedidoDirectoModal({
               <Mic className="h-3 w-3" /> Audio del pedido
             </div>
             <audio src={p.audio_url} controls className="w-full" />
+          </div>
+        )}
+
+        {(p.audio_url || p.transcripcion) && (
+          <div className="mb-3">
+            <AudioTranscripcionActions
+              audioUrl={p.audio_url}
+              transcripcion={p.transcripcion}
+              baseName={p.matricula || p.id}
+            />
           </div>
         )}
 
