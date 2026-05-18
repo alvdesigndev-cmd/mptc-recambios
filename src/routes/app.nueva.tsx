@@ -612,7 +612,18 @@ function NuevaPage() {
 
       {/* STEP 1 */}
       {step === 1 && (
-        <section className="space-y-4">
+        <section
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const t = e.target as HTMLElement;
+            if (t.tagName !== "INPUT") return;
+            if ((t as HTMLInputElement).type === "file") return;
+            if (!canNext1) return;
+            e.preventDefault();
+            onContinuarPaso1();
+          }}
+        >
           {/* Buscador encima */}
           {clienteBloqueado ? (
             <div className="flex items-start gap-3 rounded-2xl border border-success/40 bg-success/10 p-3">
@@ -897,7 +908,17 @@ function NuevaPage() {
 
       {/* STEP 2 */}
       {step === 2 && (
-        <section className="space-y-4">
+        <section
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const t = e.target as HTMLElement;
+            if (t.tagName !== "INPUT") return;
+            if (!canNext2) return;
+            e.preventDefault();
+            setStep(3);
+          }}
+        >
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
