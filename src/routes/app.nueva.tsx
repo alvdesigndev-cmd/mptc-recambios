@@ -69,6 +69,7 @@ function NuevaPage() {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [subfamilia, setSubfamilia] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const [averiaQuery, setAveriaQuery] = useState("");
 
   // Step 3 — mensaje
   const [importe, setImporte] = useState("");
