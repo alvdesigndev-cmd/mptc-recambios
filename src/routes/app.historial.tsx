@@ -266,6 +266,16 @@ function PedidoDirectoModal({
           </div>
         )}
 
+        {(p.audio_url || p.transcripcion) && (
+          <div className="mb-3">
+            <AudioTranscripcionActions
+              audioUrl={p.audio_url}
+              transcripcion={p.transcripcion}
+              baseName={p.matricula || p.id}
+            />
+          </div>
+        )}
+
         <div className="space-y-3 text-sm">
           {p.piezas && (
             <div className="border-b border-border pb-2">
