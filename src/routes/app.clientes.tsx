@@ -9,6 +9,7 @@ export const Route = createFileRoute("/app/clientes")({
 });
 
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
+import { MicButton } from "@/components/mptc/MicButton";
 
 interface Cliente {
   id: string;
