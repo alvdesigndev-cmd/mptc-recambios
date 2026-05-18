@@ -908,7 +908,17 @@ function NuevaPage() {
 
       {/* STEP 2 */}
       {step === 2 && (
-        <section className="space-y-4">
+        <section
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const t = e.target as HTMLElement;
+            if (t.tagName !== "INPUT") return;
+            if (!canNext2) return;
+            e.preventDefault();
+            setStep(3);
+          }}
+        >
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
