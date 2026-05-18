@@ -461,23 +461,48 @@ function NuevaPage() {
             ))}
           </div>
           {step === 1 && (
-            <button
-              type="button"
-              disabled={!canNext1}
-              onClick={onContinuarPaso1}
-              className={primaryBtn}
-            >
-              Continuar <ArrowRight className="h-4 w-4" />
-            </button>
+            <>
+              <Link to="/app" aria-label="Volver al inicio" className={ghostBtn + " px-3"}>
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+              <button
+                type="button"
+                disabled={!canNext1}
+                onClick={onContinuarPaso1}
+                className={primaryBtn}
+              >
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
           )}
           {step === 2 && (
+            <>
+              <button
+                type="button"
+                aria-label="Volver al paso 1"
+                onClick={() => setStep(1)}
+                className={ghostBtn + " px-3"}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                disabled={!canNext2}
+                onClick={() => setStep(3)}
+                className={primaryBtn}
+              >
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          {step === 3 && (
             <button
               type="button"
-              disabled={!canNext2}
-              onClick={() => setStep(3)}
-              className={primaryBtn}
+              aria-label="Volver al paso 2"
+              onClick={() => setStep(2)}
+              className={ghostBtn + " px-3"}
             >
-              Continuar <ArrowRight className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </button>
           )}
         </div>
