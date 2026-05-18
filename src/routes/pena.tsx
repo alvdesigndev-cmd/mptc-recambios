@@ -315,6 +315,11 @@ function PedidoModal({
                 {item.transcripcion}
               </div>
             )}
+            <AudioTranscripcionActions
+              audioUrl={item.audio_url}
+              transcripcion={item.transcripcion}
+              baseName={item.matricula || item.id}
+            />
           </div>
         )}
 
