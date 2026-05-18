@@ -24,6 +24,7 @@ import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
+import { MicButton } from "@/components/mptc/MicButton";
 
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -68,6 +69,7 @@ function NuevaPage() {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [subfamilia, setSubfamilia] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const [averiaQuery, setAveriaQuery] = useState("");
 
   // Step 3 — mensaje
   const [importe, setImporte] = useState("");
@@ -523,25 +525,28 @@ function NuevaPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={buscador}
-                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
-                  onFocus={() => setShowSuggest(true)}
-                  placeholder="Buscar cliente guardado: nombre, teléfono o matrícula…"
-                  className={inputCls + " pl-9"}
-                />
-                {buscador && (
-                  <button
-                    type="button"
-                    onClick={() => { setBuscador(""); setSuggest([]); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
-                    aria-label="Limpiar búsqueda"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={buscador}
+                    onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                    onFocus={() => setShowSuggest(true)}
+                    placeholder="Buscar cliente guardado: nombre, teléfono o matrícula…"
+                    className={inputCls + " pl-9"}
+                  />
+                  {buscador && (
+                    <button
+                      type="button"
+                      onClick={() => { setBuscador(""); setSuggest([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                      aria-label="Limpiar búsqueda"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <MicButton onResult={(t) => { setBuscador(t); setShowSuggest(true); }} title="Buscar cliente por voz" />
               </div>
 
               {showSuggest && suggest.length > 0 && (() => {
@@ -772,6 +777,75 @@ function NuevaPage() {
       {/* STEP 2 */}
       {step === 2 && (
         <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={averiaQuery}
+                onChange={(e) => setAveriaQuery(e.target.value)}
+                placeholder="Buscar avería: frenos, embrague, aceite…"
+                className={inputCls + " pl-9"}
+              />
+              {averiaQuery && (
+                <button
+                  type="button"
+                  onClick={() => setAveriaQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                  aria-label="Limpiar"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <MicButton onResult={(t) => setAveriaQuery(t)} title="Buscar avería por voz" />
+          </div>
+
+          {averiaQuery.trim().length >= 2 ? (
+            (() => {
+              const qq = averiaQuery.trim().toLowerCase();
+              const results: Array<{ fam: typeof FAMILIES_DATA[number]; sub: typeof FAMILIES_DATA[number]["subs"][number] }> = [];
+              for (const f of FAMILIES_DATA) {
+                for (const s of f.subs) {
+                  if (
+                    s.name.toLowerCase().includes(qq) ||
+                    f.name.toLowerCase().includes(qq)
+                  ) results.push({ fam: f, sub: s });
+                }
+              }
+              if (results.length === 0) {
+                return (
+                  <div className="rounded-2xl border border-border bg-surface p-6 text-center text-sm text-muted-foreground">
+                    Sin resultados para “{averiaQuery}”.
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-2xl border border-border bg-surface p-2">
+                  {results.slice(0, 20).map(({ fam: f, sub: s }) => {
+                    const active = categoria === f.slug && subfamilia === s.slug;
+                    return (
+                      <button
+                        key={f.slug + "/" + s.slug}
+                        type="button"
+                        onClick={() => { setCategoria(f.slug); setSubfamilia(s.slug); setAveriaQuery(""); }}
+                        className={
+                          "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition " +
+                          (active ? "bg-primary text-primary-foreground" : "hover:bg-surface-2")
+                        }
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="mr-2">{f.icon}</span>
+                          <span className="font-medium">{s.name}</span>
+                          <span className="ml-2 text-[11px] text-muted-foreground">{f.name}</span>
+                        </span>
+                        {active && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {visibleFamilies.map((f) => {
               const active = categoria === f.slug;
@@ -793,6 +867,7 @@ function NuevaPage() {
               );
             })}
           </div>
+          )}
 
           {!showMore && (
             <button
@@ -881,17 +956,35 @@ function NuevaPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between gap-2">
               <div className="text-sm font-semibold">Mensaje de WhatsApp</div>
-              {mensajeTouched && (
+              <div className="flex items-center gap-2">
+                {mensajeTouched && (
+                  <button
+                    type="button"
+                    onClick={() => setMensajeTouched(false)}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Regenerar
+                  </button>
+                )}
+                <MicButton
+                  size="sm"
+                  title="Dictar mensaje (añade al final)"
+                  onResult={(t) => {
+                    setMensaje((prev) => (prev ? prev.trimEnd() + " " + t : t));
+                    setMensajeTouched(true);
+                  }}
+                />
                 <button
                   type="button"
-                  onClick={() => setMensajeTouched(false)}
-                  className="text-[11px] text-primary hover:underline"
+                  onClick={() => { setMensaje(""); setMensajeTouched(true); }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  title="Borrar mensaje"
                 >
-                  Regenerar
+                  Borrar
                 </button>
-              )}
+              </div>
             </div>
             <textarea
               value={mensaje}
@@ -899,6 +992,9 @@ function NuevaPage() {
               rows={10}
               className={inputCls + " font-mono text-[13px] leading-relaxed"}
             />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Puedes dictar con el micrófono y luego editar el texto antes de enviar.
+            </p>
           </div>
 
           <BottomBar>

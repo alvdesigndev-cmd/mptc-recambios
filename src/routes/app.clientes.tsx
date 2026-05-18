@@ -9,6 +9,7 @@ export const Route = createFileRoute("/app/clientes")({
 });
 
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
+import { MicButton } from "@/components/mptc/MicButton";
 
 interface Cliente {
   id: string;
@@ -71,14 +72,17 @@ function ClientesPage() {
         </button>
       </header>
 
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar por nombre, matrícula, teléfono…"
-          className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
-        />
+      <div className="relative flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar por nombre, matrícula, teléfono…"
+            className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
+          />
+        </div>
+        <MicButton onResult={(t) => setQ(t)} title="Buscar por voz" />
       </div>
 
       {filtered.length === 0 ? (
