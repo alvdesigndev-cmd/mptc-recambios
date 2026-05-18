@@ -525,25 +525,28 @@ function NuevaPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={buscador}
-                  onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
-                  onFocus={() => setShowSuggest(true)}
-                  placeholder="Buscar cliente guardado: nombre, teléfono o matrícula…"
-                  className={inputCls + " pl-9"}
-                />
-                {buscador && (
-                  <button
-                    type="button"
-                    onClick={() => { setBuscador(""); setSuggest([]); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
-                    aria-label="Limpiar búsqueda"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={buscador}
+                    onChange={(e) => { setBuscador(e.target.value); setShowSuggest(true); }}
+                    onFocus={() => setShowSuggest(true)}
+                    placeholder="Buscar cliente guardado: nombre, teléfono o matrícula…"
+                    className={inputCls + " pl-9"}
+                  />
+                  {buscador && (
+                    <button
+                      type="button"
+                      onClick={() => { setBuscador(""); setSuggest([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                      aria-label="Limpiar búsqueda"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <MicButton onResult={(t) => { setBuscador(t); setShowSuggest(true); }} title="Buscar cliente por voz" />
               </div>
 
               {showSuggest && suggest.length > 0 && (() => {
