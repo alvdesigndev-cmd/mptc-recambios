@@ -301,6 +301,22 @@ function PedidoModal({
           <Field label="Recibido">{new Date(item.created_at).toLocaleString("es-ES")}</Field>
         </div>
 
+        {kind === "d" && (item.audio_url || item.transcripcion) && (
+          <div className="mt-3 rounded-2xl border border-border bg-surface-2 p-3 space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Pedido por voz
+            </div>
+            {item.audio_url && (
+              <audio src={item.audio_url} controls className="w-full" />
+            )}
+            {item.transcripcion && (
+              <div className="whitespace-pre-wrap rounded-xl bg-surface px-3 py-2 text-[13px] leading-relaxed">
+                {item.transcripcion}
+              </div>
+            )}
+          </div>
+        )}
+
         {item.fotos && item.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
             {item.fotos.map((u, i) => (
