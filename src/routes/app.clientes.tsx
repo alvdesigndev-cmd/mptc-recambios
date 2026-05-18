@@ -82,7 +82,11 @@ function ClientesPage() {
             className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
           />
         </div>
-        <MicButton onResult={(t) => setQ(t)} title="Buscar por voz" />
+        <MicButton
+          onInterim={(t) => setQ(t)}
+          onFinal={(t) => setQ(t)}
+          title="Buscar por voz"
+        />
       </div>
 
       {filtered.length === 0 ? (
