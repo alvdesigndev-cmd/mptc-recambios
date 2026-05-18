@@ -8,6 +8,7 @@ import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
+import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
 export const Route = createFileRoute("/pena")({
   component: PenaPage,
@@ -308,7 +309,7 @@ function PedidoModal({
               Pedido por voz
             </div>
             {item.audio_url && (
-              <audio src={item.audio_url} controls className="w-full" />
+              <AudioPlayer src={item.audio_url} />
             )}
             {item.transcripcion && (
               <div className="whitespace-pre-wrap rounded-xl bg-surface px-3 py-2 text-[13px] leading-relaxed">

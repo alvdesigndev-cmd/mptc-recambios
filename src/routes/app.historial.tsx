@@ -6,6 +6,7 @@ import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
+import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
@@ -262,7 +263,7 @@ function PedidoDirectoModal({
             <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               <Mic className="h-3 w-3" /> Audio del pedido
             </div>
-            <audio src={p.audio_url} controls className="w-full" />
+            <AudioPlayer src={p.audio_url} />
           </div>
         )}
 
