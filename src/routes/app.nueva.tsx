@@ -547,7 +547,11 @@ function NuevaPage() {
                     </button>
                   )}
                 </div>
-                <MicButton onResult={(t) => { setBuscador(t); setShowSuggest(true); }} title="Buscar cliente por voz" />
+                <MicButton
+                  onInterim={(t) => { setBuscador(t); setShowSuggest(true); }}
+                  onFinal={(t) => { setBuscador(t); setShowSuggest(true); }}
+                  title="Buscar cliente por voz"
+                />
               </div>
 
               {showSuggest && suggest.length > 0 && (() => {
