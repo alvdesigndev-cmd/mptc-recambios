@@ -802,7 +802,11 @@ function NuevaPage() {
                 </button>
               )}
             </div>
-            <MicButton onResult={(t) => setAveriaQuery(t)} title="Buscar avería por voz" />
+            <MicButton
+              onInterim={(t) => setAveriaQuery(t)}
+              onFinal={(t) => setAveriaQuery(t)}
+              title="Buscar avería por voz"
+            />
           </div>
 
           {averiaQuery.trim().length >= 2 ? (
