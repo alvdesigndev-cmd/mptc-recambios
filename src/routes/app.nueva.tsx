@@ -473,8 +473,61 @@ function NuevaPage() {
 
   const visibleFamilies = showMore ? FAMILIES_DATA : FAMILIES_DATA.slice(0, 7);
 
+  // Navegación del paso anterior (flecha izquierda / Escape).
+  const goBack = () => {
+    if (step === 1) navigate({ to: "/app" });
+    else if (step === 2) setStep(1);
+    else if (step === 3) setStep(2);
+  };
+
+  // Avanzar al siguiente paso si los datos son válidos (Ctrl/Cmd+Enter).
+  const goNext = () => {
+    if (step === 1 && canNext1) onContinuarPaso1();
+    else if (step === 2 && canNext2) setStep(3);
+  };
+
+  const stepRef = useRef<HTMLDivElement | null>(null);
+
+  // Foco automático al entrar/cambiar de paso: primer campo enfocable visible.
+  useEffect(() => {
+    const root = stepRef.current;
+    if (!root) return;
+    const t = setTimeout(() => {
+      const el = root.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), [data-step-autofocus="true"]',
+      );
+      el?.focus({ preventScroll: false });
+    }, 30);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  // Atajos de teclado: Escape vuelve atrás, Ctrl/Cmd+Enter avanza.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (busy) return;
+      const tgt = e.target as HTMLElement | null;
+      const tag = tgt?.tagName;
+      const isEditable =
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tgt?.isContentEditable;
+      if (e.key === "Escape") {
+        if (isEditable && (tgt as HTMLInputElement | HTMLTextAreaElement).value) {
+          // primero deja al input limpiar/cerrar dropdowns
+          return;
+        }
+        e.preventDefault();
+        goBack();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, canNext1, canNext2, busy]);
+
   return (
-    <div className="space-y-5">
+    <div ref={stepRef} className="space-y-5">
       {/* Header + stepper */}
       <div className="flex items-center justify-between gap-2">
         <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
