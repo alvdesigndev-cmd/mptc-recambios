@@ -956,17 +956,35 @@ function NuevaPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between gap-2">
               <div className="text-sm font-semibold">Mensaje de WhatsApp</div>
-              {mensajeTouched && (
+              <div className="flex items-center gap-2">
+                {mensajeTouched && (
+                  <button
+                    type="button"
+                    onClick={() => setMensajeTouched(false)}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Regenerar
+                  </button>
+                )}
+                <MicButton
+                  size="sm"
+                  title="Dictar mensaje (añade al final)"
+                  onResult={(t) => {
+                    setMensaje((prev) => (prev ? prev.trimEnd() + " " + t : t));
+                    setMensajeTouched(true);
+                  }}
+                />
                 <button
                   type="button"
-                  onClick={() => setMensajeTouched(false)}
-                  className="text-[11px] text-primary hover:underline"
+                  onClick={() => { setMensaje(""); setMensajeTouched(true); }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  title="Borrar mensaje"
                 >
-                  Regenerar
+                  Borrar
                 </button>
-              )}
+              </div>
             </div>
             <textarea
               value={mensaje}
@@ -974,6 +992,9 @@ function NuevaPage() {
               rows={10}
               className={inputCls + " font-mono text-[13px] leading-relaxed"}
             />
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Puedes dictar con el micrófono y luego editar el texto antes de enviar.
+            </p>
           </div>
 
           <BottomBar>
