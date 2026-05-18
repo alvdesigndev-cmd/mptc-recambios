@@ -29,7 +29,7 @@ function FamiliasGate() {
   });
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
-  const inputRef = useState<HTMLInputElement | null>(null);
+  
 
   if (unlocked) return <FamiliasAdmin />;
 
