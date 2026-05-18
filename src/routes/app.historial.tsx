@@ -6,6 +6,7 @@ import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionCard } from "@/components/mptc/GestionCard";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
+import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
