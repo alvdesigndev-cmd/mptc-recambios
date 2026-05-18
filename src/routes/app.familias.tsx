@@ -12,12 +12,71 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/app/familias")({
-  component: FamiliasAdmin,
+  component: FamiliasGate,
 });
 
 const primaryBtn = "inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50";
 const ghostBtn = "inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2";
 const dangerBtn = "inline-flex items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/20";
+
+const FAMILIAS_PIN = "1234";
+const FAMILIAS_UNLOCK_KEY = "mptc:familias:unlocked";
+
+function FamiliasGate() {
+  const [unlocked, setUnlocked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(FAMILIAS_UNLOCK_KEY) === "1";
+  });
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState(false);
+  const inputRef = useState<HTMLInputElement | null>(null);
+
+  if (unlocked) return <FamiliasAdmin />;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === FAMILIAS_PIN) {
+      try { sessionStorage.setItem(FAMILIAS_UNLOCK_KEY, "1"); } catch {}
+      setUnlocked(true);
+    } else {
+      setError(true);
+      setPin("");
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-sm space-y-4 p-4">
+      <Link to="/app/ajustes" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Volver a ajustes
+      </Link>
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <h1 className="text-lg font-bold">Acceso restringido</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Introduce el PIN para gestionar familias y subfamilias.
+        </p>
+        <form onSubmit={submit} className="mt-4 space-y-3">
+          <input
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoFocus
+            value={pin}
+            onChange={(e) => { setPin(e.target.value); setError(false); }}
+            placeholder="PIN"
+            aria-label="PIN de acceso"
+            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-center text-lg tracking-[0.5em] font-mono outline-none focus:border-primary"
+          />
+          {error && (
+            <div className="text-center text-sm font-medium text-destructive">PIN incorrecto</div>
+          )}
+          <button type="submit" className={primaryBtn + " w-full"}>
+            Entrar
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function FamiliasAdmin() {
   const navigate = useNavigate();
