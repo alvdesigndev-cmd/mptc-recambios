@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Mic, Loader2 } from "lucide-react";
 
 type SR = any;
 
 interface Props {
-  onResult: (text: string) => void;
-  /** Si true, sustituye el texto; si false (por defecto), añade al existente vía onResult */
-  mode?: "replace" | "append";
+  /** Llamado con cada texto interim (mientras se habla). */
+  onInterim?: (text: string) => void;
+  /** Llamado cuando un segmento se finaliza. */
+  onFinal?: (text: string) => void;
+  /**
+   * Compatibilidad: si no se pasan onInterim/onFinal, se llama con el último
+   * texto disponible (interim o final). Mantiene el comportamiento previo.
+   */
+  onResult?: (text: string) => void;
+  /** Llamado al iniciar la escucha (útil para snapshot del valor previo). */
+  onStart?: () => void;
+  /** Llamado al terminar la escucha. */
+  onStop?: () => void;
   lang?: string;
   className?: string;
   title?: string;
-  /** Tamaño del icono y del botón */
   size?: "sm" | "md";
 }
 
@@ -21,7 +30,11 @@ function getRecognition(): SR | null {
 }
 
 export function MicButton({
+  onInterim,
+  onFinal,
   onResult,
+  onStart,
+  onStop,
   lang = "es-ES",
   className = "",
   title = "Dictar por voz",
@@ -30,31 +43,49 @@ export function MicButton({
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SR | null>(null);
+  // Mantener handlers en refs para no re-crear el recognition cada render.
+  const handlers = useRef({ onInterim, onFinal, onResult, onStart, onStop });
+  handlers.current = { onInterim, onFinal, onResult, onStart, onStop };
 
   useEffect(() => {
     const rec = getRecognition();
     if (!rec) { setSupported(false); return; }
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = false;
+    rec.continuous = true;
     rec.maxAlternatives = 1;
-    let finalText = "";
+
     rec.onresult = (e: any) => {
       let interim = "";
-      finalText = "";
-      for (let i = 0; i < e.results.length; i++) {
+      let finalChunk = "";
+      // Recorremos sólo desde resultIndex para emitir cada final una sola vez.
+      for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i];
-        if (r.isFinal) finalText += r[0].transcript;
-        else interim += r[0].transcript;
+        const txt = r[0]?.transcript || "";
+        if (r.isFinal) finalChunk += txt;
+        else interim += txt;
       }
-      const text = (finalText || interim).trim();
-      if (text) onResult(text);
+      const h = handlers.current;
+      if (finalChunk.trim()) {
+        const t = finalChunk.trim();
+        h.onFinal?.(t);
+        // Legado: si no hay handlers granulares, onResult sólo en final.
+        if (!h.onFinal && !h.onInterim) h.onResult?.(t);
+      }
+      if (interim.trim() && h.onInterim) {
+        h.onInterim(interim.trim());
+      }
     };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      handlers.current.onStop?.();
+    };
+    rec.onerror = () => {
+      setListening(false);
+      handlers.current.onStop?.();
+    };
     recRef.current = rec;
     return () => { try { rec.stop(); } catch {} };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
   if (!supported) return null;
@@ -63,7 +94,11 @@ export function MicButton({
     const rec = recRef.current;
     if (!rec) return;
     if (listening) { try { rec.stop(); } catch {} return; }
-    try { rec.start(); setListening(true); } catch {}
+    try {
+      rec.start();
+      setListening(true);
+      handlers.current.onStart?.();
+    } catch {}
   };
 
   const sz = size === "sm" ? "h-8 w-8" : "h-9 w-9";
@@ -73,6 +108,7 @@ export function MicButton({
       onClick={toggle}
       title={title}
       aria-label={title}
+      aria-pressed={listening}
       className={
         "inline-flex shrink-0 items-center justify-center rounded-xl border border-border-strong transition " +
         sz + " " +
@@ -86,5 +122,3 @@ export function MicButton({
     </button>
   );
 }
-
-export { MicOff };

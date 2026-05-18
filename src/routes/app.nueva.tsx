@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -77,6 +77,7 @@ function NuevaPage() {
   const [piezas, setPiezas] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [mensajeTouched, setMensajeTouched] = useState(false);
+  const mensajeBaseRef = useRef<string>("");
   const [confirmToken] = useState(() => generateToken());
   const [gestionFolder] = useState(() => generateToken());
   const [pedirPena, setPedirPena] = useState(false);
@@ -546,7 +547,11 @@ function NuevaPage() {
                     </button>
                   )}
                 </div>
-                <MicButton onResult={(t) => { setBuscador(t); setShowSuggest(true); }} title="Buscar cliente por voz" />
+                <MicButton
+                  onInterim={(t) => { setBuscador(t); setShowSuggest(true); }}
+                  onFinal={(t) => { setBuscador(t); setShowSuggest(true); }}
+                  title="Buscar cliente por voz"
+                />
               </div>
 
               {showSuggest && suggest.length > 0 && (() => {
@@ -797,7 +802,11 @@ function NuevaPage() {
                 </button>
               )}
             </div>
-            <MicButton onResult={(t) => setAveriaQuery(t)} title="Buscar avería por voz" />
+            <MicButton
+              onInterim={(t) => setAveriaQuery(t)}
+              onFinal={(t) => setAveriaQuery(t)}
+              title="Buscar avería por voz"
+            />
           </div>
 
           {averiaQuery.trim().length >= 2 ? (
@@ -971,9 +980,14 @@ function NuevaPage() {
                 <MicButton
                   size="sm"
                   title="Dictar mensaje (añade al final)"
-                  onResult={(t) => {
-                    setMensaje((prev) => (prev ? prev.trimEnd() + " " + t : t));
+                  onStart={() => {
+                    mensajeBaseRef.current = mensaje ? mensaje.trimEnd() + " " : "";
                     setMensajeTouched(true);
+                  }}
+                  onInterim={(t) => setMensaje(mensajeBaseRef.current + t)}
+                  onFinal={(t) => {
+                    mensajeBaseRef.current = mensajeBaseRef.current + t + " ";
+                    setMensaje(mensajeBaseRef.current);
                   }}
                 />
                 <button
