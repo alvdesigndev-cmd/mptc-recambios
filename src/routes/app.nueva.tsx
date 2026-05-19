@@ -299,6 +299,54 @@ function NuevaPage() {
     settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
 
+  const stepRef = useRef<HTMLDivElement | null>(null);
+
+  // Foco automático al entrar/cambiar de paso: primer campo enfocable visible.
+  useEffect(() => {
+    const root = stepRef.current;
+    if (!root) return;
+    const t = setTimeout(() => {
+      const el = root.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), [data-step-autofocus="true"]',
+      );
+      el?.focus({ preventScroll: false });
+    }, 30);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  // Atajos de teclado: Escape vuelve atrás, Ctrl/Cmd+Enter avanza.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (busy) return;
+      const tgt = e.target as HTMLElement | null;
+      const tag = tgt?.tagName;
+      const isEditable =
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tgt?.isContentEditable;
+      if (e.key === "Escape") {
+        if (isEditable && (tgt as HTMLInputElement | HTMLTextAreaElement).value) return;
+        e.preventDefault();
+        if (step === 1) navigate({ to: "/app" });
+        else if (step === 2) setStep(1);
+        else if (step === 3) setStep(2);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (step === 1 && nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2)) {
+          (async () => {
+            try { await upsertClienteRef.current?.(); } catch {}
+            setStep(2);
+          })();
+        } else if (step === 2 && !!subfamilia) {
+          setStep(3);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [step, busy, navigate, nombre, telefono, matricula, subfamilia]);
+
+  // Ref mutable para llamar upsertCliente desde el listener sin recrear el efecto.
+  const upsertClienteRef = useRef<(() => Promise<void>) | null>(null);
+
   if (!settings) return null;
 
   const pickCliente = (c: ClienteRow) => {
@@ -366,6 +414,8 @@ function NuevaPage() {
       await supabase.from("clientes").insert({ ...payload, total_gestiones: 1 });
     }
   };
+
+  upsertClienteRef.current = upsertCliente;
 
   const saveGestion = async (
     estado: "en-curso" | "enviado",
@@ -515,45 +565,6 @@ function NuevaPage() {
     else if (step === 2 && canNext2) setStep(3);
   };
 
-  const stepRef = useRef<HTMLDivElement | null>(null);
-
-  // Foco automático al entrar/cambiar de paso: primer campo enfocable visible.
-  useEffect(() => {
-    const root = stepRef.current;
-    if (!root) return;
-    const t = setTimeout(() => {
-      const el = root.querySelector<HTMLElement>(
-        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), [data-step-autofocus="true"]',
-      );
-      el?.focus({ preventScroll: false });
-    }, 30);
-    return () => clearTimeout(t);
-  }, [step]);
-
-  // Atajos de teclado: Escape vuelve atrás, Ctrl/Cmd+Enter avanza.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (busy) return;
-      const tgt = e.target as HTMLElement | null;
-      const tag = tgt?.tagName;
-      const isEditable =
-        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tgt?.isContentEditable;
-      if (e.key === "Escape") {
-        if (isEditable && (tgt as HTMLInputElement | HTMLTextAreaElement).value) {
-          // primero deja al input limpiar/cerrar dropdowns
-          return;
-        }
-        e.preventDefault();
-        goBack();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        goNext();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, canNext1, canNext2, busy]);
 
   return (
     <div ref={stepRef} className="space-y-5">
