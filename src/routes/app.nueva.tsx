@@ -415,6 +415,8 @@ function NuevaPage() {
     }
   };
 
+  upsertClienteRef.current = upsertCliente;
+
   const saveGestion = async (
     estado: "en-curso" | "enviado",
     opts?: { pedirPena?: boolean; waAbierto?: boolean },
