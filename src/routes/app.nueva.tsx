@@ -487,23 +487,15 @@ function NuevaPage() {
       return;
     }
     setPedirPena(true);
-    const msg = buildPenaMessage({
-      taller: settings.tallerName,
-      vehiculo, matricula,
-      piezas: piezas || (sub ? sub.name : "—"),
-      notas: descripcion,
-      fotos: fotosUrlsOk,
-    });
-    const url = buildWAUrl(PENA_PHONE, msg);
-    const win = window.open(url, "_blank");
     try {
-      await saveGestion("en-curso", { pedirPena: true, waAbierto: true });
+      // Guardamos la gestión marcada como pedido a Peña: aparecerá
+      // automáticamente en el panel de Grupo Peña (con sus fotos).
+      // No abrimos WhatsApp: el envío al panel es directo.
+      await saveGestion("en-curso", { pedirPena: true, waAbierto: false });
       navigate({ to: "/app/historial" });
     } catch (e: any) {
       console.error("saveGestion pena", e);
-      alert("No se pudo guardar la gestión: " + (e?.message || "error desconocido"));
-    } finally {
-      if (!win) window.location.href = url;
+      alert("No se pudo guardar el pedido a Peña: " + (e?.message || "error desconocido"));
     }
   };
 
