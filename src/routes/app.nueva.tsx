@@ -441,21 +441,20 @@ function NuevaPage() {
     if (!file) return;
     setOcrBusy(true);
     try {
-      const reader = new FileReader();
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
+      // Redimensionar/comprimir la imagen para no exceder límites del servidor
+      // y acelerar el OCR. Mantiene la lectura legible (max 1280px lado largo).
+      const dataUrl = await compressImageToDataUrl(file, 1280, 0.82);
       const res = await runOcr({ data: { imageDataUrl: dataUrl } });
-      if (res?.matricula) {
-        setMatricula(res.matricula);
+      const detected = (res?.matricula || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (detected) {
+        setMatricula(detected);
       } else {
-        alert("No se detectó ninguna matrícula en la imagen.");
+        alert("No se detectó ninguna matrícula en la imagen. Prueba con otra foto más cercana y nítida.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error al escanear la matrícula.");
+    } catch (err: any) {
+      console.error("onScanMatricula", err);
+      const msg = err?.message || err?.toString?.() || "error desconocido";
+      alert("Error al escanear la matrícula: " + msg);
     } finally {
       setOcrBusy(false);
     }
