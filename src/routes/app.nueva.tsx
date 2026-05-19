@@ -62,6 +62,36 @@ function loadDraft(): Draft {
   try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}") as Draft; } catch { return {}; }
 }
 
+async function compressImageToDataUrl(file: File, maxSide = 1280, quality = 0.82): Promise<string> {
+  const readDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(f);
+  });
+  if (typeof window === "undefined" || typeof document === "undefined") return readDataUrl(file);
+  try {
+    const dataUrl = await readDataUrl(file);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+      i.src = dataUrl;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return readDataUrl(file);
+  }
+}
+
 function NuevaPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -441,21 +471,20 @@ function NuevaPage() {
     if (!file) return;
     setOcrBusy(true);
     try {
-      const reader = new FileReader();
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
+      // Redimensionar/comprimir la imagen para no exceder límites del servidor
+      // y acelerar el OCR. Mantiene la lectura legible (max 1280px lado largo).
+      const dataUrl = await compressImageToDataUrl(file, 1280, 0.82);
       const res = await runOcr({ data: { imageDataUrl: dataUrl } });
-      if (res?.matricula) {
-        setMatricula(res.matricula);
+      const detected = (res?.matricula || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (detected) {
+        setMatricula(detected);
       } else {
-        alert("No se detectó ninguna matrícula en la imagen.");
+        alert("No se detectó ninguna matrícula en la imagen. Prueba con otra foto más cercana y nítida.");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error al escanear la matrícula.");
+    } catch (err: any) {
+      console.error("onScanMatricula", err);
+      const msg = err?.message || err?.toString?.() || "error desconocido";
+      alert("Error al escanear la matrícula: " + msg);
     } finally {
       setOcrBusy(false);
     }
