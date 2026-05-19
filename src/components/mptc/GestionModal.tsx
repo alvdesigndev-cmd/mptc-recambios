@@ -46,15 +46,10 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   };
 
   const pedirPena = async () => {
-    const msg = buildPenaMessage({
-      taller: g.taller_nombre || "",
-      vehiculo: g.vehiculo || "",
-      matricula: g.matricula || "",
-      piezas: g.piezas || g.subfamilia || "—",
-      notas: g.descripcion || "",
-    });
+    // Enviamos directamente al panel de Grupo Peña (sin abrir WhatsApp).
+    // La gestión ya contiene toda la información y las fotos adjuntas,
+    // que se mostrarán en el panel al marcarla como pedido a Peña.
     await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
-    window.open(buildWAUrl(PENA_PHONE, msg), "_blank", "noopener,noreferrer");
     onChanged();
   };
 
