@@ -347,13 +347,47 @@ function PedidoModal({
           </div>
         )}
 
+        {kind === "d" && (
+          <div className="mt-5">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Estado del pedido
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { v: "aceptado",    label: "Aceptar" },
+                { v: "preparacion", label: "En preparación" },
+                { v: "enviado",     label: "Enviado" },
+                { v: "entregado",   label: "Entregado" },
+              ].map((b) => {
+                const active = item.estado === b.v;
+                return (
+                  <button
+                    key={b.v}
+                    onClick={() => setEstadoDirecto(b.v)}
+                    className={
+                      "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold active:scale-95 " +
+                      (active
+                        ? "bg-success text-success-foreground"
+                        : "border border-border-strong bg-surface hover:bg-surface-2")
+                    }
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button onClick={wa} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
             <Send className="h-4 w-4" /> WhatsApp taller
           </button>
-          <button onClick={marcarPreparado} className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-success-foreground active:scale-95">
-            <CheckCheck className="h-4 w-4" /> Marcar preparado
-          </button>
+          {kind === "g" && (
+            <button onClick={marcarPreparado} className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-success-foreground active:scale-95">
+              <CheckCheck className="h-4 w-4" /> Marcar preparado
+            </button>
+          )}
         </div>
       </div>
     </div>
