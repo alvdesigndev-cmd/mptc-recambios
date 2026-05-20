@@ -229,8 +229,16 @@ function PedidoCard({
   taller: string | null; matricula: string | null; vehiculo: string | null;
   piezas: string; estado: string; created_at: string; onClick: () => void;
 }) {
+  const dirMeta: Record<string, { label: string; cls: string }> = {
+    pendiente:   { label: "Pendiente",    cls: "bg-warning/15 text-warning" },
+    aceptado:    { label: "Aceptado",     cls: "bg-accent/15 text-accent" },
+    preparacion: { label: "Preparación",  cls: "bg-warning/15 text-warning" },
+    enviado:     { label: "Enviado",      cls: "bg-primary/15 text-primary" },
+    entregado:   { label: "Entregado",    cls: "bg-success/15 text-success" },
+    preparado:   { label: "Preparado",    cls: "bg-success/15 text-success" },
+  };
   const meta = kind === "directo"
-    ? { label: estado === "preparado" ? "Preparado" : "Directo", cls: estado === "preparado" ? "bg-success/15 text-success" : "bg-accent/15 text-accent" }
+    ? (dirMeta[estado] || { label: estado, cls: "bg-surface-2 text-text-2" })
     : estadoBadge(estado);
   return (
     <button
