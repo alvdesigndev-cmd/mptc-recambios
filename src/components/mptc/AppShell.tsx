@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Bell, Home, History, Users, Settings, Plus, LogOut } from "lucide-react";
+import { Home, History, Users, Settings, Plus, LogOut } from "lucide-react";
+import { NotificationsBell } from "@/components/mptc/NotificationsBell";
 import { useEffect, useState } from "react";
 import { clearSettings, loadSettings, type AppSettings } from "@/lib/mptc/profiles";
 
