@@ -272,11 +272,16 @@ function PedidoModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const setEstadoDirecto = async (estado: string) => {
+    await supabase.from("pedidos_pena").update({ estado }).eq("id", item.id);
+    onChanged();
+  };
+
   const marcarPreparado = async () => {
     if (kind === "g") {
       await supabase.from("gestiones").update({ estado: "completado" }).eq("id", item.id);
     } else {
-      await supabase.from("pedidos_pena").update({ estado: "preparado" }).eq("id", item.id);
+      await supabase.from("pedidos_pena").update({ estado: "entregado" }).eq("id", item.id);
     }
     onChanged();
   };
