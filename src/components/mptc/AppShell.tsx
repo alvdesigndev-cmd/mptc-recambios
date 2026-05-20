@@ -58,13 +58,7 @@ export function AppShell({ children }: Props) {
           >
             {settings.role === "taller-1" ? "Taller 1" : settings.role === "taller-2" ? "Taller 2" : "Grupo Peña"}
           </span>
-          <button
-            type="button"
-            className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-            aria-label="Notificaciones"
-          >
-            <Bell className="h-5 w-5" />
-          </button>
+          {!isPena && <NotificationsBell tallerId={settings.tallerId} />}
           <button
             type="button"
             onClick={onExit}
