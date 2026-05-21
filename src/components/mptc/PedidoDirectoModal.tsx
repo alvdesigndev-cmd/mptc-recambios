@@ -224,16 +224,6 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       // Si hay piezas vacías pero hay transcripción del audio, úsala como piezas.
       const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
 
-      const msg = buildPenaMessage({
-        taller: settings.tallerName,
-        vehiculo: f.vehiculo,
-        matricula: f.matricula,
-        piezas: piezasFinal,
-        notas: f.notas,
-      });
-      const url = buildWAUrl(PENA_PHONE, msg);
-      const win = window.open(url, "_blank");
-
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
