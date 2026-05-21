@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
