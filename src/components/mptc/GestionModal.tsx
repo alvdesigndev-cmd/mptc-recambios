@@ -51,7 +51,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     // La gestión ya contiene toda la información y las fotos adjuntas,
     // que se mostrarán en el panel al marcarla como pedido a Peña.
     await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
+    toast.success("El pedido se ha realizado correctamente");
     onChanged();
+    onClose();
   };
 
   return (
