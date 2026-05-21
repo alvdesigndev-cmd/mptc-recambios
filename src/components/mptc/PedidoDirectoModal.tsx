@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, X, Truck, Mic, Square, Share2, Download, Trash2, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { buildWAUrl } from "@/lib/mptc/wa";
-import { buildPenaMessage } from "@/lib/mptc/messages";
-import { PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
+import { toast } from "sonner";
+import { type AppSettings } from "@/lib/mptc/profiles";
 import { MicButton } from "@/components/mptc/MicButton";
 
 interface Props {
