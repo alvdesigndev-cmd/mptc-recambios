@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, X, Truck, Mic, Square, Share2, Download, Trash2, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { buildWAUrl } from "@/lib/mptc/wa";
-import { buildPenaMessage } from "@/lib/mptc/messages";
-import { PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
+import { toast } from "sonner";
+import { type AppSettings } from "@/lib/mptc/profiles";
 import { MicButton } from "@/components/mptc/MicButton";
 
 interface Props {
@@ -225,16 +224,6 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       // Si hay piezas vacías pero hay transcripción del audio, úsala como piezas.
       const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
 
-      const msg = buildPenaMessage({
-        taller: settings.tallerName,
-        vehiculo: f.vehiculo,
-        matricula: f.matricula,
-        piezas: piezasFinal,
-        notas: f.notas,
-      });
-      const url = buildWAUrl(PENA_PHONE, msg);
-      const win = window.open(url, "_blank");
-
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
@@ -247,9 +236,9 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         transcripcion,
       });
       if (error) throw error;
+      toast.success("El pedido se ha realizado correctamente");
       onSaved?.();
       onClose();
-      if (!win) window.location.href = url;
     } catch (e: any) {
       console.error("pedidos_pena insert", e);
       alert("No se pudo guardar el pedido: " + (e?.message || "error desconocido"));
