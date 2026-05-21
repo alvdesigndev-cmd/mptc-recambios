@@ -236,9 +236,9 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         transcripcion,
       });
       if (error) throw error;
+      toast.success("El pedido se ha realizado correctamente");
       onSaved?.();
       onClose();
-      if (!win) window.location.href = url;
     } catch (e: any) {
       console.error("pedidos_pena insert", e);
       alert("No se pudo guardar el pedido: " + (e?.message || "error desconocido"));
