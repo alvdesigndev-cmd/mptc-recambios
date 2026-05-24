@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
+import { GestionModal } from "@/components/mptc/GestionModal";
+import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/clientes")({
   component: ClientesPage,
@@ -10,6 +12,7 @@ export const Route = createFileRoute("/app/clientes")({
 
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { MicButton } from "@/components/mptc/MicButton";
+
 
 interface Cliente {
   id: string;
@@ -257,6 +260,9 @@ function ClienteModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historial, setHistorial] = useState<GestionRow[] | null>(null);
+  const [openGestion, setOpenGestion] = useState<Gestion | null>(null);
+  const [historialKey, setHistorialKey] = useState(0);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -276,7 +282,12 @@ function ClienteModal({
       if (!cancelled) setHistorial((data as GestionRow[]) || []);
     })();
     return () => { cancelled = true; };
-  }, [cliente]);
+  }, [cliente, historialKey]);
+
+  const openGestionById = async (id: string) => {
+    const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
+    if (data) setOpenGestion(data as Gestion);
+  };
 
 
   const remove = async () => {
@@ -317,6 +328,7 @@ function ClienteModal({
   };
 
   return (
+    <>
     <ModalShell onClose={onClose} title={editing ? "Editar cliente" : (cliente.nombre || "Cliente")}>
       {editing ? (
         <div className="space-y-3">
@@ -372,25 +384,28 @@ function ClienteModal({
                   });
                   const titulo = [g.subfamilia, g.categoria].filter(Boolean).join(" · ") || "Gestión";
                   return (
-                    <li
-                      key={g.id}
-                      className="rounded-xl border border-border bg-surface-2 p-3"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
-                          {g.estado}
-                        </span>
-                        {g.importe && (
-                          <span className="text-muted-foreground">{g.importe} €</span>
+                    <li key={g.id}>
+                      <button
+                        type="button"
+                        onClick={() => openGestionById(g.id)}
+                        className="block w-full rounded-xl border border-border bg-surface-2 p-3 text-left hover:bg-surface-3"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
+                            {g.estado}
+                          </span>
+                          {g.importe && (
+                            <span className="text-muted-foreground">{g.importe} €</span>
+                          )}
+                        </div>
+                        {g.descripcion && (
+                          <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
                         )}
-                      </div>
-                      {g.descripcion && (
-                        <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
-                      )}
+                      </button>
                     </li>
                   );
                 })}
@@ -431,6 +446,12 @@ function ClienteModal({
         )}
       </div>
     </ModalShell>
+    <GestionModal
+      gestion={openGestion}
+      onClose={() => setOpenGestion(null)}
+      onChanged={() => { setOpenGestion(null); setHistorialKey((k) => k + 1); onChanged(); }}
+    />
+    </>
   );
 }
 
