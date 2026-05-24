@@ -241,7 +241,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       onClose();
     } catch (e: any) {
       console.error("pedidos_pena insert", e);
-      alert("No se pudo guardar el pedido: " + (e?.message || "error desconocido"));
+      toast.error("No se pudo guardar el pedido. Inténtalo de nuevo.", {
+        description: e?.message || "Error de conexión con el servidor",
+      });
+      // El modal se mantiene abierto para reintentar
     } finally {
       setSaving(false);
     }
