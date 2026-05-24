@@ -443,13 +443,12 @@ function NuevaPage() {
       nombre, telefono: telN, matricula: matN, vehiculo, km,
       ultima_gestion: new Date().toISOString(),
     };
+    // No incrementamos total_gestiones: el total se calcula dinámicamente
+    // desde la tabla `gestiones` (ver app.clientes.tsx) para evitar duplicados.
     if (existing?.id) {
-      await supabase
-        .from("clientes")
-        .update({ ...payload, total_gestiones: (existing.total_gestiones || 0) + 1 })
-        .eq("id", existing.id);
+      await supabase.from("clientes").update(payload).eq("id", existing.id);
     } else {
-      await supabase.from("clientes").insert({ ...payload, total_gestiones: 1 });
+      await supabase.from("clientes").insert({ ...payload, total_gestiones: 0 });
     }
   };
 

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save } from "lucide-react";
+import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 
@@ -13,6 +13,7 @@ import { MicButton } from "@/components/mptc/MicButton";
 
 interface Cliente {
   id: string;
+  taller_id: string;
   nombre: string | null;
   telefono: string | null;
   matricula: string | null;
@@ -22,6 +23,21 @@ interface Cliente {
   total_gestiones: number;
   ultima_gestion: string | null;
   created_at: string;
+}
+
+
+interface GestionRow {
+  id: string;
+  created_at: string;
+  matricula: string | null;
+  cliente_telefono: string | null;
+  cliente_nombre: string | null;
+  vehiculo: string | null;
+  categoria: string | null;
+  subfamilia: string | null;
+  estado: string;
+  importe: string | null;
+  descripcion: string | null;
 }
 
 function ClientesPage() {
@@ -34,15 +50,37 @@ function ClientesPage() {
 
   const load = useCallback(async () => {
     if (!settings) return;
-    const { data } = await supabase
-      .from("clientes")
-      .select("*")
-      .eq("taller_id", settings.tallerId)
-      .order("ultima_gestion", { ascending: false, nullsFirst: false });
-    setItems((data as Cliente[]) || []);
+    const [{ data: cs }, { data: gs }] = await Promise.all([
+      supabase
+        .from("clientes")
+        .select("*")
+        .eq("taller_id", settings.tallerId),
+      supabase
+        .from("gestiones")
+        .select("id,matricula,cliente_telefono,created_at")
+        .eq("taller_id", settings.tallerId),
+    ]);
+    const gestiones = (gs as { matricula: string | null; cliente_telefono: string | null; created_at: string }[]) || [];
+    const list = ((cs as Cliente[]) || []).map((c) => {
+      const matN = c.matricula ? normalizeMatricula(c.matricula) : "";
+      const telN = c.telefono ? normalizeTelefono(c.telefono) : "";
+      const matches = gestiones.filter((g) => {
+        const gm = g.matricula ? normalizeMatricula(g.matricula) : "";
+        const gt = g.cliente_telefono ? normalizeTelefono(g.cliente_telefono) : "";
+        return (matN && gm === matN) || (telN && gt === telN);
+      });
+      const ultima = matches.reduce<string | null>(
+        (acc, g) => (!acc || g.created_at > acc ? g.created_at : acc),
+        null,
+      );
+      return { ...c, total_gestiones: matches.length, ultima_gestion: ultima ?? c.ultima_gestion };
+    });
+    list.sort((a, b) => (b.ultima_gestion || "").localeCompare(a.ultima_gestion || ""));
+    setItems(list);
   }, [settings]);
 
   useEffect(() => { load(); }, [load]);
+
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -218,6 +256,28 @@ function ClienteModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historial, setHistorial] = useState<GestionRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const matN = cliente.matricula ? normalizeMatricula(cliente.matricula) : "";
+      const telN = cliente.telefono ? normalizeTelefono(cliente.telefono) : "";
+      const filters: string[] = [];
+      if (matN) filters.push(`matricula.eq.${matN}`);
+      if (telN) filters.push(`cliente_telefono.eq.${telN}`);
+      if (filters.length === 0) { setHistorial([]); return; }
+      const { data } = await supabase
+        .from("gestiones")
+        .select("id,created_at,matricula,cliente_telefono,cliente_nombre,vehiculo,categoria,subfamilia,estado,importe,descripcion")
+        .eq("taller_id", cliente.taller_id)
+        .or(filters.join(","))
+        .order("created_at", { ascending: false });
+      if (!cancelled) setHistorial((data as GestionRow[]) || []);
+    })();
+    return () => { cancelled = true; };
+  }, [cliente]);
+
 
   const remove = async () => {
     if (!confirm("¿Eliminar este cliente? (no afecta a sus gestiones)")) return;
@@ -282,13 +342,61 @@ function ClienteModal({
           {error && <p className="text-xs font-semibold text-destructive">{error}</p>}
         </div>
       ) : (
-        <div className="space-y-3 text-sm">
-          <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
-          <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
-          <Row label="Vehículo" value={cliente.vehiculo || "—"} />
-          <Row label="Km" value={cliente.km || "—"} />
-          <Row label="Gestiones" value={String(cliente.total_gestiones)} />
-          {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+        <div className="space-y-4 text-sm">
+          <div className="space-y-3">
+            <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
+            <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
+            <Row label="Vehículo" value={cliente.vehiculo || "—"} />
+            <Row label="Km" value={cliente.km || "—"} />
+            {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <History className="h-3.5 w-3.5" />
+              Historial ({historial?.length ?? "…"})
+            </div>
+            {historial === null ? (
+              <div className="rounded-xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+                Cargando…
+              </div>
+            ) : historial.length === 0 ? (
+              <div className="rounded-xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+                Aún no hay gestiones para este cliente.
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {historial.map((g) => {
+                  const fecha = new Date(g.created_at).toLocaleDateString("es-ES", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  });
+                  const titulo = [g.subfamilia, g.categoria].filter(Boolean).join(" · ") || "Gestión";
+                  return (
+                    <li
+                      key={g.id}
+                      className="rounded-xl border border-border bg-surface-2 p-3"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
+                          {g.estado}
+                        </span>
+                        {g.importe && (
+                          <span className="text-muted-foreground">{g.importe} €</span>
+                        )}
+                      </div>
+                      {g.descripcion && (
+                        <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       )}
       <div className="mt-5 flex flex-wrap justify-end gap-2">
