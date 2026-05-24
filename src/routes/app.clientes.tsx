@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save } from "lucide-react";
+import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 
@@ -24,6 +24,20 @@ interface Cliente {
   created_at: string;
 }
 
+interface GestionRow {
+  id: string;
+  created_at: string;
+  matricula: string | null;
+  cliente_telefono: string | null;
+  cliente_nombre: string | null;
+  vehiculo: string | null;
+  categoria: string | null;
+  subfamilia: string | null;
+  estado: string;
+  importe: string | null;
+  descripcion: string | null;
+}
+
 function ClientesPage() {
   const settings = useSettings({ requireTaller: true });
   const navigate = useNavigate();
@@ -34,15 +48,37 @@ function ClientesPage() {
 
   const load = useCallback(async () => {
     if (!settings) return;
-    const { data } = await supabase
-      .from("clientes")
-      .select("*")
-      .eq("taller_id", settings.tallerId)
-      .order("ultima_gestion", { ascending: false, nullsFirst: false });
-    setItems((data as Cliente[]) || []);
+    const [{ data: cs }, { data: gs }] = await Promise.all([
+      supabase
+        .from("clientes")
+        .select("*")
+        .eq("taller_id", settings.tallerId),
+      supabase
+        .from("gestiones")
+        .select("id,matricula,cliente_telefono,created_at")
+        .eq("taller_id", settings.tallerId),
+    ]);
+    const gestiones = (gs as { matricula: string | null; cliente_telefono: string | null; created_at: string }[]) || [];
+    const list = ((cs as Cliente[]) || []).map((c) => {
+      const matN = c.matricula ? normalizeMatricula(c.matricula) : "";
+      const telN = c.telefono ? normalizeTelefono(c.telefono) : "";
+      const matches = gestiones.filter((g) => {
+        const gm = g.matricula ? normalizeMatricula(g.matricula) : "";
+        const gt = g.cliente_telefono ? normalizeTelefono(g.cliente_telefono) : "";
+        return (matN && gm === matN) || (telN && gt === telN);
+      });
+      const ultima = matches.reduce<string | null>(
+        (acc, g) => (!acc || g.created_at > acc ? g.created_at : acc),
+        null,
+      );
+      return { ...c, total_gestiones: matches.length, ultima_gestion: ultima ?? c.ultima_gestion };
+    });
+    list.sort((a, b) => (b.ultima_gestion || "").localeCompare(a.ultima_gestion || ""));
+    setItems(list);
   }, [settings]);
 
   useEffect(() => { load(); }, [load]);
+
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
