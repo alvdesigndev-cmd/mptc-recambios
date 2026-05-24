@@ -342,13 +342,61 @@ function ClienteModal({
           {error && <p className="text-xs font-semibold text-destructive">{error}</p>}
         </div>
       ) : (
-        <div className="space-y-3 text-sm">
-          <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
-          <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
-          <Row label="Vehículo" value={cliente.vehiculo || "—"} />
-          <Row label="Km" value={cliente.km || "—"} />
-          <Row label="Gestiones" value={String(cliente.total_gestiones)} />
-          {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+        <div className="space-y-4 text-sm">
+          <div className="space-y-3">
+            <Row label="Teléfono" value={cliente.telefono ? normalizeTelefono(cliente.telefono) : "—"} />
+            <Row label="Matrícula" value={cliente.matricula ? normalizeMatricula(cliente.matricula) : "—"} />
+            <Row label="Vehículo" value={cliente.vehiculo || "—"} />
+            <Row label="Km" value={cliente.km || "—"} />
+            {cliente.notas && <Row label="Notas" value={cliente.notas} multiline />}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <History className="h-3.5 w-3.5" />
+              Historial ({historial?.length ?? "…"})
+            </div>
+            {historial === null ? (
+              <div className="rounded-xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+                Cargando…
+              </div>
+            ) : historial.length === 0 ? (
+              <div className="rounded-xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+                Aún no hay gestiones para este cliente.
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {historial.map((g) => {
+                  const fecha = new Date(g.created_at).toLocaleDateString("es-ES", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  });
+                  const titulo = [g.subfamilia, g.categoria].filter(Boolean).join(" · ") || "Gestión";
+                  return (
+                    <li
+                      key={g.id}
+                      className="rounded-xl border border-border bg-surface-2 p-3"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
+                          {g.estado}
+                        </span>
+                        {g.importe && (
+                          <span className="text-muted-foreground">{g.importe} €</span>
+                        )}
+                      </div>
+                      {g.descripcion && (
+                        <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       )}
       <div className="mt-5 flex flex-wrap justify-end gap-2">
