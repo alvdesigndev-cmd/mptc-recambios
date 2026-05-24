@@ -282,7 +282,12 @@ function ClienteModal({
       if (!cancelled) setHistorial((data as GestionRow[]) || []);
     })();
     return () => { cancelled = true; };
-  }, [cliente]);
+  }, [cliente, historialKey]);
+
+  const openGestionById = async (id: string) => {
+    const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
+    if (data) setOpenGestion(data as Gestion);
+  };
 
 
   const remove = async () => {
