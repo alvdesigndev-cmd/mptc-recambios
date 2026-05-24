@@ -270,7 +270,10 @@ function ClienteModal({
       const { data } = await supabase
         .from("gestiones")
         .select("id,created_at,matricula,cliente_telefono,cliente_nombre,vehiculo,categoria,subfamilia,estado,importe,descripcion")
-        .eq("taller_id", cliente.id ? (cliente as Cliente & { taller_id?: string }).taller_id || "" : "")
+      const { data } = await supabase
+        .from("gestiones")
+        .select("id,created_at,matricula,cliente_telefono,cliente_nombre,vehiculo,categoria,subfamilia,estado,importe,descripcion")
+        .eq("taller_id", cliente.taller_id)
         .or(filters.join(","))
         .order("created_at", { ascending: false });
       if (!cancelled) setHistorial((data as GestionRow[]) || []);
