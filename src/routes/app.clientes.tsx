@@ -383,25 +383,28 @@ function ClienteModal({
                   });
                   const titulo = [g.subfamilia, g.categoria].filter(Boolean).join(" · ") || "Gestión";
                   return (
-                    <li
-                      key={g.id}
-                      className="rounded-xl border border-border bg-surface-2 p-3"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
-                        <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
-                          {g.estado}
-                        </span>
-                        {g.importe && (
-                          <span className="text-muted-foreground">{g.importe} €</span>
+                    <li key={g.id}>
+                      <button
+                        type="button"
+                        onClick={() => openGestionById(g.id)}
+                        className="block w-full rounded-xl border border-border bg-surface-2 p-3 text-left hover:bg-surface-3"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
+                            {g.estado}
+                          </span>
+                          {g.importe && (
+                            <span className="text-muted-foreground">{g.importe} €</span>
+                          )}
+                        </div>
+                        {g.descripcion && (
+                          <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
                         )}
-                      </div>
-                      {g.descripcion && (
-                        <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
-                      )}
+                      </button>
                     </li>
                   );
                 })}
