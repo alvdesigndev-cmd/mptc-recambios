@@ -328,6 +328,7 @@ function ClienteModal({
   };
 
   return (
+    <>
     <ModalShell onClose={onClose} title={editing ? "Editar cliente" : (cliente.nombre || "Cliente")}>
       {editing ? (
         <div className="space-y-3">
