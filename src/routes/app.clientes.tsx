@@ -13,6 +13,7 @@ import { MicButton } from "@/components/mptc/MicButton";
 
 interface Cliente {
   id: string;
+  taller_id: string;
   nombre: string | null;
   telefono: string | null;
   matricula: string | null;
@@ -23,6 +24,7 @@ interface Cliente {
   ultima_gestion: string | null;
   created_at: string;
 }
+
 
 interface GestionRow {
   id: string;
