@@ -349,7 +349,7 @@ function NuevaPage() {
 
   if (!settings) return null;
 
-  const pickCliente = (c: ClienteRow) => {
+  const pickCliente = (c: ClienteRow, opts?: { advance?: boolean }) => {
     setNombre(c.nombre || "");
     setTelefono(c.telefono || "");
     setMatricula(c.matricula || "");
@@ -358,6 +358,10 @@ function NuevaPage() {
     setShowSuggest(false);
     setBuscador("");
     setClienteBloqueado(c);
+    // Cliente ya guardado: saltar directamente al paso 2 (avería + fotos).
+    if (opts?.advance !== false) {
+      setStep(2);
+    }
   };
 
   const desbloquearCliente = () => {
