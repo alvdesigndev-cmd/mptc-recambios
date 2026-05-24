@@ -113,6 +113,8 @@ function NuevaPage() {
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
   const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(draft0.clienteBloqueado ?? null);
+  const [inlineSuggest, setInlineSuggest] = useState<ClienteRow[]>([]);
+  const [inlineFocus, setInlineFocus] = useState<"nombre" | "matricula" | null>(null);
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(draft0.categoria ?? null);
