@@ -213,6 +213,38 @@ function NuevaPage() {
     };
   }, [buscador, settings]);
 
+  // Autocompletado inline en los campos de nombre y matrícula.
+  useEffect(() => {
+    if (!settings || !inlineFocus || clienteBloqueado) {
+      setInlineSuggest([]);
+      return;
+    }
+    const raw = (inlineFocus === "nombre" ? nombre : matricula).trim();
+    if (raw.length < 2) {
+      setInlineSuggest([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const qn = raw.replace(/[\s\-_.]/g, "");
+      const filter =
+        inlineFocus === "nombre"
+          ? `nombre.ilike.%${raw}%`
+          : `matricula.ilike.%${raw}%${qn && qn !== raw ? `,matricula.ilike.%${qn}%` : ""}`;
+      const { data } = await supabase
+        .from("clientes")
+        .select("id,nombre,telefono,matricula,vehiculo,km")
+        .eq("taller_id", settings.tallerId)
+        .or(filter)
+        .limit(8);
+      if (!cancelled) setInlineSuggest((data as ClienteRow[]) || []);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [inlineFocus, nombre, matricula, settings, clienteBloqueado]);
+
   const { data: FAMILIES_DATA = [] } = useFamilias();
   const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, categoria), [FAMILIES_DATA, categoria]);
   const sub = useMemo(() => findSubfamilyBySlug(FAMILIES_DATA, categoria, subfamilia), [FAMILIES_DATA, categoria, subfamilia]);
