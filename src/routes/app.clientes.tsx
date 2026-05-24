@@ -260,6 +260,9 @@ function ClienteModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historial, setHistorial] = useState<GestionRow[] | null>(null);
+  const [openGestion, setOpenGestion] = useState<Gestion | null>(null);
+  const [historialKey, setHistorialKey] = useState(0);
+
 
   useEffect(() => {
     let cancelled = false;
