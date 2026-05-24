@@ -113,6 +113,8 @@ function NuevaPage() {
   const [showSuggest, setShowSuggest] = useState(false);
   const [buscador, setBuscador] = useState("");
   const [clienteBloqueado, setClienteBloqueado] = useState<ClienteRow | null>(draft0.clienteBloqueado ?? null);
+  const [inlineSuggest, setInlineSuggest] = useState<ClienteRow[]>([]);
+  const [inlineFocus, setInlineFocus] = useState<"nombre" | "matricula" | null>(null);
 
   // Step 2 — avería
   const [categoria, setCategoria] = useState<string | null>(draft0.categoria ?? null);
@@ -210,6 +212,38 @@ function NuevaPage() {
       clearTimeout(t);
     };
   }, [buscador, settings]);
+
+  // Autocompletado inline en los campos de nombre y matrícula.
+  useEffect(() => {
+    if (!settings || !inlineFocus || clienteBloqueado) {
+      setInlineSuggest([]);
+      return;
+    }
+    const raw = (inlineFocus === "nombre" ? nombre : matricula).trim();
+    if (raw.length < 2) {
+      setInlineSuggest([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const qn = raw.replace(/[\s\-_.]/g, "");
+      const filter =
+        inlineFocus === "nombre"
+          ? `nombre.ilike.%${raw}%`
+          : `matricula.ilike.%${raw}%${qn && qn !== raw ? `,matricula.ilike.%${qn}%` : ""}`;
+      const { data } = await supabase
+        .from("clientes")
+        .select("id,nombre,telefono,matricula,vehiculo,km")
+        .eq("taller_id", settings.tallerId)
+        .or(filter)
+        .limit(8);
+      if (!cancelled) setInlineSuggest((data as ClienteRow[]) || []);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [inlineFocus, nombre, matricula, settings, clienteBloqueado]);
 
   const { data: FAMILIES_DATA = [] } = useFamilias();
   const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, categoria), [FAMILIES_DATA, categoria]);
@@ -788,12 +822,38 @@ function NuevaPage() {
           {/* Datos cliente */}
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <Field label="Nombre del cliente">
-              <input
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                placeholder="Ej. Juan García"
-                className={inputCls}
-              />
+              <div className="relative">
+                <input
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  onFocus={() => setInlineFocus("nombre")}
+                  onBlur={() => setTimeout(() => setInlineFocus((f) => (f === "nombre" ? null : f)), 150)}
+                  placeholder="Ej. Juan García"
+                  className={inputCls}
+                  autoComplete="off"
+                />
+                {inlineFocus === "nombre" && inlineSuggest.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-border-strong bg-surface shadow-lg">
+                    {inlineSuggest.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickCliente(c, { advance: false })}
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-surface-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold">{c.nombre || "(sin nombre)"}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {[c.matricula, c.vehiculo, c.telefono].filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-[11px] text-primary">Usar</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Teléfono">
@@ -806,36 +866,63 @@ function NuevaPage() {
                 />
               </Field>
               <Field label="Matrícula">
-                <div className="flex gap-2">
-                  <input
-                    value={matricula}
-                    onChange={(e) => setMatricula(e.target.value.toUpperCase())}
-                    placeholder="1234 ABC"
-                    className={inputCls + " font-mono uppercase"}
-                  />
-                  <label
-                    title="Escanear matrícula con la cámara"
-                    className={
-                      "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
-                      (ocrBusy ? "pointer-events-none opacity-60" : "")
-                    }
-                  >
-                    {ocrBusy ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ScanLine className="h-4 w-4" />
-                    )}
+                <div className="relative">
+                  <div className="flex gap-2">
                     <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
+                      value={matricula}
+                      onChange={(e) => setMatricula(e.target.value.toUpperCase())}
+                      onFocus={() => setInlineFocus("matricula")}
+                      onBlur={() => setTimeout(() => setInlineFocus((f) => (f === "matricula" ? null : f)), 150)}
+                      placeholder="1234 ABC"
+                      className={inputCls + " font-mono uppercase"}
+                      autoComplete="off"
                     />
-                  </label>
+                    <label
+                      title="Escanear matrícula con la cámara"
+                      className={
+                        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
+                        (ocrBusy ? "pointer-events-none opacity-60" : "")
+                      }
+                    >
+                      {ocrBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ScanLine className="h-4 w-4" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  </div>
+                  {inlineFocus === "matricula" && inlineSuggest.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-border-strong bg-surface shadow-lg">
+                      {inlineSuggest.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => pickCliente(c, { advance: false })}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-surface-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate font-mono text-sm font-semibold uppercase">{c.matricula || "—"}</div>
+                            <div className="truncate text-xs text-muted-foreground">
+                              {[c.nombre, c.vehiculo].filter(Boolean).join(" · ")}
+                            </div>
+                          </div>
+                          <span className="shrink-0 text-[11px] text-primary">Usar</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Field>
             </div>
+
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Vehículo">
