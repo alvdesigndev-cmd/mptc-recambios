@@ -445,6 +445,12 @@ function ClienteModal({
         )}
       </div>
     </ModalShell>
+    <GestionModal
+      gestion={openGestion}
+      onClose={() => setOpenGestion(null)}
+      onChanged={() => { setOpenGestion(null); setHistorialKey((k) => k + 1); onChanged(); }}
+    />
+    </>
   );
 }
 
