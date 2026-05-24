@@ -254,6 +254,28 @@ function ClienteModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historial, setHistorial] = useState<GestionRow[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const matN = cliente.matricula ? normalizeMatricula(cliente.matricula) : "";
+      const telN = cliente.telefono ? normalizeTelefono(cliente.telefono) : "";
+      const filters: string[] = [];
+      if (matN) filters.push(`matricula.eq.${matN}`);
+      if (telN) filters.push(`cliente_telefono.eq.${telN}`);
+      if (filters.length === 0) { setHistorial([]); return; }
+      const { data } = await supabase
+        .from("gestiones")
+        .select("id,created_at,matricula,cliente_telefono,cliente_nombre,vehiculo,categoria,subfamilia,estado,importe,descripcion")
+        .eq("taller_id", cliente.id ? (cliente as Cliente & { taller_id?: string }).taller_id || "" : "")
+        .or(filters.join(","))
+        .order("created_at", { ascending: false });
+      if (!cancelled) setHistorial((data as GestionRow[]) || []);
+    })();
+    return () => { cancelled = true; };
+  }, [cliente]);
+
 
   const remove = async () => {
     if (!confirm("¿Eliminar este cliente? (no afecta a sus gestiones)")) return;
