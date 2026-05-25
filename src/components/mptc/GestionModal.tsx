@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 
 interface Props {
@@ -38,6 +39,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
+  // Tras guardar averías nuevas, guardamos un resumen para ofrecer los avisos
+  // (cliente / Peña) en lugar de cerrar el modal automáticamente.
+  const [avisoPendiente, setAvisoPendiente] = useState<{
+    nuevas: { texto: string; importe: string }[];
+    importeTotal: string;
+  } | null>(null);
+  const [clienteNotificado, setClienteNotificado] = useState(false);
+  const [penaNotificado, setPenaNotificado] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -60,6 +69,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     if (gestion) {
       setEditing(false);
       setNuevas([]);
+      setAvisoPendiente(null);
+      setClienteNotificado(false);
+      setPenaNotificado(false);
       setForm({
         subfamilia: gestion.subfamilia || gestion.categoria || "",
         importe: gestion.importe || "",
@@ -123,6 +135,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     let mergedDesc = form.descripcion;
     let mergedImporte = form.importe;
     const nuevasFotos = nuevas.flatMap((n) => n.fotos);
+    // Resumen legible (familia / subfamilia) para los avisos posteriores.
+    const resumenNuevas = validas.map((n) => {
+      const fam = familias.find((f) => f.id === n.familia_id);
+      const txt = fam ? `${fam.nombre} / ${n.subfamilia.trim()}` : n.subfamilia.trim();
+      return { texto: txt, importe: n.importe.trim() };
+    });
     if (validas.length) {
       const subs = validas.map((n) => n.subfamilia.trim());
       mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
@@ -152,7 +170,20 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     setEditing(false);
     setNuevas([]);
     onChanged();
-    onClose();
+    // Si se han añadido averías nuevas, ofrecemos avisar al cliente y/o a Peña
+    // antes de cerrar el modal. Si no hubo, cerramos como antes.
+    if (resumenNuevas.length) {
+      // Actualizamos la copia local de la gestión para que los mensajes usen
+      // los datos nuevos (importe, subfamilia agregada, etc.).
+      g.subfamilia = mergedSub;
+      g.importe = mergedImporte;
+      g.descripcion = mergedDesc;
+      setAvisoPendiente({ nuevas: resumenNuevas, importeTotal: mergedImporte });
+      setClienteNotificado(false);
+      setPenaNotificado(false);
+    } else {
+      onClose();
+    }
   };
 
   const remove = async () => {
@@ -177,6 +208,53 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     onChanged();
     onClose();
   };
+
+  // Mensaje corto de novedad para el cliente (cuando se añade una avería nueva).
+  const notificarCliente = () => {
+    if (!g.cliente_telefono || !avisoPendiente) return;
+    const url = typeof window !== "undefined"
+      ? `${window.location.origin}/confirmar/${g.confirm_token || ""}`
+      : "";
+    const lista = avisoPendiente.nuevas
+      .map((n) => `• ${n.texto}${n.importe ? ` — ${n.importe} €` : ""}`)
+      .join("\n");
+    const importeTxt = avisoPendiente.importeTotal || g.importe || "—";
+    const msg =
+      `Hola ${g.cliente_nombre || ""} 👋\n\n` +
+      `Novedad en tu ${g.vehiculo || ""} (${g.matricula || ""}): se ha añadido a tu gestión:\n${lista}\n\n` +
+      `💰 Nuevo importe total: *${importeTxt} €* (IVA incluido).\n\n` +
+      `✅ Confirma aquí: <${url}>`;
+    window.open(buildWAUrl(g.cliente_telefono, msg), "_blank", "noopener,noreferrer");
+    setClienteNotificado(true);
+  };
+
+  // Aviso a Grupo Peña: marca la gestión como pedido (si no lo estaba) y abre
+  // WhatsApp con el detalle de la pieza añadida para que la sumen al pedido.
+  const notificarPena = async () => {
+    if (!avisoPendiente) return;
+    const lista = avisoPendiente.nuevas
+      .map((n) => `• ${n.texto}${n.importe ? ` — ${n.importe} €` : ""}`)
+      .join("\n");
+    const yaPedido = g.pedido_pena;
+    const titulo = yaPedido
+      ? `🔧 *Ampliación de pedido* — ${g.taller_nombre || ""}`
+      : `🔧 *Pedido ${g.taller_nombre || ""}*`;
+    const cuerpo = yaPedido
+      ? `Se ha añadido una nueva pieza a la gestión de ${g.matricula || ""} (${g.vehiculo || ""}). Por favor, súmala al pedido en curso:\n${lista}`
+      : `Nueva pieza a pedir para ${g.matricula || ""} (${g.vehiculo || ""}):\n${lista}`;
+    const importeTxt = avisoPendiente.importeTotal || g.importe || "—";
+    const msg = `${titulo}\n\n${cuerpo}\n\n💰 Importe total actualizado: *${importeTxt} €*`;
+    // Marca la gestión como pedido a Peña para que aparezca/se refresque en su panel.
+    if (!yaPedido) {
+      await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
+      g.pedido_pena = true;
+      onChanged();
+    }
+    window.open(buildWAUrl(PENA_PHONE, msg), "_blank", "noopener,noreferrer");
+    setPenaNotificado(true);
+  };
+
+
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
@@ -365,6 +443,44 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 <img src={u} alt="" className="aspect-square w-full object-cover" />
               </a>
             ))}
+          </div>
+        )}
+
+        {/* Panel de avisos tras añadir averías nuevas */}
+        {avisoPendiente && !editing && (
+          <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/5 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Avisar de la novedad</span>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Se ha añadido a la gestión:{" "}
+              <span className="font-semibold text-foreground">
+                {avisoPendiente.nuevas.map((n) => n.texto).join(", ")}
+              </span>
+              . Nuevo importe total: <span className="font-semibold text-foreground">{avisoPendiente.importeTotal || g.importe || "—"} €</span>.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {g.cliente_telefono && (
+                <button
+                  onClick={notificarCliente}
+                  className={btnPrimary + (clienteNotificado ? " opacity-70" : "")}
+                >
+                  <Send className="h-4 w-4" />
+                  {clienteNotificado ? "Cliente avisado ✓" : "Avisar al cliente"}
+                </button>
+              )}
+              <button
+                onClick={notificarPena}
+                className={btnAccent + (penaNotificado ? " opacity-70" : "")}
+              >
+                <Truck className="h-4 w-4" />
+                {penaNotificado ? "Peña avisada ✓" : g.pedido_pena ? "Avisar a Peña (ampliación)" : "Avisar a Peña"}
+              </button>
+              <button onClick={() => { setAvisoPendiente(null); onClose(); }} className={btnGhost + " ml-auto"}>
+                Cerrar
+              </button>
+            </div>
           </div>
         )}
 
