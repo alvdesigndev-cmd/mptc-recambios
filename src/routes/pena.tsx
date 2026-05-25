@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send,
+  LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
