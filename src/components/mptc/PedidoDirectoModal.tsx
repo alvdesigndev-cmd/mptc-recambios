@@ -219,16 +219,25 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       alert("Indica las piezas (puedes dictarlas) o graba un audio para el pedido.");
       return;
     }
+
+    // 1) Abrimos WhatsApp INMEDIATAMENTE (gesto del usuario, sin await previo)
+    //    para que el navegador no lo bloquee como popup.
+    const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
+    const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
+    const lineas = [
+      `*Pedido directo · ${settings.tallerName}*`,
+      f.matricula ? `Matrícula: ${f.matricula}` : null,
+      f.vehiculo ? `Vehículo: ${f.vehiculo}` : null,
+      `Piezas: ${piezasFinal}`,
+      f.notas ? `Notas: ${f.notas}` : null,
+      tieneAudio ? `(audio adjunto en el panel)` : null,
+    ].filter(Boolean) as string[];
+    window.open(buildWAUrl(PENA_PHONE, lineas.join("\n")), "_blank", "noopener,noreferrer");
+
+    // 2) Guardamos en segundo plano
     setSaving(true);
-    // Abrimos la ventana de WhatsApp ANTES del await para que el navegador
-    // no la bloquee como popup (si lo hace, cae a api.whatsapp.com bloqueado).
-    const waWin = window.open("", "_blank");
     try {
       const uploadedAudio = tieneAudio ? await uploadAudio() : null;
-      const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
-
-      // Si hay piezas vacías pero hay transcripción del audio, úsala como piezas.
-      const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
 
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
@@ -243,24 +252,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
-      // Enviar a WhatsApp de Grupo Peña usando la ventana pre-abierta
-      const lineas = [
-        `*Pedido directo · ${settings.tallerName}*`,
-        f.matricula ? `Matrícula: ${f.matricula}` : null,
-        f.vehiculo ? `Vehículo: ${f.vehiculo}` : null,
-        `Piezas: ${piezasFinal}`,
-        f.notas ? `Notas: ${f.notas}` : null,
-        uploadedAudio ? `Audio: ${uploadedAudio}` : null,
-      ].filter(Boolean) as string[];
-      const waUrl = buildWAUrl(PENA_PHONE, lineas.join("\n"));
-      if (waWin && !waWin.closed) waWin.location.href = waUrl;
-      else window.open(waUrl, "_blank", "noopener,noreferrer");
-
       toast.success("El pedido se ha realizado correctamente");
       onSaved?.();
       onClose();
     } catch (e: any) {
-      try { waWin?.close(); } catch {}
       console.error("pedidos_pena insert", e);
       toast.error("No se pudo guardar el pedido. Inténtalo de nuevo.", {
         description: e?.message || "Error de conexión con el servidor",
@@ -270,6 +265,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       setSaving(false);
     }
   };
+
 
   const previewTrans = (transcripcionFinal + (transcripcionInterim ? " " + transcripcionInterim : "")).trim();
 
