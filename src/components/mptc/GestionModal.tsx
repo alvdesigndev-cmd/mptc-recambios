@@ -209,6 +209,53 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     onClose();
   };
 
+  // Mensaje corto de novedad para el cliente (cuando se añade una avería nueva).
+  const notificarCliente = () => {
+    if (!g.cliente_telefono || !avisoPendiente) return;
+    const url = typeof window !== "undefined"
+      ? `${window.location.origin}/confirmar/${g.confirm_token || ""}`
+      : "";
+    const lista = avisoPendiente.nuevas
+      .map((n) => `• ${n.texto}${n.importe ? ` — ${n.importe} €` : ""}`)
+      .join("\n");
+    const importeTxt = avisoPendiente.importeTotal || g.importe || "—";
+    const msg =
+      `Hola ${g.cliente_nombre || ""} 👋\n\n` +
+      `Novedad en tu ${g.vehiculo || ""} (${g.matricula || ""}): se ha añadido a tu gestión:\n${lista}\n\n` +
+      `💰 Nuevo importe total: *${importeTxt} €* (IVA incluido).\n\n` +
+      `✅ Confirma aquí: <${url}>`;
+    window.open(buildWAUrl(g.cliente_telefono, msg), "_blank", "noopener,noreferrer");
+    setClienteNotificado(true);
+  };
+
+  // Aviso a Grupo Peña: marca la gestión como pedido (si no lo estaba) y abre
+  // WhatsApp con el detalle de la pieza añadida para que la sumen al pedido.
+  const notificarPena = async () => {
+    if (!avisoPendiente) return;
+    const lista = avisoPendiente.nuevas
+      .map((n) => `• ${n.texto}${n.importe ? ` — ${n.importe} €` : ""}`)
+      .join("\n");
+    const yaPedido = g.pedido_pena;
+    const titulo = yaPedido
+      ? `🔧 *Ampliación de pedido* — ${g.taller_nombre || ""}`
+      : `🔧 *Pedido ${g.taller_nombre || ""}*`;
+    const cuerpo = yaPedido
+      ? `Se ha añadido una nueva pieza a la gestión de ${g.matricula || ""} (${g.vehiculo || ""}). Por favor, súmala al pedido en curso:\n${lista}`
+      : `Nueva pieza a pedir para ${g.matricula || ""} (${g.vehiculo || ""}):\n${lista}`;
+    const importeTxt = avisoPendiente.importeTotal || g.importe || "—";
+    const msg = `${titulo}\n\n${cuerpo}\n\n💰 Importe total actualizado: *${importeTxt} €*`;
+    // Marca la gestión como pedido a Peña para que aparezca/se refresque en su panel.
+    if (!yaPedido) {
+      await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
+      g.pedido_pena = true;
+      onChanged();
+    }
+    window.open(buildWAUrl(PENA_PHONE, msg), "_blank", "noopener,noreferrer");
+    setPenaNotificado(true);
+  };
+
+
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
       <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
