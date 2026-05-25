@@ -267,6 +267,45 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                         }}
                         className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
                       />
+
+                      {/* Fotos extra */}
+                      <div>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Fotos {n.subiendo && <span className="ml-1 normal-case text-muted-foreground">(subiendo…)</span>}
+                          </span>
+                          <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface px-2 py-1 text-xs font-semibold hover:bg-surface-2">
+                            <Plus className="h-3 w-3" /> Añadir fotos
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => subirFotos(idx, Array.from(e.target.files || []))}
+                            />
+                          </label>
+                        </div>
+                        {n.fotos.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2">
+                            {n.fotos.map((u, fi) => (
+                              <div key={fi} className="relative overflow-hidden rounded-lg bg-surface">
+                                <img src={u} alt="" className="aspect-square w-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const arr = [...nuevas];
+                                    arr[idx] = { ...arr[idx], fotos: arr[idx].fotos.filter((_, i) => i !== fi) };
+                                    setNuevas(arr);
+                                  }}
+                                  className="absolute right-1 top-1 rounded-md bg-black/60 p-1 text-white"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
