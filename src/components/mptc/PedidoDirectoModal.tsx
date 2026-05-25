@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type AppSettings } from "@/lib/mptc/profiles";
 import { MicButton } from "@/components/mptc/MicButton";
+import { buildWAUrl } from "@/lib/mptc/wa";
+
+const PENA_PHONE = "34634954491";
 
 interface Props {
   settings: AppSettings;
@@ -236,6 +239,18 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         transcripcion,
       });
       if (error) throw error;
+
+      // También enviar a WhatsApp de Grupo Peña
+      const lineas = [
+        `*Pedido directo · ${settings.tallerName}*`,
+        f.matricula ? `Matrícula: ${f.matricula}` : null,
+        f.vehiculo ? `Vehículo: ${f.vehiculo}` : null,
+        `Piezas: ${piezasFinal}`,
+        f.notas ? `Notas: ${f.notas}` : null,
+        uploadedAudio ? `Audio: ${uploadedAudio}` : null,
+      ].filter(Boolean) as string[];
+      try { window.open(buildWAUrl(PENA_PHONE, lineas.join("\n")), "_blank"); } catch {}
+
       toast.success("El pedido se ha realizado correctamente");
       onSaved?.();
       onClose();
