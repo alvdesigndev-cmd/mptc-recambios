@@ -164,6 +164,7 @@ export type Database = {
       pedidos_pena: {
         Row: {
           audio_url: string | null
+          confirm_token: string | null
           created_at: string
           estado: string
           fotos: string[] | null
@@ -179,6 +180,7 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
@@ -194,6 +196,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
@@ -288,6 +291,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      actualizar_estado_pedido_pena: {
+        Args: { _estado: string; _token: string }
+        Returns: {
+          estado: string
+          id: string
+        }[]
+      }
       confirmar_gestion: {
         Args: { _token: string }
         Returns: {
@@ -295,6 +305,18 @@ export type Database = {
           id: string
           matricula: string
           previous_estado: string
+        }[]
+      }
+      get_pedido_pena_by_token: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          estado: string
+          id: string
+          matricula: string
+          piezas: string
+          taller_nombre: string
+          vehiculo: string
         }[]
       }
       get_user_role: {
