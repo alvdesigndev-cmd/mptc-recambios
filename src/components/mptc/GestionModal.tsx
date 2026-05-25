@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
@@ -10,6 +10,10 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
 }
+
+type Familia = { id: string; nombre: string; icono: string };
+type Subfamilia = { id: string; familia_id: string; nombre: string };
+type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string };
 
 type EditState = {
   subfamilia: string;
