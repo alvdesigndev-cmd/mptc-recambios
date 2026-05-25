@@ -81,14 +81,33 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     onClose();
   };
 
+  const parseImporte = (s: string) => {
+    const n = parseFloat((s || "").toString().replace(",", ".").replace(/[^\d.-]/g, ""));
+    return isNaN(n) ? 0 : n;
+  };
+
   const guardarEdicion = async () => {
     setSaving(true);
+    const validas = nuevas.filter((n) => n.subfamilia.trim());
+    let mergedSub = form.subfamilia;
+    let mergedDesc = form.descripcion;
+    let mergedImporte = form.importe;
+    if (validas.length) {
+      const subs = validas.map((n) => n.subfamilia.trim());
+      mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
+      const descBloque = validas
+        .map((n) => `• ${n.subfamilia.trim()}${n.importe ? ` — ${n.importe} €` : ""}${n.descripcion ? `\n  ${n.descripcion}` : ""}`)
+        .join("\n");
+      mergedDesc = [form.descripcion, descBloque].filter(Boolean).join("\n\n");
+      const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
+      if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
+    }
     const { error } = await supabase.from("gestiones").update({
-      subfamilia: form.subfamilia || null,
-      importe: form.importe || null,
+      subfamilia: mergedSub || null,
+      importe: mergedImporte || null,
       km: form.km || null,
       piezas: form.piezas || null,
-      descripcion: form.descripcion || null,
+      descripcion: mergedDesc || null,
       objecion: form.objecion || null,
     }).eq("id", g.id);
     setSaving(false);
@@ -98,6 +117,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     }
     toast.success("Gestión actualizada");
     setEditing(false);
+    setNuevas([]);
     onChanged();
     onClose();
   };
