@@ -69,6 +69,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     if (gestion) {
       setEditing(false);
       setNuevas([]);
+      setAvisoPendiente(null);
+      setClienteNotificado(false);
+      setPenaNotificado(false);
       setForm({
         subfamilia: gestion.subfamilia || gestion.categoria || "",
         importe: gestion.importe || "",
