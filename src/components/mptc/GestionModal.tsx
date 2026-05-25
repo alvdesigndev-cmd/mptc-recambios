@@ -1,11 +1,9 @@
-import { useEffect } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
-import { PENA_PHONE } from "@/lib/mptc/profiles";
-import { buildPenaMessage } from "@/lib/mptc/messages";
 
 interface Props {
   gestion: Gestion | null;
@@ -13,12 +11,46 @@ interface Props {
   onChanged: () => void;
 }
 
+type EditState = {
+  subfamilia: string;
+  importe: string;
+  km: string;
+  piezas: string;
+  descripcion: string;
+  objecion: string;
+};
+
 export function GestionModal({ gestion, onClose, onChanged }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<EditState>({
+    subfamilia: "",
+    importe: "",
+    km: "",
+    piezas: "",
+    descripcion: "",
+    objecion: "",
+  });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    if (gestion) {
+      setEditing(false);
+      setForm({
+        subfamilia: gestion.subfamilia || gestion.categoria || "",
+        importe: gestion.importe || "",
+        km: gestion.km || "",
+        piezas: gestion.piezas || "",
+        descripcion: gestion.descripcion || "",
+        objecion: gestion.objecion || "",
+      });
+    }
+  }, [gestion]);
 
   if (!gestion) return null;
   const g = gestion;
@@ -26,6 +58,27 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
   const update = async (patch: Partial<Gestion>) => {
     await supabase.from("gestiones").update(patch).eq("id", g.id);
+    onChanged();
+    onClose();
+  };
+
+  const guardarEdicion = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("gestiones").update({
+      subfamilia: form.subfamilia || null,
+      importe: form.importe || null,
+      km: form.km || null,
+      piezas: form.piezas || null,
+      descripcion: form.descripcion || null,
+      objecion: form.objecion || null,
+    }).eq("id", g.id);
+    setSaving(false);
+    if (error) {
+      toast.error("No se pudieron guardar los cambios");
+      return;
+    }
+    toast.success("Gestión actualizada");
+    setEditing(false);
     onChanged();
     onClose();
   };
@@ -47,9 +100,6 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   };
 
   const pedirPena = async () => {
-    // Enviamos directamente al panel de Grupo Peña (sin abrir WhatsApp).
-    // La gestión ya contiene toda la información y las fotos adjuntas,
-    // que se mostrarán en el panel al marcarla como pedido a Peña.
     await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
     toast.success("El pedido se ha realizado correctamente");
     onChanged();
@@ -81,16 +131,27 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </button>
         </div>
 
-        <div className="space-y-3 text-sm">
-          <Row label="Avería" value={g.subfamilia || g.categoria || "—"} />
-          <Row label="Importe" value={g.importe ? `${g.importe} €` : "—"} />
-          <Row label="Km" value={g.km || "—"} />
-          <Row label="Teléfono" value={g.cliente_telefono || "—"} />
-          {g.piezas && <Row label="Piezas" value={g.piezas} multiline />}
-          {g.descripcion && <Row label="Notas" value={g.descripcion} multiline />}
-          {g.objecion && <Row label="Objeción" value={g.objecion} multiline />}
-          <Row label="Creada" value={new Date(g.created_at).toLocaleString("es-ES")} />
-        </div>
+        {editing ? (
+          <div className="space-y-3 text-sm">
+            <Field label="Avería" value={form.subfamilia} onChange={(v) => setForm({ ...form, subfamilia: v })} />
+            <Field label="Importe (€)" value={form.importe} onChange={(v) => setForm({ ...form, importe: v })} />
+            <Field label="Km" value={form.km} onChange={(v) => setForm({ ...form, km: v })} />
+            <Field label="Piezas" value={form.piezas} onChange={(v) => setForm({ ...form, piezas: v })} multiline />
+            <Field label="Notas" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} multiline />
+            <Field label="Objeción" value={form.objecion} onChange={(v) => setForm({ ...form, objecion: v })} multiline />
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm">
+            <Row label="Avería" value={g.subfamilia || g.categoria || "—"} />
+            <Row label="Importe" value={g.importe ? `${g.importe} €` : "—"} />
+            <Row label="Km" value={g.km || "—"} />
+            <Row label="Teléfono" value={g.cliente_telefono || "—"} />
+            {g.piezas && <Row label="Piezas" value={g.piezas} multiline />}
+            {g.descripcion && <Row label="Notas" value={g.descripcion} multiline />}
+            {g.objecion && <Row label="Objeción" value={g.objecion} multiline />}
+            <Row label="Creada" value={new Date(g.created_at).toLocaleString("es-ES")} />
+          </div>
+        )}
 
         {g.fotos && g.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -102,44 +163,60 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </div>
         )}
 
-        {/* Acciones según estado */}
+        {/* Acciones */}
         <div className="mt-5 flex flex-wrap gap-2">
-          {g.cliente_telefono && (
-            <a
-              href={`tel:${g.cliente_telefono}`}
-              className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm hover:bg-surface-2"
-            >
-              <Phone className="h-4 w-4" /> Llamar
-            </a>
-          )}
-          {(g.estado === "en-curso" || g.estado === "enviado") && g.cliente_telefono && (
-            <button onClick={reenviar} className={btnGhost}>
-              <Send className="h-4 w-4" /> {g.estado === "en-curso" ? "Enviar" : "Reenviar"}
-            </button>
-          )}
-          {(g.estado === "enviado" || g.estado === "aceptado") && !g.pedido_pena && (
-            <button onClick={pedirPena} className={btnAccent}>
-              <Truck className="h-4 w-4" /> Pedir a Peña
-            </button>
-          )}
-          {g.estado === "enviado" && (
+          {editing ? (
             <>
-              <button onClick={() => update({ estado: "aceptado" })} className={btnPrimary}>
-                <Check className="h-4 w-4" /> Marcar aceptado
+              <button onClick={guardarEdicion} disabled={saving} className={btnPrimary}>
+                <Save className="h-4 w-4" /> {saving ? "Guardando…" : "Guardar cambios"}
               </button>
-              <button onClick={() => update({ estado: "rechazado" })} className={btnGhost}>
-                <XCircle className="h-4 w-4" /> Rechazado
+              <button onClick={() => setEditing(false)} className={btnGhost}>
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setEditing(true)} className={btnGhost}>
+                <Pencil className="h-4 w-4" /> Editar
+              </button>
+              {g.cliente_telefono && (
+                <a
+                  href={`tel:${g.cliente_telefono}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm hover:bg-surface-2"
+                >
+                  <Phone className="h-4 w-4" /> Llamar
+                </a>
+              )}
+              {(g.estado === "en-curso" || g.estado === "enviado") && g.cliente_telefono && (
+                <button onClick={reenviar} className={btnGhost}>
+                  <Send className="h-4 w-4" /> {g.estado === "en-curso" ? "Enviar" : "Reenviar"}
+                </button>
+              )}
+              {(g.estado === "enviado" || g.estado === "aceptado") && !g.pedido_pena && (
+                <button onClick={pedirPena} className={btnAccent}>
+                  <Truck className="h-4 w-4" /> Pedir a Peña
+                </button>
+              )}
+              {g.estado === "enviado" && (
+                <>
+                  <button onClick={() => update({ estado: "aceptado" })} className={btnPrimary}>
+                    <Check className="h-4 w-4" /> Marcar aceptado
+                  </button>
+                  <button onClick={() => update({ estado: "rechazado" })} className={btnGhost}>
+                    <XCircle className="h-4 w-4" /> Rechazado
+                  </button>
+                </>
+              )}
+              {(g.estado === "aceptado" || g.estado === "enviado") && (
+                <button onClick={() => update({ estado: "completado" })} className={btnPrimary}>
+                  <CheckCheck className="h-4 w-4" /> Completar
+                </button>
+              )}
+              <button onClick={remove} className={btnGhost + " ml-auto text-destructive"}>
+                <Trash2 className="h-4 w-4" /> Eliminar
               </button>
             </>
           )}
-          {(g.estado === "aceptado" || g.estado === "enviado") && (
-            <button onClick={() => update({ estado: "completado" })} className={btnPrimary}>
-              <CheckCheck className="h-4 w-4" /> Completar
-            </button>
-          )}
-          <button onClick={remove} className={btnGhost + " ml-auto text-destructive"}>
-            <Trash2 className="h-4 w-4" /> Eliminar
-          </button>
         </div>
       </div>
     </div>
@@ -152,6 +229,38 @@ function Row({ label, value, multiline }: { label: string; value: string; multil
       <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className={"text-right " + (multiline ? "whitespace-pre-wrap" : "truncate")}>{value}</span>
     </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+        />
+      ) : (
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+        />
+      )}
+    </label>
   );
 }
 
