@@ -13,7 +13,7 @@ interface Props {
 
 type Familia = { id: string; nombre: string; icono: string };
 type Subfamilia = { id: string; familia_id: string; nombre: string };
-type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string };
+type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string; fotos: string[]; subiendo: boolean };
 
 type EditState = {
   subfamilia: string;
