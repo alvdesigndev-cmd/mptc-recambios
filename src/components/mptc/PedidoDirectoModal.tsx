@@ -220,6 +220,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       return;
     }
 
+    // Generamos el token de confirmación y construimos el enlace.
+    const confirmToken = generateToken();
+    const confirmUrl = `${window.location.origin}/pedido-pena/${confirmToken}`;
+
     // 1) Abrimos WhatsApp INMEDIATAMENTE (gesto del usuario, sin await previo)
     //    para que el navegador no lo bloquee como popup.
     const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
@@ -231,7 +235,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       `Piezas: ${piezasFinal}`,
       f.notas ? `Notas: ${f.notas}` : null,
       tieneAudio ? `(audio adjunto en el panel)` : null,
-    ].filter(Boolean) as string[];
+      ``,
+      `Actualizar estado del pedido:`,
+      confirmUrl,
+    ].filter((x) => x !== null) as string[];
     window.open(buildWAUrl(PENA_PHONE, lineas.join("\n")), "_blank", "noopener,noreferrer");
 
     // 2) Guardamos en segundo plano
@@ -249,6 +256,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         estado: "pendiente",
         audio_url: uploadedAudio,
         transcripcion,
+        confirm_token: confirmToken,
       });
       if (error) throw error;
 
