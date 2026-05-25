@@ -318,8 +318,9 @@ function PedidoModal({
 
   const eliminar = async () => {
     setSaving(true);
-    const tabla = kind === "g" ? "gestiones" : "pedidos_pena";
-    const { error } = await supabase.from(tabla).delete().eq("id", item.id);
+    const error = kind === "g"
+      ? (await supabase.from("gestiones").delete().eq("id", item.id)).error
+      : (await supabase.from("pedidos_pena").delete().eq("id", item.id)).error;
     setSaving(false);
     if (error) { alert("No se pudo eliminar."); return; }
     onChanged();
