@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 
 interface Props {
