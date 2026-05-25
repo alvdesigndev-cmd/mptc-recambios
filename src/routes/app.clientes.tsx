@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save, History } from "lucide-react";
+import { Search, UserPlus, X, Phone, Car, Plus, Pencil, Save, History, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { GestionModal } from "@/components/mptc/GestionModal";
@@ -388,23 +388,29 @@ function ClienteModal({
                       <button
                         type="button"
                         onClick={() => openGestionById(g.id)}
-                        className="block w-full rounded-xl border border-border bg-surface-2 p-3 text-left hover:bg-surface-3"
+                        className="group flex w-full items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 text-left hover:bg-surface-3"
                       >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                          <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
-                            {g.estado}
-                          </span>
-                          {g.importe && (
-                            <span className="text-muted-foreground">{g.importe} €</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="truncate text-sm font-semibold capitalize">{titulo}</span>
+                            <span className="shrink-0 text-[11px] text-muted-foreground">{fecha}</span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                            <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
+                              {g.estado}
+                            </span>
+                            {g.importe && (
+                              <span className="text-muted-foreground">{g.importe} €</span>
+                            )}
+                          </div>
+                          {g.descripcion && (
+                            <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
                           )}
                         </div>
-                        {g.descripcion && (
-                          <p className="mt-1 line-clamp-2 text-[12px] text-text-2">{g.descripcion}</p>
-                        )}
+                        <div className="flex shrink-0 flex-col items-center gap-1 text-[10px] font-semibold text-muted-foreground group-hover:text-primary">
+                          <Eye className="h-4 w-4" />
+                          <span className="hidden sm:inline">Ver</span>
+                        </div>
                       </button>
                     </li>
                   );
