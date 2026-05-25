@@ -59,6 +59,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   useEffect(() => {
     if (gestion) {
       setEditing(false);
+      setNuevas([]);
       setForm({
         subfamilia: gestion.subfamilia || gestion.categoria || "",
         importe: gestion.importe || "",
