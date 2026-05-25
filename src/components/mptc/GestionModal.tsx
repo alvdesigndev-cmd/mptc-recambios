@@ -446,6 +446,44 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </div>
         )}
 
+        {/* Panel de avisos tras añadir averías nuevas */}
+        {avisoPendiente && !editing && (
+          <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/5 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Avisar de la novedad</span>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Se ha añadido a la gestión:{" "}
+              <span className="font-semibold text-foreground">
+                {avisoPendiente.nuevas.map((n) => n.texto).join(", ")}
+              </span>
+              . Nuevo importe total: <span className="font-semibold text-foreground">{avisoPendiente.importeTotal || g.importe || "—"} €</span>.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {g.cliente_telefono && (
+                <button
+                  onClick={notificarCliente}
+                  className={btnPrimary + (clienteNotificado ? " opacity-70" : "")}
+                >
+                  <Send className="h-4 w-4" />
+                  {clienteNotificado ? "Cliente avisado ✓" : "Avisar al cliente"}
+                </button>
+              )}
+              <button
+                onClick={notificarPena}
+                className={btnAccent + (penaNotificado ? " opacity-70" : "")}
+              >
+                <Truck className="h-4 w-4" />
+                {penaNotificado ? "Peña avisada ✓" : g.pedido_pena ? "Avisar a Peña (ampliación)" : "Avisar a Peña"}
+              </button>
+              <button onClick={() => { setAvisoPendiente(null); onClose(); }} className={btnGhost + " ml-auto"}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Acciones */}
         <div className="mt-5 flex flex-wrap gap-2">
           {editing ? (
