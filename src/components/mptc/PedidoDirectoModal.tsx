@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type AppSettings } from "@/lib/mptc/profiles";
 import { MicButton } from "@/components/mptc/MicButton";
+import { buildWAUrl } from "@/lib/mptc/wa";
+
+const PENA_PHONE = "34634954491";
 
 interface Props {
   settings: AppSettings;
