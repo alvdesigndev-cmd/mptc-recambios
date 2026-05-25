@@ -135,6 +135,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     let mergedDesc = form.descripcion;
     let mergedImporte = form.importe;
     const nuevasFotos = nuevas.flatMap((n) => n.fotos);
+    // Resumen legible (familia / subfamilia) para los avisos posteriores.
+    const resumenNuevas = validas.map((n) => {
+      const fam = familias.find((f) => f.id === n.familia_id);
+      const txt = fam ? `${fam.nombre} / ${n.subfamilia.trim()}` : n.subfamilia.trim();
+      return { texto: txt, importe: n.importe.trim() };
+    });
     if (validas.length) {
       const subs = validas.map((n) => n.subfamilia.trim());
       mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
@@ -164,7 +170,20 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     setEditing(false);
     setNuevas([]);
     onChanged();
-    onClose();
+    // Si se han añadido averías nuevas, ofrecemos avisar al cliente y/o a Peña
+    // antes de cerrar el modal. Si no hubo, cerramos como antes.
+    if (resumenNuevas.length) {
+      // Actualizamos la copia local de la gestión para que los mensajes usen
+      // los datos nuevos (importe, subfamilia agregada, etc.).
+      g.subfamilia = mergedSub;
+      g.importe = mergedImporte;
+      g.descripcion = mergedDesc;
+      setAvisoPendiente({ nuevas: resumenNuevas, importeTotal: mergedImporte });
+      setClienteNotificado(false);
+      setPenaNotificado(false);
+    } else {
+      onClose();
+    }
   };
 
   const remove = async () => {
