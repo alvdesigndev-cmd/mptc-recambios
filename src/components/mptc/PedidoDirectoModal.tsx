@@ -260,6 +260,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       onSaved?.();
       onClose();
     } catch (e: any) {
+      try { waWin?.close(); } catch {}
       console.error("pedidos_pena insert", e);
       toast.error("No se pudo guardar el pedido. Inténtalo de nuevo.", {
         description: e?.message || "Error de conexión con el servidor",
