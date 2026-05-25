@@ -178,6 +178,100 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             <Field label="Piezas" value={form.piezas} onChange={(v) => setForm({ ...form, piezas: v })} multiline />
             <Field label="Notas" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} multiline />
             <Field label="Objeción" value={form.objecion} onChange={(v) => setForm({ ...form, objecion: v })} multiline />
+
+            {/* Añadir averías extra */}
+            <div className="rounded-2xl border border-dashed border-border-strong p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Añadir avería
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNuevas([...nuevas, { familia_id: "", subfamilia: "", importe: "", descripcion: "" }])}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Añadir
+                </button>
+              </div>
+
+              {nuevas.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Añade una nueva familia y subfamilia para sumarla a esta gestión.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {nuevas.map((n, idx) => {
+                  const subs = subfamilias.filter((s) => s.familia_id === n.familia_id);
+                  return (
+                    <div key={idx} className="space-y-2 rounded-xl bg-surface-2 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Avería #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setNuevas(nuevas.filter((_, i) => i !== idx))}
+                          className="rounded-md p-1 text-destructive hover:bg-surface-3"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <select
+                        value={n.familia_id}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], familia_id: e.target.value, subfamilia: "" };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      >
+                        <option value="">— Familia —</option>
+                        {familias.map((f) => (
+                          <option key={f.id} value={f.id}>{f.icono} {f.nombre}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={n.subfamilia}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], subfamilia: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        disabled={!n.familia_id}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none disabled:opacity-50"
+                      >
+                        <option value="">— Subfamilia —</option>
+                        {subs.map((s) => (
+                          <option key={s.id} value={s.nombre}>{s.nombre}</option>
+                        ))}
+                      </select>
+                      <input
+                        placeholder="Importe (€)"
+                        value={n.importe}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], importe: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      />
+                      <textarea
+                        placeholder="Notas (opcional)"
+                        rows={2}
+                        value={n.descripcion}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], descripcion: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 text-sm">
