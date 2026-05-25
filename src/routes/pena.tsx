@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send,
+  LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
@@ -266,6 +266,16 @@ function PedidoCard({
 function PedidoModal({
   kind, item, onClose, onChanged,
 }: { kind: "g" | "d"; item: Gestion & PedidoDirecto; onClose: () => void; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    matricula: item.matricula || "",
+    vehiculo: item.vehiculo || "",
+    piezas: item.piezas || "",
+    notas: item.notas || "",
+  });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -286,9 +296,38 @@ function PedidoModal({
     onChanged();
   };
 
+  const guardarEdicion = async () => {
+    setSaving(true);
+    const error = kind === "g"
+      ? (await supabase.from("gestiones").update({
+          matricula: form.matricula || null,
+          vehiculo: form.vehiculo || null,
+          piezas: form.piezas || null,
+        }).eq("id", item.id)).error
+      : (await supabase.from("pedidos_pena").update({
+          matricula: form.matricula || null,
+          vehiculo: form.vehiculo || null,
+          piezas: form.piezas || null,
+          notas: form.notas || null,
+        }).eq("id", item.id)).error;
+    setSaving(false);
+    if (error) { alert("No se pudo guardar los cambios."); return; }
+    setEditing(false);
+    onChanged();
+  };
+
+  const eliminar = async () => {
+    setSaving(true);
+    const error = kind === "g"
+      ? (await supabase.from("gestiones").delete().eq("id", item.id)).error
+      : (await supabase.from("pedidos_pena").delete().eq("id", item.id)).error;
+    setSaving(false);
+    if (error) { alert("No se pudo eliminar."); return; }
+    onChanged();
+  };
+
   const wa = () => {
     const msg = `✅ Pedido *${item.matricula || ""}* (${item.vehiculo || ""}) PREPARADO.\nPasad a recoger cuando podáis. 🙌`;
-    // Sin teléfono del taller: copiar al portapapeles y abrir WA web sin destino
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
 
@@ -308,15 +347,52 @@ function PedidoModal({
           </button>
         </div>
 
-        <div className="space-y-2.5 text-sm">
-          <Field label="Piezas">{item.piezas || (kind === "g" ? item.subfamilia : "") || "—"}</Field>
-          {kind === "g" && item.cliente_nombre && <Field label="Cliente">{item.cliente_nombre}</Field>}
-          {item.notas && <Field label="Notas">{item.notas}</Field>}
-          {kind === "g" && item.descripcion && <Field label="Notas">{item.descripcion}</Field>}
-          <Field label="Recibido">{new Date(item.created_at).toLocaleString("es-ES")}</Field>
-        </div>
+        {!editing ? (
+          <div className="space-y-2.5 text-sm">
+            <Field label="Piezas">{item.piezas || (kind === "g" ? item.subfamilia : "") || "—"}</Field>
+            {kind === "g" && item.cliente_nombre && <Field label="Cliente">{item.cliente_nombre}</Field>}
+            {item.notas && <Field label="Notas">{item.notas}</Field>}
+            {kind === "g" && item.descripcion && <Field label="Notas">{item.descripcion}</Field>}
+            <Field label="Recibido">{new Date(item.created_at).toLocaleString("es-ES")}</Field>
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm">
+            <EditField label="Matrícula">
+              <input
+                value={form.matricula}
+                onChange={(e) => setForm({ ...form, matricula: e.target.value.toUpperCase() })}
+                className="w-full rounded-xl bg-surface-2 px-3 py-2 font-mono outline-none focus:bg-surface-3"
+              />
+            </EditField>
+            <EditField label="Vehículo">
+              <input
+                value={form.vehiculo}
+                onChange={(e) => setForm({ ...form, vehiculo: e.target.value })}
+                className="w-full rounded-xl bg-surface-2 px-3 py-2 outline-none focus:bg-surface-3"
+              />
+            </EditField>
+            <EditField label="Piezas">
+              <textarea
+                value={form.piezas}
+                onChange={(e) => setForm({ ...form, piezas: e.target.value })}
+                rows={3}
+                className="w-full rounded-xl bg-surface-2 px-3 py-2 outline-none focus:bg-surface-3"
+              />
+            </EditField>
+            {kind === "d" && (
+              <EditField label="Notas">
+                <textarea
+                  value={form.notas}
+                  onChange={(e) => setForm({ ...form, notas: e.target.value })}
+                  rows={2}
+                  className="w-full rounded-xl bg-surface-2 px-3 py-2 outline-none focus:bg-surface-3"
+                />
+              </EditField>
+            )}
+          </div>
+        )}
 
-        {kind === "d" && (item.audio_url || item.transcripcion) && (
+        {!editing && kind === "d" && (item.audio_url || item.transcripcion) && (
           <div className="mt-3 rounded-2xl border border-border bg-surface-2 p-3 space-y-2">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Pedido por voz
@@ -337,7 +413,7 @@ function PedidoModal({
           </div>
         )}
 
-        {item.fotos && item.fotos.length > 0 && (
+        {!editing && item.fotos && item.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
             {item.fotos.map((u, i) => (
               <a key={i} href={u} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
@@ -347,7 +423,7 @@ function PedidoModal({
           </div>
         )}
 
-        {kind === "d" && (
+        {!editing && kind === "d" && (
           <div className="mt-5">
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Estado del pedido
@@ -379,20 +455,60 @@ function PedidoModal({
           </div>
         )}
 
+        {confirmDel && (
+          <div className="mt-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            <div className="font-semibold text-destructive">¿Eliminar este pedido?</div>
+            <div className="text-xs text-muted-foreground">Esta acción no se puede deshacer.</div>
+            <div className="mt-2 flex justify-end gap-2">
+              <button onClick={() => setConfirmDel(false)} className="rounded-lg border border-border-strong bg-surface px-3 py-1.5 text-xs font-semibold">Cancelar</button>
+              <button onClick={eliminar} disabled={saving} className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:opacity-50">Sí, eliminar</button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button onClick={wa} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
-            <Send className="h-4 w-4" /> WhatsApp taller
-          </button>
-          {kind === "g" && (
-            <button onClick={marcarPreparado} className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-success-foreground active:scale-95">
-              <CheckCheck className="h-4 w-4" /> Marcar preparado
-            </button>
+          {!editing ? (
+            <>
+              <button onClick={() => setConfirmDel((v) => !v)} className="inline-flex items-center gap-2 rounded-xl border border-destructive/40 bg-surface px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4" /> Eliminar
+              </button>
+              <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+                <Pencil className="h-4 w-4" /> Editar
+              </button>
+              <button onClick={wa} className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+                <Send className="h-4 w-4" /> WhatsApp taller
+              </button>
+              {kind === "g" && (
+                <button onClick={marcarPreparado} className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-sm font-semibold text-success-foreground active:scale-95">
+                  <CheckCheck className="h-4 w-4" /> Marcar preparado
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button onClick={() => setEditing(false)} className="rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold">
+                Cancelar
+              </button>
+              <button onClick={guardarEdicion} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95 disabled:opacity-50">
+                <Save className="h-4 w-4" /> Guardar cambios
+              </button>
+            </>
           )}
         </div>
       </div>
     </div>
   );
 }
+
+function EditField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[11px] font-semibold uppercase text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 
 function NuevoDirectoModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const s = loadSettings();
