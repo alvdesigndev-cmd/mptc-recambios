@@ -298,11 +298,18 @@ function PedidoModal({
 
   const guardarEdicion = async () => {
     setSaving(true);
-    const tabla = kind === "g" ? "gestiones" : "pedidos_pena";
-    const payload = kind === "g"
-      ? { matricula: form.matricula || null, vehiculo: form.vehiculo || null, piezas: form.piezas || null }
-      : { matricula: form.matricula || null, vehiculo: form.vehiculo || null, piezas: form.piezas || null, notas: form.notas || null };
-    const { error } = await supabase.from(tabla).update(payload).eq("id", item.id);
+    const error = kind === "g"
+      ? (await supabase.from("gestiones").update({
+          matricula: form.matricula || null,
+          vehiculo: form.vehiculo || null,
+          piezas: form.piezas || null,
+        }).eq("id", item.id)).error
+      : (await supabase.from("pedidos_pena").update({
+          matricula: form.matricula || null,
+          vehiculo: form.vehiculo || null,
+          piezas: form.piezas || null,
+          notas: form.notas || null,
+        }).eq("id", item.id)).error;
     setSaving(false);
     if (error) { alert("No se pudo guardar los cambios."); return; }
     setEditing(false);
