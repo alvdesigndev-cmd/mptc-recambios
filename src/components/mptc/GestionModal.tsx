@@ -86,12 +86,43 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     return isNaN(n) ? 0 : n;
   };
 
+  const subirFotos = async (idx: number, files: File[]) => {
+    if (!files.length) return;
+    setNuevas((prev) => {
+      const arr = [...prev];
+      arr[idx] = { ...arr[idx], subiendo: true };
+      return arr;
+    });
+    const tallerId = g.taller_id || "sin-taller";
+    const urls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${tallerId}/${g.id}/extra-${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage
+        .from("fotos-gestiones")
+        .upload(path, f, { contentType: f.type, upsert: false });
+      if (error) {
+        toast.error(`No se pudo subir ${f.name}`);
+        continue;
+      }
+      const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    setNuevas((prev) => {
+      const arr = [...prev];
+      arr[idx] = { ...arr[idx], fotos: [...arr[idx].fotos, ...urls], subiendo: false };
+      return arr;
+    });
+  };
+
   const guardarEdicion = async () => {
     setSaving(true);
     const validas = nuevas.filter((n) => n.subfamilia.trim());
     let mergedSub = form.subfamilia;
     let mergedDesc = form.descripcion;
     let mergedImporte = form.importe;
+    const nuevasFotos = nuevas.flatMap((n) => n.fotos);
     if (validas.length) {
       const subs = validas.map((n) => n.subfamilia.trim());
       mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
@@ -102,14 +133,18 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
       if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
     }
-    const { error } = await supabase.from("gestiones").update({
+    const patch: Record<string, unknown> = {
       subfamilia: mergedSub || null,
       importe: mergedImporte || null,
       km: form.km || null,
       piezas: form.piezas || null,
       descripcion: mergedDesc || null,
       objecion: form.objecion || null,
-    }).eq("id", g.id);
+    };
+    if (nuevasFotos.length) {
+      patch.fotos = [...(g.fotos || []), ...nuevasFotos];
+    }
+    const { error } = await supabase.from("gestiones").update(patch).eq("id", g.id);
     setSaving(false);
     if (error) {
       toast.error("No se pudieron guardar los cambios");
