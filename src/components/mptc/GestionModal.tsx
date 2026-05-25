@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
@@ -10,6 +10,10 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
 }
+
+type Familia = { id: string; nombre: string; icono: string };
+type Subfamilia = { id: string; familia_id: string; nombre: string };
+type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string };
 
 type EditState = {
   subfamilia: string;
@@ -31,6 +35,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     descripcion: "",
     objecion: "",
   });
+  const [familias, setFamilias] = useState<Familia[]>([]);
+  const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
+  const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -39,8 +46,20 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   }, [onClose]);
 
   useEffect(() => {
+    (async () => {
+      const [{ data: fams }, { data: subs }] = await Promise.all([
+        supabase.from("familias").select("id,nombre,icono").order("orden"),
+        supabase.from("subfamilias").select("id,familia_id,nombre").order("orden"),
+      ]);
+      setFamilias((fams as Familia[]) || []);
+      setSubfamilias((subs as Subfamilia[]) || []);
+    })();
+  }, []);
+
+  useEffect(() => {
     if (gestion) {
       setEditing(false);
+      setNuevas([]);
       setForm({
         subfamilia: gestion.subfamilia || gestion.categoria || "",
         importe: gestion.importe || "",
@@ -62,14 +81,33 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     onClose();
   };
 
+  const parseImporte = (s: string) => {
+    const n = parseFloat((s || "").toString().replace(",", ".").replace(/[^\d.-]/g, ""));
+    return isNaN(n) ? 0 : n;
+  };
+
   const guardarEdicion = async () => {
     setSaving(true);
+    const validas = nuevas.filter((n) => n.subfamilia.trim());
+    let mergedSub = form.subfamilia;
+    let mergedDesc = form.descripcion;
+    let mergedImporte = form.importe;
+    if (validas.length) {
+      const subs = validas.map((n) => n.subfamilia.trim());
+      mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
+      const descBloque = validas
+        .map((n) => `• ${n.subfamilia.trim()}${n.importe ? ` — ${n.importe} €` : ""}${n.descripcion ? `\n  ${n.descripcion}` : ""}`)
+        .join("\n");
+      mergedDesc = [form.descripcion, descBloque].filter(Boolean).join("\n\n");
+      const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
+      if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
+    }
     const { error } = await supabase.from("gestiones").update({
-      subfamilia: form.subfamilia || null,
-      importe: form.importe || null,
+      subfamilia: mergedSub || null,
+      importe: mergedImporte || null,
       km: form.km || null,
       piezas: form.piezas || null,
-      descripcion: form.descripcion || null,
+      descripcion: mergedDesc || null,
       objecion: form.objecion || null,
     }).eq("id", g.id);
     setSaving(false);
@@ -79,6 +117,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     }
     toast.success("Gestión actualizada");
     setEditing(false);
+    setNuevas([]);
     onChanged();
     onClose();
   };
@@ -139,6 +178,100 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             <Field label="Piezas" value={form.piezas} onChange={(v) => setForm({ ...form, piezas: v })} multiline />
             <Field label="Notas" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} multiline />
             <Field label="Objeción" value={form.objecion} onChange={(v) => setForm({ ...form, objecion: v })} multiline />
+
+            {/* Añadir averías extra */}
+            <div className="rounded-2xl border border-dashed border-border-strong p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Añadir avería
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNuevas([...nuevas, { familia_id: "", subfamilia: "", importe: "", descripcion: "" }])}
+                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Añadir
+                </button>
+              </div>
+
+              {nuevas.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Añade una nueva familia y subfamilia para sumarla a esta gestión.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {nuevas.map((n, idx) => {
+                  const subs = subfamilias.filter((s) => s.familia_id === n.familia_id);
+                  return (
+                    <div key={idx} className="space-y-2 rounded-xl bg-surface-2 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Avería #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setNuevas(nuevas.filter((_, i) => i !== idx))}
+                          className="rounded-md p-1 text-destructive hover:bg-surface-3"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <select
+                        value={n.familia_id}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], familia_id: e.target.value, subfamilia: "" };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      >
+                        <option value="">— Familia —</option>
+                        {familias.map((f) => (
+                          <option key={f.id} value={f.id}>{f.icono} {f.nombre}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={n.subfamilia}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], subfamilia: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        disabled={!n.familia_id}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none disabled:opacity-50"
+                      >
+                        <option value="">— Subfamilia —</option>
+                        {subs.map((s) => (
+                          <option key={s.id} value={s.nombre}>{s.nombre}</option>
+                        ))}
+                      </select>
+                      <input
+                        placeholder="Importe (€)"
+                        value={n.importe}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], importe: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      />
+                      <textarea
+                        placeholder="Notas (opcional)"
+                        rows={2}
+                        value={n.descripcion}
+                        onChange={(e) => {
+                          const arr = [...nuevas];
+                          arr[idx] = { ...arr[idx], descripcion: e.target.value };
+                          setNuevas(arr);
+                        }}
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 text-sm">
