@@ -220,6 +220,9 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       return;
     }
     setSaving(true);
+    // Abrimos la ventana de WhatsApp ANTES del await para que el navegador
+    // no la bloquee como popup (si lo hace, cae a api.whatsapp.com bloqueado).
+    const waWin = window.open("about:blank", "_blank", "noopener,noreferrer");
     try {
       const uploadedAudio = tieneAudio ? await uploadAudio() : null;
       const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
@@ -240,7 +243,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
-      // También enviar a WhatsApp de Grupo Peña
+      // Enviar a WhatsApp de Grupo Peña usando la ventana pre-abierta
       const lineas = [
         `*Pedido directo · ${settings.tallerName}*`,
         f.matricula ? `Matrícula: ${f.matricula}` : null,
@@ -249,12 +252,15 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         f.notas ? `Notas: ${f.notas}` : null,
         uploadedAudio ? `Audio: ${uploadedAudio}` : null,
       ].filter(Boolean) as string[];
-      try { window.open(buildWAUrl(PENA_PHONE, lineas.join("\n")), "_blank"); } catch {}
+      const waUrl = buildWAUrl(PENA_PHONE, lineas.join("\n"));
+      if (waWin && !waWin.closed) waWin.location.href = waUrl;
+      else window.open(waUrl, "_blank", "noopener,noreferrer");
 
       toast.success("El pedido se ha realizado correctamente");
       onSaved?.();
       onClose();
     } catch (e: any) {
+      try { waWin?.close(); } catch {}
       console.error("pedidos_pena insert", e);
       toast.error("No se pudo guardar el pedido. Inténtalo de nuevo.", {
         description: e?.message || "Error de conexión con el servidor",
