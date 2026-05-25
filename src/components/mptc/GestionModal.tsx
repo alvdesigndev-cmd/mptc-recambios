@@ -133,17 +133,15 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
       if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
     }
-    const patch: Record<string, unknown> = {
+    const patch = {
       subfamilia: mergedSub || null,
       importe: mergedImporte || null,
       km: form.km || null,
       piezas: form.piezas || null,
       descripcion: mergedDesc || null,
       objecion: form.objecion || null,
+      ...(nuevasFotos.length ? { fotos: [...(g.fotos || []), ...nuevasFotos] } : {}),
     };
-    if (nuevasFotos.length) {
-      patch.fotos = [...(g.fotos || []), ...nuevasFotos];
-    }
     const { error } = await supabase.from("gestiones").update(patch).eq("id", g.id);
     setSaving(false);
     if (error) {
