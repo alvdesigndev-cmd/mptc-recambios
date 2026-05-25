@@ -222,7 +222,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     setSaving(true);
     // Abrimos la ventana de WhatsApp ANTES del await para que el navegador
     // no la bloquee como popup (si lo hace, cae a api.whatsapp.com bloqueado).
-    const waWin = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const waWin = window.open("", "_blank");
     try {
       const uploadedAudio = tieneAudio ? await uploadAudio() : null;
       const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
