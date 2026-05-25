@@ -35,12 +35,26 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     descripcion: "",
     objecion: "",
   });
+  const [familias, setFamilias] = useState<Familia[]>([]);
+  const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
+  const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: fams }, { data: subs }] = await Promise.all([
+        supabase.from("familias").select("id,nombre,icono").order("orden"),
+        supabase.from("subfamilias").select("id,familia_id,nombre").order("orden"),
+      ]);
+      setFamilias((fams as Familia[]) || []);
+      setSubfamilias((subs as Subfamilia[]) || []);
+    })();
+  }, []);
 
   useEffect(() => {
     if (gestion) {
