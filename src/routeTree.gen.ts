@@ -13,6 +13,7 @@ import { Route as PenaRouteImport } from './routes/pena'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as PedidoPenaTokenRouteImport } from './routes/pedido-pena.$token'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as AppNuevaRouteImport } from './routes/app.nueva'
 import { Route as AppHistorialRouteImport } from './routes/app.historial'
@@ -39,6 +40,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const PedidoPenaTokenRoute = PedidoPenaTokenRouteImport.update({
+  id: '/pedido-pena/$token',
+  path: '/pedido-pena/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmarTokenRoute = ConfirmarTokenRouteImport.update({
   id: '/confirmar/$token',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/app/historial': typeof AppHistorialRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
+  '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
+    | '/pedido-pena/$token'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
+    | '/pedido-pena/$token'
     | '/app'
   id:
     | '__root__'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/app/historial'
     | '/app/nueva'
     | '/confirmar/$token'
+    | '/pedido-pena/$token'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   PenaRoute: typeof PenaRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
+  PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/pedido-pena/$token': {
+      id: '/pedido-pena/$token'
+      path: '/pedido-pena/$token'
+      fullPath: '/pedido-pena/$token'
+      preLoaderRoute: typeof PedidoPenaTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/confirmar/$token': {
       id: '/confirmar/$token'
@@ -252,7 +272,18 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   PenaRoute: PenaRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
+  PedidoPenaTokenRoute: PedidoPenaTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
