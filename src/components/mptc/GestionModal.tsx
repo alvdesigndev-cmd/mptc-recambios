@@ -39,6 +39,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
+  // Tras guardar averías nuevas, guardamos un resumen para ofrecer los avisos
+  // (cliente / Peña) en lugar de cerrar el modal automáticamente.
+  const [avisoPendiente, setAvisoPendiente] = useState<{
+    nuevas: { texto: string; importe: string }[];
+    importeTotal: string;
+  } | null>(null);
+  const [clienteNotificado, setClienteNotificado] = useState(false);
+  const [penaNotificado, setPenaNotificado] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
