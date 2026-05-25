@@ -13,7 +13,7 @@ interface Props {
 
 type Familia = { id: string; nombre: string; icono: string };
 type Subfamilia = { id: string; familia_id: string; nombre: string };
-type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string };
+type NuevaAveria = { familia_id: string; subfamilia: string; importe: string; descripcion: string; fotos: string[]; subiendo: boolean };
 
 type EditState = {
   subfamilia: string;
@@ -86,12 +86,43 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     return isNaN(n) ? 0 : n;
   };
 
+  const subirFotos = async (idx: number, files: File[]) => {
+    if (!files.length) return;
+    setNuevas((prev) => {
+      const arr = [...prev];
+      arr[idx] = { ...arr[idx], subiendo: true };
+      return arr;
+    });
+    const tallerId = g.taller_id || "sin-taller";
+    const urls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${tallerId}/${g.id}/extra-${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage
+        .from("fotos-gestiones")
+        .upload(path, f, { contentType: f.type, upsert: false });
+      if (error) {
+        toast.error(`No se pudo subir ${f.name}`);
+        continue;
+      }
+      const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    setNuevas((prev) => {
+      const arr = [...prev];
+      arr[idx] = { ...arr[idx], fotos: [...arr[idx].fotos, ...urls], subiendo: false };
+      return arr;
+    });
+  };
+
   const guardarEdicion = async () => {
     setSaving(true);
     const validas = nuevas.filter((n) => n.subfamilia.trim());
     let mergedSub = form.subfamilia;
     let mergedDesc = form.descripcion;
     let mergedImporte = form.importe;
+    const nuevasFotos = nuevas.flatMap((n) => n.fotos);
     if (validas.length) {
       const subs = validas.map((n) => n.subfamilia.trim());
       mergedSub = [form.subfamilia, ...subs].filter(Boolean).join(" + ");
@@ -102,14 +133,16 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
       if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
     }
-    const { error } = await supabase.from("gestiones").update({
+    const patch = {
       subfamilia: mergedSub || null,
       importe: mergedImporte || null,
       km: form.km || null,
       piezas: form.piezas || null,
       descripcion: mergedDesc || null,
       objecion: form.objecion || null,
-    }).eq("id", g.id);
+      ...(nuevasFotos.length ? { fotos: [...(g.fotos || []), ...nuevasFotos] } : {}),
+    };
+    const { error } = await supabase.from("gestiones").update(patch).eq("id", g.id);
     setSaving(false);
     if (error) {
       toast.error("No se pudieron guardar los cambios");
@@ -187,7 +220,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setNuevas([...nuevas, { familia_id: "", subfamilia: "", importe: "", descripcion: "" }])}
+                  onClick={() => setNuevas([...nuevas, { familia_id: "", subfamilia: "", importe: "", descripcion: "", fotos: [], subiendo: false }])}
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground"
                 >
                   <Plus className="h-3.5 w-3.5" /> Añadir
@@ -267,6 +300,45 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                         }}
                         className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
                       />
+
+                      {/* Fotos extra */}
+                      <div>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Fotos {n.subiendo && <span className="ml-1 normal-case text-muted-foreground">(subiendo…)</span>}
+                          </span>
+                          <label className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface px-2 py-1 text-xs font-semibold hover:bg-surface-2">
+                            <Plus className="h-3 w-3" /> Añadir fotos
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => subirFotos(idx, Array.from(e.target.files || []))}
+                            />
+                          </label>
+                        </div>
+                        {n.fotos.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2">
+                            {n.fotos.map((u, fi) => (
+                              <div key={fi} className="relative overflow-hidden rounded-lg bg-surface">
+                                <img src={u} alt="" className="aspect-square w-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const arr = [...nuevas];
+                                    arr[idx] = { ...arr[idx], fotos: arr[idx].fotos.filter((_, i) => i !== fi) };
+                                    setNuevas(arr);
+                                  }}
+                                  className="absolute right-1 top-1 rounded-md bg-black/60 p-1 text-white"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
