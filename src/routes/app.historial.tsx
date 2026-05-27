@@ -43,6 +43,7 @@ interface PedidoDirecto {
 }
 
 function HistorialPage() {
+  const navigate = useNavigate();
   const settings = useSettings({ requireTaller: true });
   const [items, setItems] = useState<Gestion[]>([]);
   const [directos, setDirectos] = useState<PedidoDirecto[]>([]);
