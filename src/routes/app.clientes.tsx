@@ -248,6 +248,7 @@ function NuevoClienteModal({
 function ClienteModal({
   cliente, onClose, onNuevaGestion, onChanged,
 }: { cliente: Cliente; onClose: () => void; onNuevaGestion: (id: string) => void; onChanged: () => void }) {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({
     nombre: cliente.nombre || "",
@@ -286,8 +287,16 @@ function ClienteModal({
 
   const openGestionById = async (id: string) => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
-    if (data) setOpenGestion(data as Gestion);
+    if (!data) return;
+    const g = data as Gestion;
+    if (g.estado === "borrador") {
+      navigate({ to: "/app/nueva", search: { resume: g.id } });
+      onClose();
+    } else {
+      setOpenGestion(g);
+    }
   };
+
 
 
   const remove = async () => {
