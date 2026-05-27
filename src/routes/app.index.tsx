@@ -150,7 +150,12 @@ function Dashboard() {
           </div>
           <div className="space-y-2">
             {pendientes.map((g) => (
-              <GestionCard key={g.id} g={g} onClick={() => g.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: g.id } }) : setOpen(g)} />
+              <GestionCard
+                key={g.id}
+                g={g}
+                onClick={() => g.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: g.id } }) : setOpen(g)}
+                onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
+              />
             ))}
           </div>
         </section>
@@ -170,7 +175,12 @@ function Dashboard() {
         ) : (
           <div className="space-y-2">
             {recientes.map((g) => (
-              <GestionCard key={g.id} g={g} onClick={() => g.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: g.id } }) : setOpen(g)} />
+              <GestionCard
+                key={g.id}
+                g={g}
+                onClick={() => g.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: g.id } }) : setOpen(g)}
+                onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
+              />
             ))}
           </div>
         )}

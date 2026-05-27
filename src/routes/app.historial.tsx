@@ -161,7 +161,12 @@ function HistorialPage() {
         <div className="space-y-2">
           {feed.map((entry) =>
             entry.kind === "g" ? (
-              <GestionCard key={"g-" + entry.item.id} g={entry.item} onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)} />
+              <GestionCard
+                key={"g-" + entry.item.id}
+                g={entry.item}
+                onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)}
+                onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
+              />
             ) : (
               <PedidoDirectoCard
                 key={"d-" + entry.item.id}
