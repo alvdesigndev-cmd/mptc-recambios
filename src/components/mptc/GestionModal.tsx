@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
+import { MicButton } from "@/components/mptc/MicButton";
 
 interface Props {
   gestion: Gestion | null;
@@ -23,6 +24,7 @@ type EditState = {
   piezas: string;
   descripcion: string;
   objecion: string;
+  mensaje: string;
 };
 
 export function GestionModal({ gestion, onClose, onChanged }: Props) {
@@ -35,7 +37,10 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     piezas: "",
     descripcion: "",
     objecion: "",
+    mensaje: "",
   });
+  // Snapshot del mensaje al iniciar el dictado, para anexar sin pisar.
+  const mensajeBaseRef = useRef<string>("");
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
@@ -79,6 +84,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         piezas: gestion.piezas || "",
         descripcion: gestion.descripcion || "",
         objecion: gestion.objecion || "",
+        mensaje: gestion.mensaje || "",
       });
     }
   }, [gestion]);
