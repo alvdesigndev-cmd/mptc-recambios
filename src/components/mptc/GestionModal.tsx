@@ -313,6 +313,40 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             <Field label="Notas" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} multiline />
             <Field label="Objeción" value={form.objecion} onChange={(v) => setForm({ ...form, objecion: v })} multiline />
 
+            {/* Mensaje WhatsApp — se conserva entre ediciones y permite ampliar por texto o voz */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Mensaje WhatsApp
+                </span>
+                <MicButton
+                  size="sm"
+                  title="Dictar y añadir al mensaje"
+                  onStart={() => { mensajeBaseRef.current = form.mensaje || ""; }}
+                  onInterim={(t) => {
+                    const base = mensajeBaseRef.current;
+                    setForm((f) => ({ ...f, mensaje: base ? `${base.trimEnd()}\n${t}` : t }));
+                  }}
+                  onFinal={(t) => {
+                    const base = mensajeBaseRef.current;
+                    const next = base ? `${base.trimEnd()}\n${t}` : t;
+                    mensajeBaseRef.current = next;
+                    setForm((f) => ({ ...f, mensaje: next }));
+                  }}
+                />
+              </div>
+              <textarea
+                value={form.mensaje}
+                onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
+                rows={8}
+                placeholder="El mensaje original se mantiene. Añade aquí la nueva avería (a mano o con el micro)."
+                className="w-full whitespace-pre-wrap rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Al guardar, las averías añadidas abajo se anexarán automáticamente al mensaje.
+              </p>
+            </div>
+
             {/* Añadir averías extra */}
             <div className="rounded-2xl border border-dashed border-border-strong p-3">
               <div className="mb-2 flex items-center justify-between">
