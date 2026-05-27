@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import type { Gestion } from "@/lib/mptc/types";
 import { loadSettings, PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { useFamilias } from "@/lib/mptc/useFamilias";
