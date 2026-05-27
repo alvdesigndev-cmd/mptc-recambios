@@ -43,6 +43,10 @@ export function MicButton({
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const recRef = useRef<SR | null>(null);
+  // Índice del próximo result a procesar. Necesario porque en algunos
+  // navegadores (Chrome) e.resultIndex no avanza correctamente con
+  // continuous=true, lo que provoca que los finales se emitan repetidos.
+  const nextIndexRef = useRef(0);
   // Mantener handlers en refs para no re-crear el recognition cada render.
   const handlers = useRef({ onInterim, onFinal, onResult, onStart, onStop });
   handlers.current = { onInterim, onFinal, onResult, onStart, onStop };
@@ -58,18 +62,22 @@ export function MicButton({
     rec.onresult = (e: any) => {
       let interim = "";
       let finalChunk = "";
-      // Recorremos sólo desde resultIndex para emitir cada final una sola vez.
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      const start = nextIndexRef.current;
+      for (let i = start; i < e.results.length; i++) {
         const r = e.results[i];
         const txt = r[0]?.transcript || "";
-        if (r.isFinal) finalChunk += txt;
-        else interim += txt;
+        if (r.isFinal) {
+          finalChunk += txt;
+          // Marcamos este índice como ya procesado.
+          nextIndexRef.current = i + 1;
+        } else {
+          interim += txt;
+        }
       }
       const h = handlers.current;
       if (finalChunk.trim()) {
         const t = finalChunk.trim();
         h.onFinal?.(t);
-        // Legado: si no hay handlers granulares, onResult sólo en final.
         if (!h.onFinal && !h.onInterim) h.onResult?.(t);
       }
       if (interim.trim() && h.onInterim) {
@@ -78,10 +86,12 @@ export function MicButton({
     };
     rec.onend = () => {
       setListening(false);
+      nextIndexRef.current = 0;
       handlers.current.onStop?.();
     };
     rec.onerror = () => {
       setListening(false);
+      nextIndexRef.current = 0;
       handlers.current.onStop?.();
     };
     recRef.current = rec;
@@ -95,6 +105,7 @@ export function MicButton({
     if (!rec) return;
     if (listening) { try { rec.stop(); } catch {} return; }
     try {
+      nextIndexRef.current = 0;
       rec.start();
       setListening(true);
       handlers.current.onStart?.();
