@@ -248,6 +248,7 @@ function NuevoClienteModal({
 function ClienteModal({
   cliente, onClose, onNuevaGestion, onChanged,
 }: { cliente: Cliente; onClose: () => void; onNuevaGestion: (id: string) => void; onChanged: () => void }) {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({
     nombre: cliente.nombre || "",
