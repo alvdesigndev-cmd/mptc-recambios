@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
+import { MicButton } from "@/components/mptc/MicButton";
 
 interface Props {
   gestion: Gestion | null;
@@ -23,6 +24,7 @@ type EditState = {
   piezas: string;
   descripcion: string;
   objecion: string;
+  mensaje: string;
 };
 
 export function GestionModal({ gestion, onClose, onChanged }: Props) {
@@ -35,7 +37,10 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     piezas: "",
     descripcion: "",
     objecion: "",
+    mensaje: "",
   });
+  // Snapshot del mensaje al iniciar el dictado, para anexar sin pisar.
+  const mensajeBaseRef = useRef<string>("");
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [nuevas, setNuevas] = useState<NuevaAveria[]>([]);
@@ -79,6 +84,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         piezas: gestion.piezas || "",
         descripcion: gestion.descripcion || "",
         objecion: gestion.objecion || "",
+        mensaje: gestion.mensaje || "",
       });
     }
   }, [gestion]);
@@ -151,6 +157,21 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
       if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
     }
+    // Construir el bloque a anexar al mensaje original (si hay averías nuevas).
+    let mergedMensaje = form.mensaje;
+    if (validas.length) {
+      const bloqueMensaje = validas
+        .map((n) => {
+          const fam = familias.find((f) => f.id === n.familia_id);
+          const tit = fam ? `${fam.nombre} / ${n.subfamilia.trim()}` : n.subfamilia.trim();
+          const imp = n.importe ? ` — *${n.importe} €*` : "";
+          const nota = n.descripcion ? `\n  ${n.descripcion}` : "";
+          return `• ${tit}${imp}${nota}`;
+        })
+        .join("\n");
+      const cabecera = `\n\n— Avería añadida (${new Date().toLocaleDateString("es-ES")}) —\n`;
+      mergedMensaje = (form.mensaje || "").trimEnd() + cabecera + bloqueMensaje;
+    }
     const patch = {
       subfamilia: mergedSub || null,
       importe: mergedImporte || null,
@@ -158,6 +179,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       piezas: form.piezas || null,
       descripcion: mergedDesc || null,
       objecion: form.objecion || null,
+      mensaje: mergedMensaje || null,
       ...(nuevasFotos.length ? { fotos: [...(g.fotos || []), ...nuevasFotos] } : {}),
     };
     const { error } = await supabase.from("gestiones").update(patch).eq("id", g.id);
@@ -170,14 +192,15 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     setEditing(false);
     setNuevas([]);
     onChanged();
+    // Reflejar cambios en la copia local para los avisos.
+    g.subfamilia = mergedSub;
+    g.importe = mergedImporte;
+    g.descripcion = mergedDesc;
+    g.mensaje = mergedMensaje;
+    setForm((f) => ({ ...f, mensaje: mergedMensaje }));
     // Si se han añadido averías nuevas, ofrecemos avisar al cliente y/o a Peña
     // antes de cerrar el modal. Si no hubo, cerramos como antes.
     if (resumenNuevas.length) {
-      // Actualizamos la copia local de la gestión para que los mensajes usen
-      // los datos nuevos (importe, subfamilia agregada, etc.).
-      g.subfamilia = mergedSub;
-      g.importe = mergedImporte;
-      g.descripcion = mergedDesc;
       setAvisoPendiente({ nuevas: resumenNuevas, importeTotal: mergedImporte });
       setClienteNotificado(false);
       setPenaNotificado(false);
@@ -198,7 +221,11 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     const url = typeof window !== "undefined"
       ? `${window.location.origin}/confirmar/${g.confirm_token || ""}`
       : "";
-    const msg = `Hola ${g.cliente_nombre || ""} 👋\n\nTe recuerdo el presupuesto de tu ${g.vehiculo || ""} (${g.matricula || ""}):\n\n💰 *${g.importe || "—"} €*\n\n✅ Confirma aquí: ${url}`;
+    // Si tenemos el mensaje original guardado, lo reutilizamos para no perder
+    // las averías acumuladas. Si no, generamos un recordatorio corto.
+    const msg = g.mensaje && g.mensaje.trim()
+      ? g.mensaje
+      : `Hola ${g.cliente_nombre || ""} 👋\n\nTe recuerdo el presupuesto de tu ${g.vehiculo || ""} (${g.matricula || ""}):\n\n💰 *${g.importe || "—"} €*\n\n✅ Confirma aquí: ${url}`;
     window.open(buildWAUrl(g.cliente_telefono, msg), "_blank", "noopener,noreferrer");
   };
 
@@ -289,6 +316,40 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             <Field label="Piezas" value={form.piezas} onChange={(v) => setForm({ ...form, piezas: v })} multiline />
             <Field label="Notas" value={form.descripcion} onChange={(v) => setForm({ ...form, descripcion: v })} multiline />
             <Field label="Objeción" value={form.objecion} onChange={(v) => setForm({ ...form, objecion: v })} multiline />
+
+            {/* Mensaje WhatsApp — se conserva entre ediciones y permite ampliar por texto o voz */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Mensaje WhatsApp
+                </span>
+                <MicButton
+                  size="sm"
+                  title="Dictar y añadir al mensaje"
+                  onStart={() => { mensajeBaseRef.current = form.mensaje || ""; }}
+                  onInterim={(t) => {
+                    const base = mensajeBaseRef.current;
+                    setForm((f) => ({ ...f, mensaje: base ? `${base.trimEnd()}\n${t}` : t }));
+                  }}
+                  onFinal={(t) => {
+                    const base = mensajeBaseRef.current;
+                    const next = base ? `${base.trimEnd()}\n${t}` : t;
+                    mensajeBaseRef.current = next;
+                    setForm((f) => ({ ...f, mensaje: next }));
+                  }}
+                />
+              </div>
+              <textarea
+                value={form.mensaje}
+                onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
+                rows={8}
+                placeholder="El mensaje original se mantiene. Añade aquí la nueva avería (a mano o con el micro)."
+                className="w-full whitespace-pre-wrap rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Al guardar, las averías añadidas abajo se anexarán automáticamente al mensaje.
+              </p>
+            </div>
 
             {/* Añadir averías extra */}
             <div className="rounded-2xl border border-dashed border-border-strong p-3">

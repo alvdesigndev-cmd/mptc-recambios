@@ -106,6 +106,7 @@ export type Database = {
           importe: string | null
           km: string | null
           matricula: string | null
+          mensaje: string | null
           objecion: string | null
           pedido_pena: boolean
           piezas: string | null
@@ -128,6 +129,7 @@ export type Database = {
           importe?: string | null
           km?: string | null
           matricula?: string | null
+          mensaje?: string | null
           objecion?: string | null
           pedido_pena?: boolean
           piezas?: string | null
@@ -150,6 +152,7 @@ export type Database = {
           importe?: string | null
           km?: string | null
           matricula?: string | null
+          mensaje?: string | null
           objecion?: string | null
           pedido_pena?: boolean
           piezas?: string | null
