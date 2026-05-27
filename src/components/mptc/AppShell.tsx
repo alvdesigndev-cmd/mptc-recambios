@@ -100,14 +100,19 @@ export function AppShell({ children }: Props) {
             </div>
           </nav>
 
-          {/* FAB */}
-          <Link
-            to="/app/nueva"
+          {/* FAB: siempre arranca una gestión NUEVA aunque ya estés en /app/nueva.
+              El borrador anterior se conserva en BD como "Reanudar". */}
+          <button
+            type="button"
             aria-label="Nueva gestión"
+            onClick={() => {
+              try { sessionStorage.removeItem("mptc:nueva:draft"); } catch {}
+              navigate({ to: "/app/nueva", search: { fresh: String(Date.now()) } });
+            }}
             className="fixed bottom-[78px] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-glow-blue)] transition-transform active:scale-95"
           >
             <Plus className="h-6 w-6" />
-          </Link>
+          </button>
         </>
       )}
     </div>

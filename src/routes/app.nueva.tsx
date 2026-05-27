@@ -571,7 +571,7 @@ function NuevaPage() {
   ) => {
     setBusy(true);
     try {
-      const insertPayload = {
+      const payload = {
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
         cliente_nombre: nombre,
@@ -585,16 +585,29 @@ function NuevaPage() {
         confirm_token: confirmToken,
         fotos: fotosUrlsOk,
         mensaje: mensaje || null,
+        borrador_step: null,
       };
-      const { data, error } = await supabase
-        .from("gestiones")
-        .insert(insertPayload)
-        .select("id")
-        .single();
-      if (error || !data) throw error || new Error("insert failed");
+      let id: string;
+      if (gestionId) {
+        const { error } = await supabase
+          .from("gestiones")
+          .update(payload)
+          .eq("id", gestionId);
+        if (error) throw error;
+        id = gestionId;
+      } else {
+        const { data, error } = await supabase
+          .from("gestiones")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error || !data) throw error || new Error("insert failed");
+        id = data.id as string;
+        setGestionId(id);
+      }
       await upsertCliente();
       clearDraft();
-      return data.id as string;
+      return id;
     } finally {
       setBusy(false);
     }
