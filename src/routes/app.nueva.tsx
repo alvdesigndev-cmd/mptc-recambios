@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import type { Gestion } from "@/lib/mptc/types";
 import { loadSettings, PENA_PHONE, type AppSettings } from "@/lib/mptc/profiles";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { useFamilias } from "@/lib/mptc/useFamilias";
@@ -29,9 +30,19 @@ import { MicButton } from "@/components/mptc/MicButton";
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
     clienteId: typeof s.clienteId === "string" ? s.clienteId : undefined,
+    resume: typeof s.resume === "string" ? s.resume : undefined,
+    fresh: typeof s.fresh === "string" ? s.fresh : undefined,
   }),
-  component: NuevaPage,
+  component: NuevaRoute,
 });
+
+function NuevaRoute() {
+  // Remontar la página cuando se pulse "+" (cambia search.fresh) o cuando
+  // se reanude una gestión distinta (cambia search.resume), para resetear
+  // todo el estado interno y los efectos de carga.
+  const { fresh, resume } = Route.useSearch();
+  return <NuevaPage key={`${fresh ?? "x"}::${resume ?? "x"}`} />;
+}
 
 type Step = 1 | 2 | 3;
 
@@ -55,6 +66,8 @@ interface Draft {
   mensaje?: string; mensajeTouched?: boolean;
   confirmToken?: string; gestionFolder?: string;
   pedirPena?: boolean;
+  gestionId?: string | null;
+  fotosUrlsOk?: string[];
 }
 
 function loadDraft(): Draft {
@@ -134,6 +147,8 @@ function NuevaPage() {
   const [pedirPena, setPedirPena] = useState(draft0.pedirPena ?? false);
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
+  // Id en BD del borrador / gestión en curso (para no duplicar al guardar).
+  const [gestionId, setGestionId] = useState<string | null>(draft0.gestionId ?? null);
   const runOcr = useServerFn(ocrMatricula);
 
   // Persistir borrador en sessionStorage para no perder datos al volver atrás.
@@ -142,14 +157,14 @@ function NuevaPage() {
       step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
       categoria, subfamilia, averiaQuery,
       importe, descripcion, piezas, mensaje, mensajeTouched,
-      confirmToken, gestionFolder, pedirPena,
+      confirmToken, gestionFolder, pedirPena, gestionId,
     };
     try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
   }, [
     step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
     categoria, subfamilia, averiaQuery,
     importe, descripcion, piezas, mensaje, mensajeTouched,
-    confirmToken, gestionFolder, pedirPena,
+    confirmToken, gestionFolder, pedirPena, gestionId,
   ]);
 
   const clearDraft = () => { try { sessionStorage.removeItem(DRAFT_KEY); } catch {} };
@@ -177,6 +192,102 @@ function NuevaPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
+
+  // Reanudar una gestión existente desde ?resume={id}: rellenar todos los
+  // campos y volver al paso por el que se quedó el usuario.
+  useEffect(() => {
+    const id = (search as { resume?: string }).resume;
+    if (!id || !settings) return;
+    if (gestionId === id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("gestiones")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (!data) return;
+      const g = data as Gestion;
+      setGestionId(g.id);
+      setNombre(g.cliente_nombre || "");
+      setTelefono(g.cliente_telefono || "");
+      setMatricula(g.matricula || "");
+      setVehiculo(g.vehiculo || "");
+      setKm(g.km || "");
+      setCategoria(g.categoria || null);
+      setSubfamilia(g.subfamilia || null);
+      setImporte(g.importe || "");
+      setDescripcion(g.descripcion || "");
+      setPiezas(g.piezas || "");
+      if (g.mensaje) {
+        setMensaje(g.mensaje);
+        setMensajeTouched(true);
+        mensajeBaseRef.current = g.mensaje;
+      }
+      if (g.fotos && g.fotos.length) {
+        setFotosUrls(g.fotos);
+        setFotosError(g.fotos.map(() => false));
+      }
+      const s = (g.borrador_step ?? 1) as Step;
+      setStep(s === 2 || s === 3 ? s : 1);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  // Autosave del borrador en BD. Permite mostrar la gestión a medio hacer en
+  // Inicio/Historial con el estado "Reanudar". Solo se guarda si hay
+  // contenido mínimo (algún dato del cliente o avería) y mientras la
+  // gestión no haya pasado todavía a "enviado" / "en-curso".
+  useEffect(() => {
+    if (!settings) return;
+    const tieneContenido = !!(
+      nombre.trim() || matricula.trim() || telefono.trim() ||
+      descripcion.trim() || piezas.trim() || importe.trim() || subfamilia
+    );
+    if (!tieneContenido) return;
+    const t = setTimeout(async () => {
+      const payload = {
+        taller_id: settings.tallerId,
+        taller_nombre: settings.tallerName,
+        cliente_nombre: nombre,
+        cliente_telefono: normalizeTelefono(telefono),
+        matricula: normalizeMatricula(matricula),
+        vehiculo, km, categoria, subfamilia,
+        descripcion, piezas, importe,
+        mensaje: mensaje || null,
+        confirm_token: confirmToken,
+        fotos: fotosUrlsOk,
+        borrador_step: step,
+      };
+      if (gestionId) {
+        // Solo actualizamos como borrador si sigue siendo borrador (no pisar
+        // gestiones ya enviadas/aceptadas).
+        const { data: row } = await supabase
+          .from("gestiones")
+          .select("estado")
+          .eq("id", gestionId)
+          .maybeSingle();
+        if (!row || row.estado === "borrador") {
+          await supabase
+            .from("gestiones")
+            .update({ ...payload, estado: "borrador" })
+            .eq("id", gestionId);
+        }
+      } else {
+        const { data, error } = await supabase
+          .from("gestiones")
+          .insert({ ...payload, estado: "borrador" })
+          .select("id")
+          .single();
+        if (!error && data) setGestionId(data.id as string);
+      }
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    settings, step, nombre, telefono, matricula, vehiculo, km,
+    categoria, subfamilia, importe, descripcion, piezas, mensaje,
+    fotosUrls, gestionId, confirmToken,
+  ]);
 
   // Búsqueda de clientes guardados — SÓLO usa el buscador dedicado.
   useEffect(() => {
@@ -460,7 +571,7 @@ function NuevaPage() {
   ) => {
     setBusy(true);
     try {
-      const insertPayload = {
+      const payload = {
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
         cliente_nombre: nombre,
@@ -474,16 +585,29 @@ function NuevaPage() {
         confirm_token: confirmToken,
         fotos: fotosUrlsOk,
         mensaje: mensaje || null,
+        borrador_step: null,
       };
-      const { data, error } = await supabase
-        .from("gestiones")
-        .insert(insertPayload)
-        .select("id")
-        .single();
-      if (error || !data) throw error || new Error("insert failed");
+      let id: string;
+      if (gestionId) {
+        const { error } = await supabase
+          .from("gestiones")
+          .update(payload)
+          .eq("id", gestionId);
+        if (error) throw error;
+        id = gestionId;
+      } else {
+        const { data, error } = await supabase
+          .from("gestiones")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error || !data) throw error || new Error("insert failed");
+        id = data.id as string;
+        setGestionId(id);
+      }
       await upsertCliente();
       clearDraft();
-      return data.id as string;
+      return id;
     } finally {
       setBusy(false);
     }

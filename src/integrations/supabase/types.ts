@@ -94,6 +94,7 @@ export type Database = {
       }
       gestiones: {
         Row: {
+          borrador_step: number | null
           categoria: string | null
           cliente_nombre: string | null
           cliente_telefono: string | null
@@ -117,6 +118,7 @@ export type Database = {
           wa_abierto: boolean
         }
         Insert: {
+          borrador_step?: number | null
           categoria?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           wa_abierto?: boolean
         }
         Update: {
+          borrador_step?: number | null
           categoria?: string | null
           cliente_nombre?: string | null
           cliente_telefono?: string | null
