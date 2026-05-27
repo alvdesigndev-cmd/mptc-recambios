@@ -161,7 +161,7 @@ function HistorialPage() {
         <div className="space-y-2">
           {feed.map((entry) =>
             entry.kind === "g" ? (
-              <GestionCard key={"g-" + entry.item.id} g={entry.item} onClick={() => setOpen(entry.item)} />
+              <GestionCard key={"g-" + entry.item.id} g={entry.item} onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)} />
             ) : (
               <PedidoDirectoCard
                 key={"d-" + entry.item.id}
