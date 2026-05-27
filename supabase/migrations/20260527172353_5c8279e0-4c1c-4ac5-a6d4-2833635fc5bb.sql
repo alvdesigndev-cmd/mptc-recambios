@@ -1,0 +1,1 @@
+ALTER TABLE public.gestiones ADD COLUMN IF NOT EXISTS mensaje text;
