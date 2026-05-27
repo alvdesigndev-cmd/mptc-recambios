@@ -29,9 +29,19 @@ import { MicButton } from "@/components/mptc/MicButton";
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
     clienteId: typeof s.clienteId === "string" ? s.clienteId : undefined,
+    resume: typeof s.resume === "string" ? s.resume : undefined,
+    fresh: typeof s.fresh === "string" ? s.fresh : undefined,
   }),
-  component: NuevaPage,
+  component: NuevaRoute,
 });
+
+function NuevaRoute() {
+  // Remontar la página cuando se pulse "+" (cambia search.fresh) o cuando
+  // se reanude una gestión distinta (cambia search.resume), para resetear
+  // todo el estado interno y los efectos de carga.
+  const { fresh, resume } = Route.useSearch();
+  return <NuevaPage key={`${fresh ?? "x"}::${resume ?? "x"}`} />;
+}
 
 type Step = 1 | 2 | 3;
 
@@ -55,6 +65,8 @@ interface Draft {
   mensaje?: string; mensajeTouched?: boolean;
   confirmToken?: string; gestionFolder?: string;
   pedirPena?: boolean;
+  gestionId?: string | null;
+  fotosUrlsOk?: string[];
 }
 
 function loadDraft(): Draft {
