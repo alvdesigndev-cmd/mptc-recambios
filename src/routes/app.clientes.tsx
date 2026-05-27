@@ -287,8 +287,16 @@ function ClienteModal({
 
   const openGestionById = async (id: string) => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
-    if (data) setOpenGestion(data as Gestion);
+    if (!data) return;
+    const g = data as Gestion;
+    if (g.estado === "borrador") {
+      navigate({ to: "/app/nueva", search: { resume: g.id } });
+      onClose();
+    } else {
+      setOpenGestion(g);
+    }
   };
+
 
 
   const remove = async () => {
