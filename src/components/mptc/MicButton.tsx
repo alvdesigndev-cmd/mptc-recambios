@@ -105,6 +105,7 @@ export function MicButton({
     if (!rec) return;
     if (listening) { try { rec.stop(); } catch {} return; }
     try {
+      nextIndexRef.current = 0;
       rec.start();
       setListening(true);
       handlers.current.onStart?.();
