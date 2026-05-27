@@ -221,7 +221,11 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     const url = typeof window !== "undefined"
       ? `${window.location.origin}/confirmar/${g.confirm_token || ""}`
       : "";
-    const msg = `Hola ${g.cliente_nombre || ""} 👋\n\nTe recuerdo el presupuesto de tu ${g.vehiculo || ""} (${g.matricula || ""}):\n\n💰 *${g.importe || "—"} €*\n\n✅ Confirma aquí: ${url}`;
+    // Si tenemos el mensaje original guardado, lo reutilizamos para no perder
+    // las averías acumuladas. Si no, generamos un recordatorio corto.
+    const msg = g.mensaje && g.mensaje.trim()
+      ? g.mensaje
+      : `Hola ${g.cliente_nombre || ""} 👋\n\nTe recuerdo el presupuesto de tu ${g.vehiculo || ""} (${g.matricula || ""}):\n\n💰 *${g.importe || "—"} €*\n\n✅ Confirma aquí: ${url}`;
     window.open(buildWAUrl(g.cliente_telefono, msg), "_blank", "noopener,noreferrer");
   };
 
