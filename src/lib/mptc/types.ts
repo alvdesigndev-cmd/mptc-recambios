@@ -24,6 +24,7 @@ export interface Gestion {
   fotos: string[] | null;
   confirm_token: string | null;
   objecion: string | null;
+  mensaje?: string | null;
   wa_abierto?: boolean;
   created_at: string;
 }

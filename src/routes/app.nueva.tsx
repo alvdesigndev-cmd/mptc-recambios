@@ -473,6 +473,7 @@ function NuevaPage() {
         wa_abierto: opts?.waAbierto ?? false,
         confirm_token: confirmToken,
         fotos: fotosUrlsOk,
+        mensaje: mensaje || null,
       };
       const { data, error } = await supabase
         .from("gestiones")
