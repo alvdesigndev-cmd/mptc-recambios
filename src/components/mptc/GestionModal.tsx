@@ -483,6 +483,39 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 })}
               </div>
             </div>
+
+            {/* Vista previa del mensaje final (con averías nuevas anexadas) */}
+            {(() => {
+              const validas = nuevas.filter((n) => n.subfamilia.trim());
+              let preview = form.mensaje || "";
+              if (validas.length) {
+                const bloque = validas
+                  .map((n) => {
+                    const fam = familias.find((f) => f.id === n.familia_id);
+                    const tit = fam ? `${fam.nombre} / ${n.subfamilia.trim()}` : n.subfamilia.trim();
+                    const imp = n.importe ? ` — *${n.importe} €*` : "";
+                    const nota = n.descripcion ? `\n  ${n.descripcion}` : "";
+                    return `• ${tit}${imp}${nota}`;
+                  })
+                  .join("\n");
+                const cabecera = `\n\n— Avería añadida (${new Date().toLocaleDateString("es-ES")}) —\n`;
+                preview = (form.mensaje || "").trimEnd() + cabecera + bloque;
+              }
+              if (!preview.trim()) return null;
+              return (
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Vista previa del mensaje {validas.length > 0 && <span className="ml-1 normal-case text-primary">(actualizado)</span>}
+                  </span>
+                  <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-surface-2 px-3 py-2 text-[13px] leading-relaxed">
+                    {preview}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Así se enviará el mensaje completo al cliente tras guardar.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="space-y-3 text-sm">
