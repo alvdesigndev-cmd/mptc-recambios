@@ -157,6 +157,21 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       const total = parseImporte(form.importe) + validas.reduce((a, n) => a + parseImporte(n.importe), 0);
       if (total > 0) mergedImporte = total.toFixed(2).replace(/\.00$/, "");
     }
+    // Construir el bloque a anexar al mensaje original (si hay averías nuevas).
+    let mergedMensaje = form.mensaje;
+    if (validas.length) {
+      const bloqueMensaje = validas
+        .map((n) => {
+          const fam = familias.find((f) => f.id === n.familia_id);
+          const tit = fam ? `${fam.nombre} / ${n.subfamilia.trim()}` : n.subfamilia.trim();
+          const imp = n.importe ? ` — *${n.importe} €*` : "";
+          const nota = n.descripcion ? `\n  ${n.descripcion}` : "";
+          return `• ${tit}${imp}${nota}`;
+        })
+        .join("\n");
+      const cabecera = `\n\n— Avería añadida (${new Date().toLocaleDateString("es-ES")}) —\n`;
+      mergedMensaje = (form.mensaje || "").trimEnd() + cabecera + bloqueMensaje;
+    }
     const patch = {
       subfamilia: mergedSub || null,
       importe: mergedImporte || null,
@@ -164,6 +179,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       piezas: form.piezas || null,
       descripcion: mergedDesc || null,
       objecion: form.objecion || null,
+      mensaje: mergedMensaje || null,
       ...(nuevasFotos.length ? { fotos: [...(g.fotos || []), ...nuevasFotos] } : {}),
     };
     const { error } = await supabase.from("gestiones").update(patch).eq("id", g.id);
@@ -176,14 +192,15 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     setEditing(false);
     setNuevas([]);
     onChanged();
+    // Reflejar cambios en la copia local para los avisos.
+    g.subfamilia = mergedSub;
+    g.importe = mergedImporte;
+    g.descripcion = mergedDesc;
+    g.mensaje = mergedMensaje;
+    setForm((f) => ({ ...f, mensaje: mergedMensaje }));
     // Si se han añadido averías nuevas, ofrecemos avisar al cliente y/o a Peña
     // antes de cerrar el modal. Si no hubo, cerramos como antes.
     if (resumenNuevas.length) {
-      // Actualizamos la copia local de la gestión para que los mensajes usen
-      // los datos nuevos (importe, subfamilia agregada, etc.).
-      g.subfamilia = mergedSub;
-      g.importe = mergedImporte;
-      g.descripcion = mergedDesc;
       setAvisoPendiente({ nuevas: resumenNuevas, importeTotal: mergedImporte });
       setClienteNotificado(false);
       setPenaNotificado(false);
