@@ -1,12 +1,13 @@
-import { Clock, Send, Check, X as XIcon, CheckCheck } from "lucide-react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2 } from "lucide-react";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 
 interface Props {
   g: Gestion;
   onClick: () => void;
+  onDelete?: (g: Gestion) => void;
 }
 
-export function GestionCard({ g, onClick }: Props) {
+export function GestionCard({ g, onClick, onDelete }: Props) {
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
@@ -14,11 +15,15 @@ export function GestionCard({ g, onClick }: Props) {
     g.estado === "rechazado" ? XIcon :
     g.estado === "completado" ? CheckCheck : Clock;
 
+  const isBorrador = g.estado === "borrador";
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-2xl border border-border bg-surface p-3.5 text-left transition hover:border-primary/40 hover:bg-surface-2"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      className="flex w-full items-start gap-3 rounded-2xl border border-border bg-surface p-3.5 text-left transition hover:border-primary/40 hover:bg-surface-2 cursor-pointer"
     >
       <div className={"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl " + meta.cls}>
         <Icon className="h-5 w-5" />
@@ -42,6 +47,21 @@ export function GestionCard({ g, onClick }: Props) {
           </span>
         </div>
       </div>
-    </button>
+      {isBorrador && onDelete && (
+        <button
+          type="button"
+          aria-label="Eliminar borrador"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("¿Eliminar este borrador? No se podrá reanudar.")) {
+              onDelete(g);
+            }
+          }}
+          className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 }
