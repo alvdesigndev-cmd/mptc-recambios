@@ -1,4 +1,5 @@
 export type EstadoGestion =
+  | "borrador"
   | "en-curso"
   | "enviado"
   | "aceptado"
@@ -25,11 +26,13 @@ export interface Gestion {
   confirm_token: string | null;
   objecion: string | null;
   mensaje?: string | null;
+  borrador_step?: number | null;
   wa_abierto?: boolean;
   created_at: string;
 }
 
 export const ESTADO_META: Record<string, { label: string; cls: string }> = {
+  "borrador": { label: "Reanudar", cls: "bg-accent/15 text-accent" },
   "en-curso": { label: "En curso", cls: "bg-warning/15 text-warning" },
   "enviado":  { label: "Enviado",  cls: "bg-primary/15 text-primary" },
   "aceptado": { label: "Aceptado", cls: "bg-success/15 text-success" },
