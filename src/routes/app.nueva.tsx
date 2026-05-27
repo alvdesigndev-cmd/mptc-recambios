@@ -146,6 +146,8 @@ function NuevaPage() {
   const [pedirPena, setPedirPena] = useState(draft0.pedirPena ?? false);
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
+  // Id en BD del borrador / gestión en curso (para no duplicar al guardar).
+  const [gestionId, setGestionId] = useState<string | null>(draft0.gestionId ?? null);
   const runOcr = useServerFn(ocrMatricula);
 
   // Persistir borrador en sessionStorage para no perder datos al volver atrás.
@@ -154,14 +156,14 @@ function NuevaPage() {
       step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
       categoria, subfamilia, averiaQuery,
       importe, descripcion, piezas, mensaje, mensajeTouched,
-      confirmToken, gestionFolder, pedirPena,
+      confirmToken, gestionFolder, pedirPena, gestionId,
     };
     try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
   }, [
     step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
     categoria, subfamilia, averiaQuery,
     importe, descripcion, piezas, mensaje, mensajeTouched,
-    confirmToken, gestionFolder, pedirPena,
+    confirmToken, gestionFolder, pedirPena, gestionId,
   ]);
 
   const clearDraft = () => { try { sessionStorage.removeItem(DRAFT_KEY); } catch {} };
