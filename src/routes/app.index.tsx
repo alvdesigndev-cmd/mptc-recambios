@@ -170,7 +170,7 @@ function Dashboard() {
         ) : (
           <div className="space-y-2">
             {recientes.map((g) => (
-              <GestionCard key={g.id} g={g} onClick={() => setOpen(g)} />
+              <GestionCard key={g.id} g={g} onClick={() => g.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: g.id } }) : setOpen(g)} />
             ))}
           </div>
         )}
