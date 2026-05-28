@@ -607,7 +607,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                   <Send className="h-4 w-4" /> {g.estado === "en-curso" ? "Enviar" : "Reenviar"}
                 </button>
               )}
-              {(g.estado === "enviado" || g.estado === "aceptado") && !g.pedido_pena && (
+              {g.estado !== "borrador" && !g.pedido_pena && (
                 <button onClick={pedirPena} className={btnAccent}>
                   <Truck className="h-4 w-4" /> Pedir a Peña
                 </button>
