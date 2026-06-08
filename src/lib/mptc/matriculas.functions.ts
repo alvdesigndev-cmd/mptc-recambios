@@ -11,10 +11,12 @@ const PlateSchema = z.object({
     .regex(/^[A-Z0-9]+$/, "Matrícula inválida"),
 });
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+
 export type PlateLookupResult = {
   ok: boolean;
   plate: string;
-  data?: unknown;
+  data?: JsonValue;
   error?: string;
 };
 
