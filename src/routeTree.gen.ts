@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as PedidoPenaTokenRouteImport } from './routes/pedido-pena.$token'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as AppNuevaRouteImport } from './routes/app.nueva'
+import { Route as AppMatriculasRouteImport } from './routes/app.matriculas'
 import { Route as AppHistorialRouteImport } from './routes/app.historial'
 import { Route as AppFamiliasRouteImport } from './routes/app.familias'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
@@ -56,6 +57,11 @@ const AppNuevaRoute = AppNuevaRouteImport.update({
   path: '/nueva',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMatriculasRoute = AppMatriculasRouteImport.update({
+  id: '/matriculas',
+  path: '/matriculas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHistorialRoute = AppHistorialRouteImport.update({
   id: '/historial',
   path: '/historial',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
+  '/app/matriculas': typeof AppMatriculasRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
+  '/app/matriculas': typeof AppMatriculasRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
+  '/app/matriculas': typeof AppMatriculasRoute
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/familias'
     | '/app/historial'
+    | '/app/matriculas'
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/familias'
     | '/app/historial'
+    | '/app/matriculas'
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/app/clientes'
     | '/app/familias'
     | '/app/historial'
+    | '/app/matriculas'
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
@@ -216,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNuevaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/matriculas': {
+      id: '/app/matriculas'
+      path: '/matriculas'
+      fullPath: '/app/matriculas'
+      preLoaderRoute: typeof AppMatriculasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/historial': {
       id: '/app/historial'
       path: '/historial'
@@ -252,6 +271,7 @@ interface AppRouteChildren {
   AppClientesRoute: typeof AppClientesRoute
   AppFamiliasRoute: typeof AppFamiliasRoute
   AppHistorialRoute: typeof AppHistorialRoute
+  AppMatriculasRoute: typeof AppMatriculasRoute
   AppNuevaRoute: typeof AppNuevaRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
   AppFamiliasRoute: AppFamiliasRoute,
   AppHistorialRoute: AppHistorialRoute,
+  AppMatriculasRoute: AppMatriculasRoute,
   AppNuevaRoute: AppNuevaRoute,
   AppIndexRoute: AppIndexRoute,
 }
@@ -277,3 +298,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
