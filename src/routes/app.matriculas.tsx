@@ -212,13 +212,17 @@ function LocalInfoView({ info, plate }: { info: LocalInfo; plate: string }) {
             {cliente.km && <Field k="Km" v={cliente.km} />}
             <div className="rounded-lg bg-surface-2 p-2">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total gestiones</div>
-              <Link
-                to="/app/historial"
-                search={{ q: plate }}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                {cliente.total_gestiones}
-              </Link>
+              {gestiones.length > 0 ? (
+                <Link
+                  to="/app/historial"
+                  search={{ q: plate }}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  {gestiones.length}
+                </Link>
+              ) : (
+                <div className="text-sm font-medium">0</div>
+              )}
             </div>
             {cliente.ultima_gestion && (
               <Field k="Última gestión" v={new Date(cliente.ultima_gestion).toLocaleDateString("es-ES")} />
