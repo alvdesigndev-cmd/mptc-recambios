@@ -538,7 +538,7 @@ function NuevaPage() {
 
     const { data: matches } = await supabase
       .from("clientes")
-      .select("id,total_gestiones,matricula,telefono")
+      .select("id,matricula,telefono")
       .eq("taller_id", settings.tallerId)
       .or(orFilter);
 
