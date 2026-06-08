@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search, Inbox, Truck, X, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,9 @@ import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import type { Gestion } from "@/lib/mptc/types";
 
 export const Route = createFileRoute("/app/historial")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    q: typeof s.q === "string" ? s.q : undefined,
+  }),
   component: HistorialPage,
 });
 
@@ -44,11 +47,12 @@ interface PedidoDirecto {
 
 function HistorialPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const settings = useSettings({ requireTaller: true });
   const [items, setItems] = useState<Gestion[]>([]);
   const [directos, setDirectos] = useState<PedidoDirecto[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todas");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(search.q ?? "");
   const [open, setOpen] = useState<Gestion | null>(null);
   const [openDirecto, setOpenDirecto] = useState<PedidoDirecto | null>(null);
 

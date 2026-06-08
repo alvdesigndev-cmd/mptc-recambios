@@ -210,7 +210,16 @@ function LocalInfoView({ info, plate }: { info: LocalInfo; plate: string }) {
           <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
             {cliente.vehiculo && <Field k="Vehículo" v={cliente.vehiculo} />}
             {cliente.km && <Field k="Km" v={cliente.km} />}
-            <Field k="Total gestiones" v={String(cliente.total_gestiones)} />
+            <div className="rounded-lg bg-surface-2 p-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Total gestiones</div>
+              <Link
+                to="/app/historial"
+                search={{ q: plate }}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {cliente.total_gestiones}
+              </Link>
+            </div>
             {cliente.ultima_gestion && (
               <Field k="Última gestión" v={new Date(cliente.ultima_gestion).toLocaleDateString("es-ES")} />
             )}
