@@ -78,7 +78,7 @@ export function AppShell({ children }: Props) {
       {!isPena && (
         <>
           <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-xl">
-            <div className="mx-auto grid max-w-[1200px] grid-cols-4">
+            <div className="mx-auto grid max-w-[1200px] grid-cols-5">
               {TABS.map((t) => {
                 const active = t.exact
                   ? location.pathname === t.to
