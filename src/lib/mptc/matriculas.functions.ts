@@ -14,7 +14,7 @@ const PlateSchema = z.object({
 export type PlateLookupResult = {
   ok: boolean;
   plate: string;
-  data?: Record<string, unknown>;
+  data?: unknown;
   error?: string;
 };
 
