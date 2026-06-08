@@ -45,7 +45,7 @@ export const lookupPlate = createServerFn({ method: "POST" })
           error: res.status === 404 ? "Matrícula no encontrada" : `Error ${res.status}`,
         };
       }
-      const json = (await res.json()) as Record<string, unknown>;
+      const json = (await res.json()) as JsonValue;
       return { ok: true, plate: data.plate, data: json };
     } catch (e) {
       console.error("[plate] fetch failed", e);
