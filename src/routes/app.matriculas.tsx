@@ -41,19 +41,51 @@ function MatriculasPage() {
   const [plate, setPlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PlateLookupResult | null>(null);
+  const [local, setLocal] = useState<LocalInfo | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  const fetchLocal = async (p: string): Promise<LocalInfo> => {
+    const s = loadSettings();
+    const tallerId = s?.tallerId ?? null;
+    const cliQ = supabase
+      .from("clientes")
+      .select("id,nombre,telefono,matricula,vehiculo,km,notas,total_gestiones,ultima_gestion")
+      .eq("matricula", p)
+      .limit(1);
+    const gesQ = supabase
+      .from("gestiones")
+      .select("id,matricula,vehiculo,categoria,subfamilia,descripcion,piezas,importe,estado,created_at")
+      .eq("matricula", p)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const [cliRes, gesRes] = await Promise.all([
+      tallerId ? cliQ.eq("taller_id", tallerId) : cliQ,
+      tallerId ? gesQ.eq("taller_id", tallerId) : gesQ,
+    ]);
+    return {
+      cliente: (cliRes.data?.[0] as LocalCliente | undefined) ?? null,
+      gestiones: (gesRes.data as LocalGestion[] | null) ?? [],
+    };
+  };
+
   const submit = async (raw: string) => {
-    const p = raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const p = normalizeMatricula(raw).replace(/[^A-Z0-9]/g, "");
     if (p.length < 4) return;
     setPlate(p);
     setLoading(true);
     setResult(null);
+    setLocal(null);
     try {
-      const res = await lookup({ data: { plate: p } });
-      setResult(res);
-    } catch (e) {
-      setResult({ ok: false, plate: p, error: "Error al consultar" });
+      const [apiRes, localRes] = await Promise.all([
+        lookup({ data: { plate: p } }).catch((): PlateLookupResult => ({
+          ok: false,
+          plate: p,
+          error: "Error al consultar",
+        })),
+        fetchLocal(p).catch(() => ({ cliente: null, gestiones: [] } as LocalInfo)),
+      ]);
+      setResult(apiRes);
+      setLocal(localRes);
     } finally {
       setLoading(false);
     }
