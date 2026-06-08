@@ -1,8 +1,36 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Car, Search, ScanLine, Loader2, X, AlertCircle } from "lucide-react";
+import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History } from "lucide-react";
 import { lookupPlate, type PlateLookupResult } from "@/lib/mptc/matriculas.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { loadSettings } from "@/lib/mptc/profiles";
+import { normalizeMatricula } from "@/lib/mptc/normalize";
+
+type LocalCliente = {
+  id: string;
+  nombre: string | null;
+  telefono: string | null;
+  matricula: string | null;
+  vehiculo: string | null;
+  km: string | null;
+  notas: string | null;
+  total_gestiones: number;
+  ultima_gestion: string | null;
+};
+type LocalGestion = {
+  id: string;
+  matricula: string | null;
+  vehiculo: string | null;
+  categoria: string | null;
+  subfamilia: string | null;
+  descripcion: string | null;
+  piezas: string | null;
+  importe: string | null;
+  estado: string;
+  created_at: string;
+};
+type LocalInfo = { cliente: LocalCliente | null; gestiones: LocalGestion[] };
 
 export const Route = createFileRoute("/app/matriculas")({
   component: MatriculasPage,
