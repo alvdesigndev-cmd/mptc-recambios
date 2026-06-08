@@ -144,8 +144,15 @@ function MatriculasPage() {
         </form>
       </section>
 
+      {local && (local.cliente || local.gestiones.length > 0) && (
+        <LocalInfoView info={local} plate={plate} />
+      )}
+
       {result && (
         <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Datos oficiales (DGT)
+          </div>
           {result.ok ? (
             <ResultView result={result} />
           ) : (
