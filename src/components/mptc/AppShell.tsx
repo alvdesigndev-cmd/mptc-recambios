@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, History, Users, Settings, Plus, LogOut } from "lucide-react";
+import { Home, History, Users, Settings, Plus, LogOut, Car } from "lucide-react";
 import { NotificationsBell } from "@/components/mptc/NotificationsBell";
 import { useEffect, useState } from "react";
 import { clearSettings, loadSettings, type AppSettings } from "@/lib/mptc/profiles";
@@ -11,6 +11,7 @@ interface Props {
 const TABS = [
   { to: "/app", label: "Inicio", icon: Home, exact: true },
   { to: "/app/historial", label: "Historial", icon: History, exact: false },
+  { to: "/app/matriculas", label: "Matrículas", icon: Car, exact: false },
   { to: "/app/clientes", label: "Clientes", icon: Users, exact: false },
   { to: "/app/ajustes", label: "Ajustes", icon: Settings, exact: false },
 ] as const;
