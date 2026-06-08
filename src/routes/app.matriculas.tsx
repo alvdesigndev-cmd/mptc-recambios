@@ -180,6 +180,113 @@ function MatriculasPage() {
   );
 }
 
+function LocalInfoView({ info, plate }: { info: LocalInfo; plate: string }) {
+  const { cliente, gestiones } = info;
+  return (
+    <section className="rounded-2xl border border-primary/40 bg-primary/5 p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+          Cliente de tu taller
+        </div>
+        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+          {gestiones.length} gestión{gestiones.length === 1 ? "" : "es"}
+        </span>
+      </div>
+
+      {cliente ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            <span className="font-semibold">{cliente.nombre || "Sin nombre"}</span>
+            {cliente.telefono && (
+              <a
+                href={`tel:${cliente.telefono}`}
+                className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Phone className="h-3 w-3" /> {cliente.telefono}
+              </a>
+            )}
+          </div>
+          <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+            {cliente.vehiculo && <Field k="Vehículo" v={cliente.vehiculo} />}
+            {cliente.km && <Field k="Km" v={cliente.km} />}
+            <Field k="Total gestiones" v={String(cliente.total_gestiones)} />
+            {cliente.ultima_gestion && (
+              <Field k="Última gestión" v={new Date(cliente.ultima_gestion).toLocaleDateString("es-ES")} />
+            )}
+          </dl>
+          {cliente.notas && (
+            <div className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs">
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>{cliente.notas}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground">
+          La matrícula <span className="font-mono font-semibold">{plate}</span> no está en clientes,
+          pero tiene {gestiones.length} gestión{gestiones.length === 1 ? "" : "es"} registrada
+          {gestiones.length === 1 ? "" : "s"}.
+        </div>
+      )}
+
+      {gestiones.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <History className="h-3 w-3" /> Historial
+          </div>
+          <ul className="space-y-2">
+            {gestiones.slice(0, 5).map((g) => (
+              <li key={g.id} className="rounded-lg bg-surface-2 p-3 text-xs">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-semibold">
+                    {g.subfamilia || g.categoria || "Gestión"}
+                  </span>
+                  <EstadoBadge estado={g.estado} />
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+                  <span>{new Date(g.created_at).toLocaleDateString("es-ES")}</span>
+                  {g.importe && <span>{g.importe} €</span>}
+                  {g.piezas && <span className="truncate">{g.piezas}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {gestiones.length > 5 && (
+            <Link
+              to="/app/historial"
+              className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+            >
+              Ver historial completo →
+            </Link>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Field({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="rounded-lg bg-surface-2 p-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</div>
+      <div className="text-sm font-medium">{v}</div>
+    </div>
+  );
+}
+
+function EstadoBadge({ estado }: { estado: string }) {
+  const map: Record<string, string> = {
+    "aceptado": "bg-emerald-500/15 text-emerald-600",
+    "rechazado": "bg-destructive/15 text-destructive",
+    "en-curso": "bg-amber-500/15 text-amber-600",
+  };
+  const cls = map[estado] ?? "bg-muted text-muted-foreground";
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}>{estado}</span>
+  );
+}
+
 function ResultView({ result }: { result: PlateLookupResult }) {
   const data = (result.data ?? {}) as Record<string, unknown>;
   const entries = Object.entries(data).filter(
