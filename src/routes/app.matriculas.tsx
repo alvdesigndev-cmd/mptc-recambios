@@ -15,7 +15,6 @@ type LocalCliente = {
   vehiculo: string | null;
   km: string | null;
   notas: string | null;
-  total_gestiones: number;
   ultima_gestion: string | null;
 };
 type LocalGestion = {
@@ -49,7 +48,7 @@ function MatriculasPage() {
     const tallerId = s?.tallerId ?? null;
     const cliQ = supabase
       .from("clientes")
-      .select("id,nombre,telefono,matricula,vehiculo,km,notas,total_gestiones,ultima_gestion")
+      .select("id,nombre,telefono,matricula,vehiculo,km,notas,ultima_gestion")
       .eq("matricula", p)
       .limit(1);
     const gesQ = supabase
