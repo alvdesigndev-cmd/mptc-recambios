@@ -362,12 +362,36 @@ function ClienteModal({
     if (err) { setError(err); return; }
     setError(null);
     setSaving(true);
+    const matN = normalizeMatricula(f.matricula);
+    if (matN && matN !== (cliente.matricula || "")) {
+      const { data: dup } = await supabase
+        .from("clientes")
+        .select("id,nombre")
+        .eq("taller_id", cliente.taller_id)
+        .eq("matricula", matN)
+        .neq("id", cliente.id)
+        .maybeSingle();
+      if (dup) {
+        setError(`Ya existe un cliente con la matrícula ${matN} en este taller${dup.nombre ? ` (${dup.nombre})` : ""}.`);
+        setSaving(false);
+        return;
+      }
+    }
     const payload = {
       ...f,
       telefono: normalizeTelefono(f.telefono),
-      matricula: normalizeMatricula(f.matricula),
+      matricula: matN,
     };
-    await supabase.from("clientes").update(payload).eq("id", cliente.id);
+    const { error: updErr } = await supabase.from("clientes").update(payload).eq("id", cliente.id);
+    if (updErr) {
+      if ((updErr as { code?: string }).code === "23505") {
+        setError(`Ya existe un cliente con esa matrícula en este taller.`);
+      } else {
+        setError(updErr.message || "No se pudo guardar el cliente.");
+      }
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onChanged();
   };
