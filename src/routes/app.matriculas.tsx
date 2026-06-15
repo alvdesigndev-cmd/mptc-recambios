@@ -76,7 +76,7 @@ function MatriculasPage() {
     setLocal(null);
     try {
       const [apiRes, localRes] = await Promise.all([
-        lookup({ plate: p }).catch((): PlateLookupResult => ({
+        lookup({ data: { plate: p } }).catch((): PlateLookupResult => ({
           ok: false,
           plate: p,
           error: "Error al consultar",
