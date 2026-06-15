@@ -23,17 +23,15 @@ export type PlateLookupResult = {
 export const lookupPlate = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => PlateSchema.parse(data))
   .handler(async ({ data }): Promise<PlateLookupResult> => {
-    const apiKey = process.env.RAPIDAPI_PLATE_KEY;
-    if (!apiKey) {
-      return { ok: false, plate: data.plate, error: "Falta configurar RAPIDAPI_PLATE_KEY" };
-    }
+    const apiKey = process.env.RAPIDAPI_PLATE_KEY ?? "828a4daeeemsh70039a30f2d1de2p13f5a3jsn9d8c314d8463";
     try {
-      const url = `https://api-license-plate.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
+      const url = `https://api-license-plate-spain.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
       const res = await fetch(url, {
         method: "GET",
         headers: {
-          "X-RapidAPI-Key": apiKey,
-          "X-RapidAPI-Host": "api-license-plate.p.rapidapi.com",
+          "Content-Type": "application/json",
+          "x-rapidapi-key": apiKey,
+          "x-rapidapi-host": "api-license-plate-spain.p.rapidapi.com",
         },
       });
       if (!res.ok) {
