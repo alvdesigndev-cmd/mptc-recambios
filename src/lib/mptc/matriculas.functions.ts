@@ -5,7 +5,7 @@ export type PlateLookupResult = {
   error?: string;
 };
 
-export async function lookupPlate({ data }: { data: { `plate`: string } }): Promise<PlateLookupResult> {
+export async function lookupPlate({ data }: { data: { plate: string } }): Promise<PlateLookupResult> {
   const plate = data.plate.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (plate.length < 4) return { ok: false, plate, error: "Matrícula inválida" };
 
