@@ -192,20 +192,51 @@ function NuevoClienteModal({
 }: { tallerId: string; tallerNombre: string; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState({ nombre: "", telefono: "", matricula: "", vehiculo: "", km: "", notas: "" });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const save = async () => {
     if (!f.nombre.trim()) return;
+    setError(null);
     setSaving(true);
-    await supabase.from("clientes").insert({
-      taller_id: tallerId,
-      taller_nombre: tallerNombre,
-      ...f,
-      telefono: normalizeTelefono(f.telefono),
-      matricula: normalizeMatricula(f.matricula),
-      total_gestiones: 0,
-    });
-    setSaving(false);
-    onSaved();
+    try {
+      const matN = normalizeMatricula(f.matricula);
+      if (matN) {
+        const { data: dup } = await supabase
+          .from("clientes")
+          .select("id,nombre")
+          .eq("taller_id", tallerId)
+          .eq("matricula", matN)
+          .maybeSingle();
+        if (dup) {
+          setError(`Ya existe un cliente con la matrícula ${matN} en este taller${dup.nombre ? ` (${dup.nombre})` : ""}.`);
+          setSaving(false);
+          return;
+        }
+      }
+      const { error: insErr } = await supabase.from("clientes").insert({
+        taller_id: tallerId,
+        taller_nombre: tallerNombre,
+        ...f,
+        telefono: normalizeTelefono(f.telefono),
+        matricula: matN,
+        total_gestiones: 0,
+      });
+      if (insErr) {
+        // 23505 = unique_violation (cinturón de seguridad si hay carrera)
+        if ((insErr as { code?: string }).code === "23505") {
+          setError(`Ya existe un cliente con esa matrícula en este taller.`);
+        } else {
+          setError(insErr.message || "No se pudo guardar el cliente.");
+        }
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo guardar el cliente.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -230,6 +261,11 @@ function NuevoClienteModal({
             className="w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none"
           />
         </label>
+        {error && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+            {error}
+          </div>
+        )}
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className="rounded-xl border border-border-strong bg-surface px-4 py-2 text-sm font-semibold">Cancelar</button>
@@ -326,12 +362,36 @@ function ClienteModal({
     if (err) { setError(err); return; }
     setError(null);
     setSaving(true);
+    const matN = normalizeMatricula(f.matricula);
+    if (matN && matN !== (cliente.matricula || "")) {
+      const { data: dup } = await supabase
+        .from("clientes")
+        .select("id,nombre")
+        .eq("taller_id", cliente.taller_id)
+        .eq("matricula", matN)
+        .neq("id", cliente.id)
+        .maybeSingle();
+      if (dup) {
+        setError(`Ya existe un cliente con la matrícula ${matN} en este taller${dup.nombre ? ` (${dup.nombre})` : ""}.`);
+        setSaving(false);
+        return;
+      }
+    }
     const payload = {
       ...f,
       telefono: normalizeTelefono(f.telefono),
-      matricula: normalizeMatricula(f.matricula),
+      matricula: matN,
     };
-    await supabase.from("clientes").update(payload).eq("id", cliente.id);
+    const { error: updErr } = await supabase.from("clientes").update(payload).eq("id", cliente.id);
+    if (updErr) {
+      if ((updErr as { code?: string }).code === "23505") {
+        setError(`Ya existe un cliente con esa matrícula en este taller.`);
+      } else {
+        setError(updErr.message || "No se pudo guardar el cliente.");
+      }
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onChanged();
   };
