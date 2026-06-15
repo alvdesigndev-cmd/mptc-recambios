@@ -35,7 +35,7 @@ export const Route = createFileRoute("/app/matriculas")({
 });
 
 function MatriculasPage() {
-  const lookup = useServerFn(lookupPlate);
+  const lookup = lookupPlate;
   const [plate, setPlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PlateLookupResult | null>(null);
