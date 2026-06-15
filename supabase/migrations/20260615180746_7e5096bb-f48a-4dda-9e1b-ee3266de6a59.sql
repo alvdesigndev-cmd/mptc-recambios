@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS clientes_taller_matricula_unique ON public.clientes (taller_id, matricula) WHERE matricula IS NOT NULL;
