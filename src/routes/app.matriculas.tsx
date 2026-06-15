@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History } from "lucide-react";
 import { lookupPlate, type PlateLookupResult } from "@/lib/mptc/matriculas.functions";
@@ -36,7 +35,7 @@ export const Route = createFileRoute("/app/matriculas")({
 });
 
 function MatriculasPage() {
-  const lookup = useServerFn(lookupPlate);
+  const lookup = lookupPlate;
   const [plate, setPlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PlateLookupResult | null>(null);
