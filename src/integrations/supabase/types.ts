@@ -102,12 +102,16 @@ export type Database = {
           created_at: string
           descripcion: string | null
           estado: string
+          fecha_matriculacion: string | null
           fotos: string[] | null
           id: string
           importe: string | null
           km: string | null
+          marca: string | null
           matricula: string | null
           mensaje: string | null
+          modelo: string | null
+          motor: string | null
           objecion: string | null
           pedido_pena: boolean
           piezas: string | null
@@ -115,6 +119,7 @@ export type Database = {
           taller_id: string | null
           taller_nombre: string | null
           vehiculo: string | null
+          vin: string | null
           wa_abierto: boolean
         }
         Insert: {
@@ -126,12 +131,16 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           estado?: string
+          fecha_matriculacion?: string | null
           fotos?: string[] | null
           id?: string
           importe?: string | null
           km?: string | null
+          marca?: string | null
           matricula?: string | null
           mensaje?: string | null
+          modelo?: string | null
+          motor?: string | null
           objecion?: string | null
           pedido_pena?: boolean
           piezas?: string | null
@@ -139,6 +148,7 @@ export type Database = {
           taller_id?: string | null
           taller_nombre?: string | null
           vehiculo?: string | null
+          vin?: string | null
           wa_abierto?: boolean
         }
         Update: {
@@ -150,12 +160,16 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           estado?: string
+          fecha_matriculacion?: string | null
           fotos?: string[] | null
           id?: string
           importe?: string | null
           km?: string | null
+          marca?: string | null
           matricula?: string | null
           mensaje?: string | null
+          modelo?: string | null
+          motor?: string | null
           objecion?: string | null
           pedido_pena?: boolean
           piezas?: string | null
@@ -163,6 +177,7 @@ export type Database = {
           taller_id?: string | null
           taller_nombre?: string | null
           vehiculo?: string | null
+          vin?: string | null
           wa_abierto?: boolean
         }
         Relationships: []
