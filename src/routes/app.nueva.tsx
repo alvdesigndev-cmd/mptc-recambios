@@ -60,6 +60,7 @@ const DRAFT_KEY = "mptc:nueva:draft";
 interface Draft {
   step?: Step;
   nombre?: string; telefono?: string; matricula?: string; vehiculo?: string; km?: string;
+  vin?: string; marca?: string; modelo?: string; motor?: string; fechaMatriculacion?: string;
   clienteBloqueado?: ClienteRow | null;
   categoria?: string | null; subfamilia?: string | null; averiaQuery?: string;
   importe?: string; descripcion?: string; piezas?: string;
