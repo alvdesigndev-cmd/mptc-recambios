@@ -119,6 +119,11 @@ function NuevaPage() {
   const [matricula, setMatricula] = useState(draft0.matricula ?? "");
   const [vehiculo, setVehiculo] = useState(draft0.vehiculo ?? "");
   const [km, setKm] = useState(draft0.km ?? "");
+  const [vin, setVin] = useState(draft0.vin ?? "");
+  const [marca, setMarca] = useState(draft0.marca ?? "");
+  const [modelo, setModelo] = useState(draft0.modelo ?? "");
+  const [motor, setMotor] = useState(draft0.motor ?? "");
+  const [fechaMatriculacion, setFechaMatriculacion] = useState(draft0.fechaMatriculacion ?? "");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
   const [fotosError, setFotosError] = useState<boolean[]>([]);
@@ -155,7 +160,7 @@ function NuevaPage() {
   // Persistir borrador en sessionStorage para no perder datos al volver atrás.
   useEffect(() => {
     const d: Draft = {
-      step, nombre, telefono, matricula, vehiculo, km, clienteBloqueado,
+      step, nombre, telefono, matricula, vehiculo, km, vin, marca, modelo, motor, fechaMatriculacion, clienteBloqueado,
       categoria, subfamilia, averiaQuery,
       importe, descripcion, piezas, mensaje, mensajeTouched,
       confirmToken, gestionFolder, pedirPena, gestionId,
@@ -214,6 +219,11 @@ function NuevaPage() {
       setMatricula(g.matricula || "");
       setVehiculo(g.vehiculo || "");
       setKm(g.km || "");
+      setVin(g.vin || "");
+      setMarca(g.marca || "");
+      setModelo(g.modelo || "");
+      setMotor(g.motor || "");
+      setFechaMatriculacion(g.fecha_matriculacion || "");
       setCategoria(g.categoria || null);
       setSubfamilia(g.subfamilia || null);
       setImporte(g.importe || "");
@@ -252,7 +262,9 @@ function NuevaPage() {
         cliente_nombre: nombre,
         cliente_telefono: normalizeTelefono(telefono),
         matricula: normalizeMatricula(matricula),
-        vehiculo, km, categoria, subfamilia,
+        vehiculo, km,
+        vin, marca, modelo, motor, fecha_matriculacion: fechaMatriculacion,
+        categoria, subfamilia,
         descripcion, piezas, importe,
         mensaje: mensaje || null,
         confirm_token: confirmToken,
@@ -578,6 +590,7 @@ function NuevaPage() {
         cliente_nombre: nombre,
         cliente_telefono: normalizeTelefono(telefono),
         matricula: normalizeMatricula(matricula), vehiculo, km,
+        vin, marca, modelo, motor, fecha_matriculacion: fechaMatriculacion,
         categoria, subfamilia,
         descripcion, piezas, importe,
         estado,
@@ -1068,6 +1081,50 @@ function NuevaPage() {
                 />
               </Field>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Marca">
+                <input
+                  value={marca}
+                  onChange={(e) => setMarca(e.target.value)}
+                  placeholder="Ej. NISSAN"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Modelo">
+                <input
+                  value={modelo}
+                  onChange={(e) => setModelo(e.target.value)}
+                  placeholder="Ej. Micra"
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Motor">
+                <input
+                  value={motor}
+                  onChange={(e) => setMotor(e.target.value)}
+                  placeholder="Ej. CG12DE"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Fecha matriculación">
+                <input
+                  value={fechaMatriculacion}
+                  onChange={(e) => setFechaMatriculacion(e.target.value)}
+                  placeholder="Ej. 22/04/2005"
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+            <Field label="VIN">
+              <input
+                value={vin}
+                onChange={(e) => setVin(e.target.value)}
+                placeholder="Ej. SJNFBAK12U1368468"
+                className={inputCls}
+              />
+            </Field>
           </div>
 
           {/* Fotos */}
