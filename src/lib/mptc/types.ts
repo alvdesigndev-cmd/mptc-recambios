@@ -15,6 +15,11 @@ export interface Gestion {
   matricula: string | null;
   vehiculo: string | null;
   km: string | null;
+  vin: string | null;
+  marca: string | null;
+  modelo: string | null;
+  motor: string | null;
+  fecha_matriculacion: string | null;
   categoria: string | null;
   subfamilia: string | null;
   descripcion: string | null;

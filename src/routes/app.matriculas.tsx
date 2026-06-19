@@ -151,6 +151,11 @@ function MatriculasPage() {
         step: 1,
         matricula: p,
         vehiculo,
+        vin: String(data?.VIN ?? data?.vin ?? "").trim() || undefined,
+        marca: String(data?.MARCA ?? data?.marca ?? "").trim() || undefined,
+        modelo: String(data?.MODELO ?? data?.modelo ?? "").trim() || undefined,
+        motor: String(data?.MOTOR ?? data?.motor ?? "").trim() || undefined,
+        fechaMatriculacion: String(data?.FECHA_MATRICULACION ?? data?.fecha_matriculacion ?? "").trim() || undefined,
       };
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
