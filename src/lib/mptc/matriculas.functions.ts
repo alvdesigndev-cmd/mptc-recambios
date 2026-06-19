@@ -17,13 +17,13 @@ export const lookupPlate = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<PlateLookupResult> => {
     const apiKey = process.env.RAPIDAPI_PLATE_KEY ?? "828a4daeeemsh70039a30f2d1de2p13f5a3jsn9d8c314d8463";
     try {
-      const url = `https://api-license-plate-spain.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
+      const url = `https://matriculas-espana1.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
       const res = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           "x-rapidapi-key": apiKey,
-          "x-rapidapi-host": "api-license-plate-spain.p.rapidapi.com",
+          "x-rapidapi-host": "matriculas-espana1.p.rapidapi.com",
         },
       });
       if (!res.ok) return { ok: false, plate: data.plate, error: res.status === 404 ? "Matrícula no encontrada" : `Error ${res.status}` };
