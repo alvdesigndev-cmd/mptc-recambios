@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History } from "lucide-react";
+import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History, Clock, Trash2, Wrench, Camera } from "lucide-react";
 import { lookupPlate, type PlateLookupResult } from "@/lib/mptc/matriculas.functions";
+import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { loadSettings } from "@/lib/mptc/profiles";
 import { normalizeMatricula } from "@/lib/mptc/normalize";
@@ -31,17 +32,57 @@ type LocalGestion = {
 };
 type LocalInfo = { cliente: LocalCliente | null; gestiones: LocalGestion[] };
 
+type RecentItem = {
+  plate: string;
+  vehiculo: string;
+  ts: number;
+  data: Record<string, unknown>;
+};
+
+const RECENT_KEY = "mptc:matriculas:recientes";
+const DRAFT_KEY = "mptc:nueva:draft";
+
+function loadRecent(): RecentItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? (arr as RecentItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(items: RecentItem[]) {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 12)));
+  } catch {}
+}
+
+function buildVehiculo(data: Record<string, unknown>): string {
+  const marca = String(data?.MARCA ?? data?.marca ?? "").trim();
+  const modelo = String(data?.MODELO ?? data?.modelo ?? "").trim();
+  return `${marca} ${modelo}`.trim();
+}
+
 export const Route = createFileRoute("/app/matriculas")({
   component: MatriculasPage,
 });
 
 function MatriculasPage() {
   const lookup = useServerFn(lookupPlate);
+  const navigate = useNavigate();
   const [plate, setPlate] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PlateLookupResult | null>(null);
   const [local, setLocal] = useState<LocalInfo | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [recent, setRecent] = useState<RecentItem[]>([]);
+
+  useEffect(() => {
+    setRecent(loadRecent());
+  }, []);
 
   const fetchLocal = async (p: string): Promise<LocalInfo> => {
     const s = loadSettings();
@@ -85,9 +126,48 @@ function MatriculasPage() {
       ]);
       setResult(apiRes);
       setLocal(localRes);
+      if (apiRes.ok && apiRes.data) {
+        const item: RecentItem = {
+          plate: p,
+          vehiculo: buildVehiculo(apiRes.data),
+          ts: Date.now(),
+          data: apiRes.data,
+        };
+        setRecent((prev) => {
+          const next = [item, ...prev.filter((r) => r.plate !== p)].slice(0, 12);
+          saveRecent(next);
+          return next;
+        });
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const startGestion = (p: string, data: Record<string, unknown>) => {
+    const vehiculo = buildVehiculo(data);
+    try {
+      const draft = {
+        step: 1,
+        matricula: p,
+        vehiculo,
+      };
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+    navigate({ to: "/app/nueva", search: { fresh: String(Date.now()) } });
+  };
+
+  const removeRecent = (p: string) => {
+    setRecent((prev) => {
+      const next = prev.filter((r) => r.plate !== p);
+      saveRecent(next);
+      return next;
+    });
+  };
+
+  const clearRecent = () => {
+    saveRecent([]);
+    setRecent([]);
   };
 
   return (
@@ -149,8 +229,19 @@ function MatriculasPage() {
 
       {result && (
         <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <div className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Datos oficiales (DGT)
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Datos oficiales (DGT)
+            </div>
+            {result.ok && result.data && (
+              <button
+                type="button"
+                onClick={() => startGestion(result.plate, result.data as Record<string, unknown>)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                <Wrench className="h-3.5 w-3.5" /> Nueva gestión
+              </button>
+            )}
           </div>
           {result.ok ? (
             <ResultView result={result} />
@@ -163,6 +254,68 @@ function MatriculasPage() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {recent.length > 0 && (
+        <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Clock className="h-3 w-3" /> Búsquedas recientes
+            </div>
+            <button
+              type="button"
+              onClick={clearRecent}
+              className="text-[10px] font-medium text-muted-foreground hover:text-destructive"
+            >
+              Limpiar
+            </button>
+          </div>
+          <ul className="space-y-2">
+            {recent.map((r) => (
+              <li
+                key={r.plate}
+                className="flex items-center gap-2 rounded-lg bg-surface-2 p-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => submit(r.plate)}
+                  className="flex flex-1 items-center gap-3 text-left"
+                >
+                  <div className="rounded border-2 border-foreground bg-yellow-300 px-2 py-1 font-mono text-xs font-bold tracking-widest text-black">
+                    {r.plate}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">
+                      {r.vehiculo || "Vehículo"}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(r.ts).toLocaleString("es-ES", {
+                        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startGestion(r.plate, r.data)}
+                  className="rounded-md bg-primary/15 p-2 text-primary hover:bg-primary/25"
+                  aria-label="Nueva gestión"
+                  title="Nueva gestión"
+                >
+                  <Wrench className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeRecent(r.plate)}
+                  className="rounded-md p-2 text-muted-foreground hover:text-destructive"
+                  aria-label="Eliminar"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -341,47 +494,38 @@ function PlateScanner({
   onDetected: (plate: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manualMode, setManualMode] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [manual, setManual] = useState("");
+  const runOcr = useServerFn(ocrMatricula);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    let raf = 0;
     let cancelled = false;
 
-    const BD = (globalThis as any).BarcodeDetector;
-    if (!BD) {
-      setManualMode(true);
-      return;
-    }
-
     (async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setManualMode(true);
+        setError("La cámara no está disponible en este dispositivo");
+        return;
+      }
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
         });
-        if (cancelled) return;
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
+          setReady(true);
         }
-        const detector = new BD({ formats: ["code_128", "code_39", "qr_code"] });
-        const tick = async () => {
-          if (cancelled || !videoRef.current) return;
-          try {
-            const codes = await detector.detect(videoRef.current);
-            if (codes && codes.length > 0) {
-              const raw = String(codes[0].rawValue || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-              if (raw.length >= 4) {
-                onDetected(raw);
-                return;
-              }
-            }
-          } catch {}
-          raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
-      } catch (e) {
+      } catch {
         setError("No se pudo acceder a la cámara");
         setManualMode(true);
       }
@@ -389,12 +533,42 @@ function PlateScanner({
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [onDetected]);
+  }, []);
 
-  const [manual, setManual] = useState("");
+  const capture = async () => {
+    const video = videoRef.current;
+    if (!video || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (!w || !h) throw new Error("Cámara no lista");
+      const canvas = canvasRef.current ?? document.createElement("canvas");
+      canvasRef.current = canvas;
+      const maxSide = 1280;
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas no disponible");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      const res = await runOcr({ data: { imageDataUrl: dataUrl } });
+      const m = (res?.matricula || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (m.length >= 4) {
+        onDetected(m);
+      } else {
+        setError("No se detectó ninguna matrícula. Inténtalo de nuevo o introdúcela manualmente.");
+      }
+    } catch (e) {
+      setError("No se pudo leer la matrícula. Inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
@@ -406,17 +580,37 @@ function PlateScanner({
           </button>
         </div>
         {!manualMode ? (
-          <div className="relative aspect-[4/3] bg-black">
-            <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="h-24 w-3/4 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
-            </div>
-            {error && (
-              <div className="absolute bottom-2 left-2 right-2 rounded bg-destructive/90 p-2 text-xs text-destructive-foreground">
-                {error}
+          <>
+            <div className="relative aspect-[4/3] bg-black">
+              <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-24 w-3/4 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
               </div>
-            )}
-          </div>
+              {error && (
+                <div className="absolute bottom-2 left-2 right-2 rounded bg-destructive/90 p-2 text-xs text-destructive-foreground">
+                  {error}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-2 p-4">
+              <button
+                type="button"
+                onClick={() => setManualMode(true)}
+                className="text-xs font-medium text-muted-foreground hover:text-primary"
+              >
+                Introducir manualmente
+              </button>
+              <button
+                type="button"
+                onClick={capture}
+                disabled={!ready || busy}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                {busy ? "Leyendo..." : "Capturar y leer"}
+              </button>
+            </div>
+          </>
         ) : (
           <form
             onSubmit={(e) => {
@@ -427,7 +621,7 @@ function PlateScanner({
             className="space-y-3 p-4"
           >
             <p className="text-xs text-muted-foreground">
-              {error ?? "Tu dispositivo no admite escaneo automático. Introduce la matrícula manualmente."}
+              {error ?? "Introduce la matrícula manualmente."}
             </p>
             <input
               autoFocus
