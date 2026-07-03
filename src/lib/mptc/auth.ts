@@ -43,10 +43,18 @@ export interface SignUpInput {
 
 export async function signUp(input: SignUpInput) {
   const redirect = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
-  const taller_id =
-    input.role === "pena" ? "grupo-pena" : TALLER_INFO[input.role].id;
-  const default_taller_name =
-    input.role === "pena" ? "Grupo Peña" : TALLER_INFO[input.role].name;
+  const isPena = input.role === "pena";
+  const isAdmin = input.role === "admin";
+  const taller_id = isPena
+    ? "grupo-pena"
+    : isAdmin
+      ? "admin"
+      : TALLER_INFO[input.role as Exclude<Role, "pena" | "admin">].id;
+  const default_taller_name = isPena
+    ? "Grupo Peña"
+    : isAdmin
+      ? "Administración"
+      : TALLER_INFO[input.role as Exclude<Role, "pena" | "admin">].name;
   return await supabase.auth.signUp({
     email: input.email,
     password: input.password,

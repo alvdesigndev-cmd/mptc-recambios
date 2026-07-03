@@ -25,8 +25,9 @@ export function consumeRedirectPath(): string | null {
 export function pickPostLoginPath(fallback: string): string {
   const saved = consumeRedirectPath();
   if (!saved) return fallback;
-  // Coherencia de rol: /pena solo para 'pena', /app para talleres.
+  // Coherencia de rol: /pena solo para 'pena', /app para talleres, /admin para admin.
   if (fallback === "/pena" && !saved.startsWith("/pena")) return fallback;
   if (fallback === "/app" && !saved.startsWith("/app")) return fallback;
+  if (fallback.startsWith("/admin") && !saved.startsWith("/admin")) return fallback;
   return saved;
 }

@@ -1,0 +1,246 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { Pencil, Save, X, Power, Plus, Store, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/admin/talleres")({
+  component: TalleresAdminPage,
+});
+
+interface Taller {
+  taller_id: string;
+  nombre: string;
+  ciudad: string;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+function TalleresAdminPage() {
+  const [rows, setRows] = useState<Taller[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState<{ taller_id: string; nombre: string; ciudad: string }>({ taller_id: "", nombre: "", ciudad: "" });
+  const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newForm, setNewForm] = useState({ taller_id: "", nombre: "", ciudad: "" });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("talleres").select("*").order("taller_id");
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setRows((data as Taller[]) || []);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = (t: Taller) => {
+    setEditing(t.taller_id);
+    setForm({ taller_id: t.taller_id, nombre: t.nombre, ciudad: t.ciudad ?? "" });
+    setErr(null);
+  };
+
+  const cancelEdit = () => { setEditing(null); setErr(null); };
+
+  const saveEdit = async (original: Taller) => {
+    setSaving(true); setErr(null);
+    try {
+      const newId = form.taller_id.trim();
+      if (!newId) throw new Error("El identificador no puede estar vacío");
+      // Si cambia el taller_id, llamamos a la RPC (renombra en cascada).
+      if (newId !== original.taller_id) {
+        const { error } = await supabase.rpc("rename_taller_id" as never, { _old: original.taller_id, _new: newId } as never);
+        if (error) throw error;
+      }
+      const { error: uerr } = await supabase
+        .from("talleres")
+        .update({ nombre: form.nombre.trim() || original.nombre, ciudad: form.ciudad.trim() })
+        .eq("taller_id", newId);
+      if (uerr) throw uerr;
+      setEditing(null);
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || "No se pudo guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActivo = async (t: Taller) => {
+    const confirmMsg = t.activo
+      ? `¿Desactivar ${t.nombre}? Sus usuarios no podrán acceder y no aparecerá en registros ni en el panel de Peña.`
+      : `¿Reactivar ${t.nombre}?`;
+    if (!confirm(confirmMsg)) return;
+    const { error } = await supabase.from("talleres").update({ activo: !t.activo }).eq("taller_id", t.taller_id);
+    if (error) { setErr(error.message); return; }
+    load();
+  };
+
+  const createTaller = async () => {
+    setSaving(true); setErr(null);
+    try {
+      const id = newForm.taller_id.trim();
+      if (!id || !newForm.nombre.trim()) throw new Error("Identificador y nombre son obligatorios");
+      const { error } = await supabase.from("talleres").insert({
+        taller_id: id,
+        nombre: newForm.nombre.trim(),
+        ciudad: newForm.ciudad.trim(),
+        activo: true,
+      });
+      if (error) throw error;
+      setCreating(false);
+      setNewForm({ taller_id: "", nombre: "", ciudad: "" });
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || "No se pudo crear el taller");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-xl font-bold"><Store className="h-5 w-5 text-primary" /> Talleres</h1>
+          <p className="text-[13px] text-muted-foreground">Gestiona los talleres del sistema: nombre, identificador y estado.</p>
+        </div>
+        <button
+          onClick={() => { setCreating(true); setErr(null); }}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95"
+        >
+          <Plus className="h-4 w-4" /> Nuevo taller
+        </button>
+      </div>
+
+      {err && <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{err}</div>}
+
+      {creating && (
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-3 text-sm font-semibold">Nuevo taller</div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="text-xs">
+              <span className="text-muted-foreground">Identificador (slug)</span>
+              <input
+                value={newForm.taller_id}
+                onChange={(e) => setNewForm({ ...newForm, taller_id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                placeholder="taller-6-nombre"
+                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 font-mono text-sm"
+              />
+            </label>
+            <label className="text-xs">
+              <span className="text-muted-foreground">Nombre</span>
+              <input value={newForm.nombre} onChange={(e) => setNewForm({ ...newForm, nombre: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+            </label>
+            <label className="text-xs">
+              <span className="text-muted-foreground">Ciudad</span>
+              <input value={newForm.ciudad} onChange={(e) => setNewForm({ ...newForm, ciudad: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+            </label>
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            <button onClick={() => setCreating(false)} className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-2">Cancelar</button>
+            <button onClick={createTaller} disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Crear
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <table className="w-full text-sm">
+          <thead className="bg-surface-2 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Identificador</th>
+              <th className="px-4 py-3">Nombre</th>
+              <th className="px-4 py-3">Ciudad</th>
+              <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+              </td></tr>
+            )}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No hay talleres.</td></tr>
+            )}
+            {rows.map((t) => {
+              const isEd = editing === t.taller_id;
+              return (
+                <tr key={t.taller_id} className={"border-t border-border " + (t.activo ? "" : "opacity-60")}>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    {isEd ? (
+                      <input
+                        value={form.taller_id}
+                        onChange={(e) => setForm({ ...form, taller_id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                        className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 font-mono"
+                      />
+                    ) : t.taller_id}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isEd ? (
+                      <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                        className="w-full rounded-md border border-border bg-surface-2 px-2 py-1" />
+                    ) : <span className="font-semibold">{t.nombre}</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isEd ? (
+                      <input value={form.ciudad} onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
+                        className="w-full rounded-md border border-border bg-surface-2 px-2 py-1" />
+                    ) : (t.ciudad || <span className="text-muted-foreground">—</span>)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase " +
+                      (t.activo ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
+                      {t.activo ? "Activo" : "Desactivado"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      {isEd ? (
+                        <>
+                          <button onClick={() => saveEdit(t)} disabled={saving}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-60">
+                            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar
+                          </button>
+                          <button onClick={cancelEdit} className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-2">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(t)}
+                            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground">
+                            <Pencil className="h-3.5 w-3.5" /> Editar
+                          </button>
+                          <button onClick={() => toggleActivo(t)}
+                            className={"inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold " +
+                              (t.activo
+                                ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                                : "bg-success/10 text-success hover:bg-success/20")}>
+                            <Power className="h-3.5 w-3.5" /> {t.activo ? "Desactivar" : "Activar"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Al renombrar el identificador se actualizan también los perfiles, clientes, gestiones y pedidos asociados.
+      </p>
+    </div>
+  );
+}
