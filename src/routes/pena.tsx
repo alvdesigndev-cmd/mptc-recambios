@@ -85,7 +85,7 @@ function PenaPage() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [ready, load]);
 
-  const onExit = () => { clearSettings(); navigate({ to: "/" }); };
+  const onExit = async () => { await signOut(); navigate({ to: "/auth" }); };
 
   const filteredGestiones = useMemo(() => {
     const qq = q.trim().toLowerCase();
