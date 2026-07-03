@@ -35,7 +35,7 @@ function AuthPage() {
       if (cancelled || !data.session) return;
       const p = await syncProfileToSettings();
       const fallback = p?.role === "pena" ? "/pena" : "/app";
-      navigate({ to: pickPostLoginPath(fallback), replace: true });
+      navigate({ to: pickPostLoginPath(fallback) as any, replace: true });
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -49,7 +49,7 @@ function AuthPage() {
         if (error) throw error;
         const p = await syncProfileToSettings();
         const fallback = p?.role === "pena" ? "/pena" : "/app";
-        navigate({ to: pickPostLoginPath(fallback), replace: true });
+        navigate({ to: pickPostLoginPath(fallback) as any, replace: true });
       } else {
         const { error } = await signUp({
           email, password, role,
