@@ -28,6 +28,10 @@ export default defineConfig({
           clientsClaim: true,
           skipWaiting: false, // controlamos la activación con el toast
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
+          // Script adicional que corre en el propio SW: al `activate`
+          // elimina cachés antiguos con prefijos `mptc-*` / `workbox-*`
+          // que ya no forman parte de esta versión.
+          importScripts: ["/sw-cleanup.js"],
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.mode === "navigate",
@@ -35,7 +39,11 @@ export default defineConfig({
               options: {
                 cacheName: "mptc-html",
                 networkTimeoutSeconds: 4,
-                expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 },
+                expiration: {
+                  maxEntries: 32,
+                  maxAgeSeconds: 60 * 60 * 24,
+                  purgeOnQuotaError: true,
+                },
               },
             },
             {
@@ -44,11 +52,16 @@ export default defineConfig({
               handler: "CacheFirst",
               options: {
                 cacheName: "mptc-assets",
-                expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                expiration: {
+                  maxEntries: 120,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                  purgeOnQuotaError: true,
+                },
               },
             },
           ],
         },
+
         manifest: false, // usamos el manifest.webmanifest ya presente en public/
       }),
     ],
