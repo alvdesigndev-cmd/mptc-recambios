@@ -4,7 +4,7 @@ import {
   LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadSettings } from "@/lib/mptc/profiles";
+// loadSettings/clearSettings importados más abajo junto con el resto de utilidades de auth.
 import { signOut } from "@/lib/mptc/auth";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
