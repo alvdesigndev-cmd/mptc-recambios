@@ -199,17 +199,17 @@ function MatriculasPage() {
   };
 
   const startGestion = (p: string, data: Record<string, unknown>) => {
-    const vehiculo = buildVehiculo(data);
+    const m = mapApiData(data);
     try {
       const draft = {
         step: 1,
         matricula: p,
-        vehiculo,
-        vin: String(data?.VIN ?? data?.vin ?? "").trim() || undefined,
-        marca: String(data?.MARCA ?? data?.marca ?? "").trim() || undefined,
-        modelo: String(data?.MODELO ?? data?.modelo ?? "").trim() || undefined,
-        motor: String(data?.MOTOR ?? data?.motor ?? "").trim() || undefined,
-        fechaMatriculacion: String(data?.FECHA_MATRICULACION ?? data?.fecha_matriculacion ?? "").trim() || undefined,
+        vehiculo: m.vehiculo || undefined,
+        vin: m.vin || undefined,
+        marca: m.marca || undefined,
+        modelo: m.modelo || undefined,
+        motor: m.motor || undefined,
+        fechaMatriculacion: m.fechaMatriculacion || undefined,
       };
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
