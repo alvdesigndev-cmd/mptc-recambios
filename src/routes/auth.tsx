@@ -28,14 +28,26 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [activeTallerIds, setActiveTallerIds] = useState<Set<string> | null>(null);
+
+  const roleFallback = (r: Role | undefined | null) =>
+    r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
 
   useEffect(() => {
+    // Aviso si /app nos redirigió con ?disabled=1
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
+      setError("Tu taller ha sido desactivado. Contacta con el administrador.");
+    }
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled || !data.session) return;
       const p = await syncProfileToSettings();
-      const fallback = p?.role === "pena" ? "/pena" : "/app";
-      navigate({ to: pickPostLoginPath(fallback) as any, replace: true });
+      navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+    });
+    // Carga la lista de talleres activos para el registro.
+    supabase.from("talleres").select("taller_id,activo").then(({ data }) => {
+      if (cancelled || !data) return;
+      setActiveTallerIds(new Set(data.filter((t: any) => t.activo).map((t: any) => t.taller_id as string)));
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -48,8 +60,7 @@ function AuthPage() {
         const { error } = await signIn(email, password);
         if (error) throw error;
         const p = await syncProfileToSettings();
-        const fallback = p?.role === "pena" ? "/pena" : "/app";
-        navigate({ to: pickPostLoginPath(fallback) as any, replace: true });
+        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
         const { error } = await signUp({
           email, password, role,
@@ -93,11 +104,14 @@ function AuthPage() {
               <span className="text-muted-foreground">Rol</span>
               <select value={role} onChange={(e) => setRole(e.target.value as Role)}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
-                <option value="taller-1">Taller 1</option>
-                <option value="taller-2">Taller 2</option>
-                <option value="taller-3">TecniAuto Express Marbella</option>
-                <option value="taller-4">Mecánica Autofran</option>
-                <option value="taller-5">Boxes Team Marbella</option>
+                {[
+                  { r: "taller-1", id: "taller-1-mtc-recambios", label: "Taller 1" },
+                  { r: "taller-2", id: "taller-2-mtc-recambios", label: "Taller 2" },
+                  { r: "taller-3", id: "taller-3-tecniauto-express-marbella", label: "TecniAuto Express Marbella" },
+                  { r: "taller-4", id: "taller-4-mecanica-autofran", label: "Mecánica Autofran" },
+                  { r: "taller-5", id: "taller-5-boxes-team-marbella", label: "Boxes Team Marbella" },
+                ].filter((o) => !activeTallerIds || activeTallerIds.has(o.id))
+                  .map((o) => <option key={o.r} value={o.r}>{o.label}</option>)}
                 <option value="pena">Grupo Peña (proveedor)</option>
               </select>
             </label>
