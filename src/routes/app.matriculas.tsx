@@ -252,6 +252,7 @@ function MatriculasPage() {
 
   const startGestion = (p: string, data: Record<string, unknown>) => {
     const m = mapApiData(data);
+    const tech = buildTechDescripcion(p, data);
     try {
       const draft = {
         step: 1,
@@ -262,6 +263,7 @@ function MatriculasPage() {
         modelo: m.modelo || undefined,
         motor: m.motor || undefined,
         fechaMatriculacion: m.fechaMatriculacion || undefined,
+        descripcion: tech || undefined,
       };
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
