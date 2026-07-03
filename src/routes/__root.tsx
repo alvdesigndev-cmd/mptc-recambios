@@ -11,6 +11,8 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSettings } from "@/lib/mptc/profiles";
 import { registerServiceWorker } from "@/lib/mptc/registerSW";
+import { Toaster } from "@/components/ui/sonner";
+
 
 
 import appCss from "../styles.css?url";
