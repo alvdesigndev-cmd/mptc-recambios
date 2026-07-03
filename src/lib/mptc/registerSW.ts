@@ -1,8 +1,9 @@
+/// <reference types="vite-plugin-pwa/client" />
 // Registro protegido del service worker generado por vite-plugin-pwa.
 // - Nunca se registra en dev, iframe, previews de Lovable o con ?sw=off.
-// - Muestra un toast cuando hay una nueva versión disponible.
-// - En cualquier contexto refusado, desregistra el SW existente para no
-//   servir HTML/asset caducados.
+// - Muestra un toast cuando hay una nueva versión disponible; al aceptar,
+//   activa el nuevo SW y recarga la página.
+// - En cualquier contexto refusado, desregistra el SW existente.
 import { toast } from "sonner";
 
 const SW_URL = "/sw.js";
@@ -49,55 +50,33 @@ export async function registerServiceWorker() {
   }
   if (!("serviceWorker" in navigator)) return;
 
-  let reloading = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloading) return;
-    reloading = true;
-    window.location.reload();
-  });
+  // `virtual:pwa-register` está expuesto por vite-plugin-pwa: gestiona el
+  // ciclo `waiting → SKIP_WAITING → controllerchange → reload` por nosotros.
+  const { registerSW } = await import("virtual:pwa-register");
 
-  try {
-    const reg = await navigator.serviceWorker.register(SW_URL, { scope: "/" });
-
-    const promptUpdate = (waiting: ServiceWorker) => {
+  const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
       toast("Nueva versión disponible", {
         description: "Recarga para aplicar la actualización.",
         duration: Infinity,
         action: {
           label: "Recargar",
-          onClick: () => waiting.postMessage({ type: "SKIP_WAITING" }),
+          onClick: () => updateSW(true),
         },
       });
-    };
-
-    // Ya hay una versión esperando desde una carga anterior.
-    if (reg.waiting && navigator.serviceWorker.controller) {
-      promptUpdate(reg.waiting);
-    }
-
-    reg.addEventListener("updatefound", () => {
-      const installing = reg.installing;
-      if (!installing) return;
-      installing.addEventListener("statechange", () => {
-        if (
-          installing.state === "installed" &&
-          navigator.serviceWorker.controller &&
-          reg.waiting
-        ) {
-          promptUpdate(reg.waiting);
-        }
+    },
+    onRegisteredSW(_swUrl, reg) {
+      if (!reg) return;
+      // Sondeo puntual de actualizaciones al volver a primer plano.
+      const check = () => { reg.update().catch(() => {}); };
+      window.addEventListener("focus", check);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") check();
       });
-    });
-
-    // Sondeo puntual de actualizaciones cuando el PWA vuelve a primer plano.
-    const checkForUpdate = () => {
-      reg.update().catch(() => {});
-    };
-    window.addEventListener("focus", checkForUpdate);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") checkForUpdate();
-    });
-  } catch (err) {
-    console.warn("SW registration failed", err);
-  }
+    },
+    onRegisterError(err) {
+      console.warn("SW registration failed", err);
+    },
+  });
 }

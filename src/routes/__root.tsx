@@ -10,6 +10,8 @@ import {
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { clearSettings } from "@/lib/mptc/profiles";
+import { registerServiceWorker } from "@/lib/mptc/registerSW";
+
 
 import appCss from "../styles.css?url";
 
@@ -134,6 +136,9 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    // Registro protegido del SW + toast de actualización disponible.
+    void registerServiceWorker();
+
     // Al cerrar y reabrir el PWA la sesión puede haber caducado. Escuchamos
     // cambios de estado de auth para invalidar el router y forzar que las
     // guardas de /app y /pena se re-ejecuten (y redirijan a /auth).
@@ -148,6 +153,7 @@ function RootComponent() {
     });
     return () => { data.subscription.unsubscribe(); };
   }, [router, queryClient]);
+
 
   return (
     <QueryClientProvider client={queryClient}>
