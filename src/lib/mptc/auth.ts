@@ -55,7 +55,7 @@ export async function signUp(input: SignUpInput) {
       data: {
         role: input.role,
         taller_id,
-        taller_name: input.tallerName || (input.role === "pena" ? "Grupo Peña" : "Taller"),
+        taller_name: input.tallerName || default_taller_name,
         ciudad: input.ciudad ?? "",
         mecanico: input.mecanico ?? "",
       },
