@@ -10,7 +10,18 @@ import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
+import { redirect } from "@tanstack/react-router";
+import { syncProfileToSettings } from "@/lib/mptc/auth";
+
 export const Route = createFileRoute("/pena")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw redirect({ to: "/auth" });
+    const p = await syncProfileToSettings();
+    if (!p) throw redirect({ to: "/auth" });
+    if (p.role !== "pena") throw redirect({ to: "/app" });
+  },
   component: PenaPage,
 });
 
