@@ -124,6 +124,9 @@ function NuevaPage() {
   const [modelo, setModelo] = useState(draft0.modelo ?? "");
   const [motor, setMotor] = useState(draft0.motor ?? "");
   const [fechaMatriculacion, setFechaMatriculacion] = useState(draft0.fechaMatriculacion ?? "");
+  const [showTecnicos, setShowTecnicos] = useState<boolean>(
+    Boolean(draft0.vin || draft0.marca || draft0.modelo || draft0.motor || draft0.fechaMatriculacion),
+  );
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
   const [fotosError, setFotosError] = useState<boolean[]>([]);
@@ -1081,50 +1084,75 @@ function NuevaPage() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Marca">
-                <input
-                  value={marca}
-                  onChange={(e) => setMarca(e.target.value)}
-                  placeholder="Ej. NISSAN"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Modelo">
-                <input
-                  value={modelo}
-                  onChange={(e) => setModelo(e.target.value)}
-                  placeholder="Ej. Micra"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Motor">
-                <input
-                  value={motor}
-                  onChange={(e) => setMotor(e.target.value)}
-                  placeholder="Ej. CG12DE"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Fecha matriculación">
-                <input
-                  value={fechaMatriculacion}
-                  onChange={(e) => setFechaMatriculacion(e.target.value)}
-                  placeholder="Ej. 22/04/2005"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-            <Field label="VIN">
-              <input
-                value={vin}
-                onChange={(e) => setVin(e.target.value)}
-                placeholder="Ej. SJNFBAK12U1368468"
-                className={inputCls}
-              />
-            </Field>
+            {(() => {
+              const hasTecnicos = Boolean(vin || marca || modelo || motor || fechaMatriculacion);
+              if (!hasTecnicos && !showTecnicos) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setShowTecnicos(true)}
+                    className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    + Añadir datos técnicos (marca, modelo, VIN…)
+                  </button>
+                );
+              }
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Marca">
+                      <input
+                        value={marca}
+                        onChange={(e) => setMarca(e.target.value)}
+                        placeholder="Ej. NISSAN"
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="Modelo">
+                      <input
+                        value={modelo}
+                        onChange={(e) => setModelo(e.target.value)}
+                        placeholder="Ej. Micra"
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Motor">
+                      <input
+                        value={motor}
+                        onChange={(e) => setMotor(e.target.value)}
+                        placeholder="Ej. CG12DE"
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="Fecha matriculación">
+                      <input
+                        value={fechaMatriculacion}
+                        onChange={(e) => setFechaMatriculacion(e.target.value)}
+                        placeholder="DD/MM/AAAA"
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="VIN">
+                    <input
+                      value={vin}
+                      onChange={(e) => setVin(e.target.value.toUpperCase())}
+                      placeholder="17 caracteres (opcional)"
+                      maxLength={17}
+                      className={inputCls}
+                    />
+                    {vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin) && (
+                      <p className="mt-1 text-[11px] text-warning">
+                        El VIN debe tener 17 caracteres alfanuméricos (sin I, O, Q).
+                      </p>
+                    )}
+                  </Field>
+                </>
+              );
+            })()}
+
           </div>
 
           {/* Fotos */}
