@@ -3,7 +3,15 @@
 // para que el resto de la app pueda leer `tallerId`, `tallerName`, etc. de
 // forma síncrona, igual que antes.
 
-export type Role = "taller-1" | "taller-2" | "pena";
+export type Role = "taller-1" | "taller-2" | "taller-3" | "taller-4" | "taller-5" | "pena";
+
+export const TALLER_INFO: Record<Exclude<Role, "pena">, { id: string; name: string }> = {
+  "taller-1": { id: "taller-1-mtc-recambios", name: "Taller 1" },
+  "taller-2": { id: "taller-2-mtc-recambios", name: "Taller 2" },
+  "taller-3": { id: "taller-3-tecniauto-express-marbella", name: "TecniAuto Express Marbella" },
+  "taller-4": { id: "taller-4-mecanica-autofran", name: "Mecánica Autofran" },
+  "taller-5": { id: "taller-5-boxes-team-marbella", name: "Boxes Team Marbella" },
+};
 
 export const PENA_PHONE = "34634954491";
 

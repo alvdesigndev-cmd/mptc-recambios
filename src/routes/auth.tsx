@@ -92,6 +92,9 @@ function AuthPage() {
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
                 <option value="taller-1">Taller 1</option>
                 <option value="taller-2">Taller 2</option>
+                <option value="taller-3">TecniAuto Express Marbella</option>
+                <option value="taller-4">Mecánica Autofran</option>
+                <option value="taller-5">Boxes Team Marbella</option>
                 <option value="pena">Grupo Peña (proveedor)</option>
               </select>
             </label>

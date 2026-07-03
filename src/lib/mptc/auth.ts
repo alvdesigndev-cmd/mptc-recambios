@@ -4,6 +4,7 @@ import {
   loadSettings,
   saveSettings,
   settingsFromProfile,
+  TALLER_INFO,
   type ProfileRow,
   type Role,
 } from "./profiles";
@@ -43,11 +44,9 @@ export interface SignUpInput {
 export async function signUp(input: SignUpInput) {
   const redirect = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
   const taller_id =
-    input.role === "pena"
-      ? "grupo-pena"
-      : input.role === "taller-1"
-      ? "taller-1-mtc-recambios"
-      : "taller-2-mtc-recambios";
+    input.role === "pena" ? "grupo-pena" : TALLER_INFO[input.role].id;
+  const default_taller_name =
+    input.role === "pena" ? "Grupo Peña" : TALLER_INFO[input.role].name;
   return await supabase.auth.signUp({
     email: input.email,
     password: input.password,
@@ -56,7 +55,7 @@ export async function signUp(input: SignUpInput) {
       data: {
         role: input.role,
         taller_id,
-        taller_name: input.tallerName || (input.role === "pena" ? "Grupo Peña" : "Taller"),
+        taller_name: input.tallerName || default_taller_name,
         ciudad: input.ciudad ?? "",
         mecanico: input.mecanico ?? "",
       },
