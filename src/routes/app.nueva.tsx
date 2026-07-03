@@ -124,6 +124,9 @@ function NuevaPage() {
   const [modelo, setModelo] = useState(draft0.modelo ?? "");
   const [motor, setMotor] = useState(draft0.motor ?? "");
   const [fechaMatriculacion, setFechaMatriculacion] = useState(draft0.fechaMatriculacion ?? "");
+  const [showTecnicos, setShowTecnicos] = useState<boolean>(
+    Boolean(draft0.vin || draft0.marca || draft0.modelo || draft0.motor || draft0.fechaMatriculacion),
+  );
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosUrls, setFotosUrls] = useState<(string | null)[]>([]);
   const [fotosError, setFotosError] = useState<boolean[]>([]);
