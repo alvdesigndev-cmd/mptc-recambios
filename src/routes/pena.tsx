@@ -4,7 +4,8 @@ import {
   LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
+import { loadSettings } from "@/lib/mptc/profiles";
+import { signOut } from "@/lib/mptc/auth";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
