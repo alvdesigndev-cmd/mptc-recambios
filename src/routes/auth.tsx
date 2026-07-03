@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
+import { pickPostLoginPath } from "@/lib/mptc/redirect";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -33,7 +34,8 @@ function AuthPage() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled || !data.session) return;
       const p = await syncProfileToSettings();
-      navigate({ to: p?.role === "pena" ? "/pena" : "/app", replace: true });
+      const fallback = p?.role === "pena" ? "/pena" : "/app";
+      navigate({ to: pickPostLoginPath(fallback), replace: true });
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -46,7 +48,8 @@ function AuthPage() {
         const { error } = await signIn(email, password);
         if (error) throw error;
         const p = await syncProfileToSettings();
-        navigate({ to: p?.role === "pena" ? "/pena" : "/app", replace: true });
+        const fallback = p?.role === "pena" ? "/pena" : "/app";
+        navigate({ to: pickPostLoginPath(fallback), replace: true });
       } else {
         const { error } = await signUp({
           email, password, role,
