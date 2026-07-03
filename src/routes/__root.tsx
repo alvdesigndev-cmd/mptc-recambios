@@ -82,12 +82,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "MPTC RECAMBIOS" },
       { name: "description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
       { name: "author", content: "Lovable" },
-      { name: "theme-color", content: "#2563EB" },
+      // theme-color: iOS y Android usan éste para pintar la barra de estado
+      // en modo standalone. Damos un valor por defecto y variantes por esquema.
+      { name: "theme-color", content: "#0b0f19" },
+      { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#ffffff" },
+      { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#0b0f19" },
+      { name: "color-scheme", content: "light dark" },
+      // iOS PWA en modo standalone
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "MPTC" },
       { name: "application-name", content: "MPTC" },
+      { name: "format-detection", content: "telephone=no" },
+      // Windows tile
+      { name: "msapplication-TileColor", content: "#2563EB" },
+      { name: "msapplication-tap-highlight", content: "no" },
       { property: "og:title", content: "MPTC RECAMBIOS" },
       { property: "og:description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
       { property: "og:type", content: "website" },
@@ -99,15 +109,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/I4CrMSAEv8QlZk8DZhpFTimKdKB2/social-images/social-1779039552040-logo.webp" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+      // Pantallas de arranque iOS. iOS solo aplica la que coincide EXACTAMENTE
+      // con el viewport en px físicos * orientación, por lo que declaramos las
+      // tallas más comunes de iPhone y iPad.
+      { rel: "apple-touch-startup-image", href: "/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-1080x2340.png", media: "(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-1536x2048.png", media: "(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-1668x2388.png", media: "(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { rel: "apple-touch-startup-image", href: "/splash-2048x2732.png", media: "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
     ],
+
 
   }),
   shellComponent: RootShell,
