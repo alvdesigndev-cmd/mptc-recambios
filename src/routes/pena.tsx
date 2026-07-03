@@ -4,13 +4,25 @@ import {
   LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
+import { loadSettings } from "@/lib/mptc/profiles";
+import { signOut } from "@/lib/mptc/auth";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
+import { redirect } from "@tanstack/react-router";
+import { syncProfileToSettings } from "@/lib/mptc/auth";
+
 export const Route = createFileRoute("/pena")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) throw redirect({ to: "/auth" });
+    const p = await syncProfileToSettings();
+    if (!p) throw redirect({ to: "/auth" });
+    if (p.role !== "pena") throw redirect({ to: "/app" });
+  },
   component: PenaPage,
 });
 
@@ -73,7 +85,7 @@ function PenaPage() {
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis); };
   }, [ready, load]);
 
-  const onExit = () => { clearSettings(); navigate({ to: "/" }); };
+  const onExit = async () => { await signOut(); navigate({ to: "/auth" }); };
 
   const filteredGestiones = useMemo(() => {
     const qq = q.trim().toLowerCase();
