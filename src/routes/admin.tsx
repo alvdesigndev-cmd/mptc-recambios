@@ -3,19 +3,26 @@ import { LogOut, Store } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
-import { clearSettings } from "@/lib/mptc/profiles";
+import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { saveRedirectPath } from "@/lib/mptc/redirect";
 import { signOut } from "@/lib/mptc/auth";
+import { checkAuthResilient } from "@/lib/mptc/authCheck";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    const auth = await checkAuthResilient();
+    if ("expired" in auth) {
       saveRedirectPath(location.href);
       clearSettings();
       await supabase.auth.signOut().catch(() => {});
       throw redirect({ to: "/auth" });
+    }
+    if ("offline" in auth) {
+      const cached = loadSettings();
+      if (!cached) { saveRedirectPath(location.href); throw redirect({ to: "/auth" }); }
+      if (cached.role !== "admin") throw redirect({ to: cached.role === "pena" ? "/pena" : "/app" });
+      return;
     }
     const p = await syncProfileToSettings();
     if (!p) {

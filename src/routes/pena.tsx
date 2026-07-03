@@ -4,7 +4,7 @@ import {
   LogOut, Truck, CheckCheck, Search, Phone, Inbox, Plus, X, Send, Pencil, Trash2, Save,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadSettings } from "@/lib/mptc/profiles";
+// loadSettings/clearSettings importados más abajo junto con el resto de utilidades de auth.
 import { signOut } from "@/lib/mptc/auth";
 import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
@@ -13,18 +13,26 @@ import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
 import { redirect } from "@tanstack/react-router";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
-import { clearSettings } from "@/lib/mptc/profiles";
+import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { saveRedirectPath } from "@/lib/mptc/redirect";
+import { checkAuthResilient } from "@/lib/mptc/authCheck";
 
 export const Route = createFileRoute("/pena")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    const auth = await checkAuthResilient();
+    if ("expired" in auth) {
       saveRedirectPath(location.href);
       clearSettings();
       await supabase.auth.signOut().catch(() => {});
       throw redirect({ to: "/auth" });
+    }
+    if ("offline" in auth) {
+      const cached = loadSettings();
+      if (!cached) { saveRedirectPath(location.href); throw redirect({ to: "/auth" }); }
+      if (cached.role === "admin") throw redirect({ to: "/admin/talleres" });
+      if (cached.role !== "pena") throw redirect({ to: "/app" });
+      return;
     }
     const p = await syncProfileToSettings();
     if (!p) {
