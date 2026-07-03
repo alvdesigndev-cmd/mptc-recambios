@@ -72,6 +72,15 @@ function PenaPage() {
   }, [navigate]);
 
   const load = useCallback(async () => {
+    // Talleres activos (para filtrar en el panel).
+    const { data: talleresRows } = await supabase
+      .from("talleres")
+      .select("taller_id,activo");
+    const activos = new Set(
+      ((talleresRows as { taller_id: string; activo: boolean }[]) || [])
+        .filter((t) => t.activo)
+        .map((t) => t.taller_id),
+    );
     const [{ data: g }, { data: d }] = await Promise.all([
       supabase.from("gestiones").select("*")
         .eq("pedido_pena", true)
@@ -81,8 +90,10 @@ function PenaPage() {
         .order("created_at", { ascending: false })
         .limit(300),
     ]);
-    setGestiones((g as Gestion[]) || []);
-    setDirectos((d as PedidoDirecto[]) || []);
+    const gs = ((g as Gestion[]) || []).filter((x) => !x.taller_id || activos.has(x.taller_id));
+    const ds = ((d as PedidoDirecto[]) || []).filter((x) => !x.taller_id || activos.has(x.taller_id));
+    setGestiones(gs);
+    setDirectos(ds);
   }, []);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
