@@ -120,6 +120,58 @@ function buildVehiculo(data: Record<string, unknown>): string {
   return mapApiData(data).vehiculo;
 }
 
+/**
+ * Builds an auto-generated "Datos técnicos del vehículo" block using the
+ * additional fields the API returns (cilindrada, potencia, tipo de motor,
+ * inyección, país, códigos TecDoc…). Only includes fields that came back
+ * with a real value.
+ */
+export function buildTechDescripcion(
+  plate: string,
+  data: Record<string, unknown>,
+): string {
+  const rows: Array<[string, string]> = [];
+  const add = (label: string, ...keys: string[]) => {
+    const v = pickStr(data, ...keys);
+    if (v) rows.push([label, v]);
+  };
+  add("Matrícula", "MATRICULA", "matricula");
+  add("Marca", "MARCA", "marca");
+  add("Modelo", "MODELO", "modelo");
+  add("Cilindrada", "TPMOTOR", "tpmotor");
+  add("Tipo motor", "TYMOTOR", "tymotor");
+  add("Códigos motor", "MOTOR", "motor");
+  const kw = pickStr(data, "KWs", "kws", "KW", "kw");
+  if (kw) {
+    const cv = Math.round(parseFloat(kw.replace(",", ".")) * 1.35962);
+    rows.push(["Potencia", Number.isFinite(cv) && cv > 0 ? `${kw} kW (~${cv} CV)` : `${kw} kW`]);
+  }
+  add("Inyección", "INYECCION", "inyeccion");
+  add("País", "PAIS", "pais");
+  const vin = pickStr(data, "VIN", "vin");
+  if (vin && isValidVin(vin)) rows.push(["VIN", vin.toUpperCase()]);
+  const fecha = normalizeFecha(pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion"));
+  if (fecha) {
+    const parts = fecha.split("/");
+    const year = parts.length === 3 ? parseInt(parts[2], 10) : NaN;
+    const antig = Number.isFinite(year) ? new Date().getFullYear() - year : NaN;
+    rows.push(["Matriculación", Number.isFinite(antig) && antig >= 0 ? `${fecha} (${antig} años)` : fecha]);
+  }
+  const tecdoc: string[] = [];
+  const idMarca = pickStr(data, "ID_MARCA_TECDOC", "id_marca_tecdoc");
+  const idModelo = pickStr(data, "ID_MODELO_TECDOC", "id_modelo_tecdoc");
+  const idKtype = pickStr(data, "ID_KTYPE", "id_ktype");
+  if (idMarca) tecdoc.push(`marca ${idMarca}`);
+  if (idModelo) tecdoc.push(`modelo ${idModelo}`);
+  if (idKtype) tecdoc.push(`ktype ${idKtype}`);
+  if (tecdoc.length) rows.push(["TecDoc", tecdoc.join(" · ")]);
+
+  if (!rows.length) return "";
+  const body = rows.map(([k, v]) => `• ${k}: ${v}`).join("\n");
+  return `📋 Datos técnicos (${plate})\n${body}`;
+}
+
+
 export const Route = createFileRoute("/app/matriculas")({
   component: MatriculasPage,
 });
@@ -200,6 +252,7 @@ function MatriculasPage() {
 
   const startGestion = (p: string, data: Record<string, unknown>) => {
     const m = mapApiData(data);
+    const tech = buildTechDescripcion(p, data);
     try {
       const draft = {
         step: 1,
@@ -210,6 +263,7 @@ function MatriculasPage() {
         modelo: m.modelo || undefined,
         motor: m.motor || undefined,
         fechaMatriculacion: m.fechaMatriculacion || undefined,
+        descripcion: tech || undefined,
       };
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
