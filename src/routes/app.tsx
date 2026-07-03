@@ -23,6 +23,19 @@ export const Route = createFileRoute("/app")({
       throw redirect({ to: "/auth" });
     }
     if (p.role === "pena") throw redirect({ to: "/pena" });
+    if (p.role === "admin") throw redirect({ to: "/admin/talleres" });
+
+    // Bloquear acceso si el taller del usuario está desactivado.
+    const { data: taller } = await supabase
+      .from("talleres")
+      .select("activo")
+      .eq("taller_id", p.taller_id)
+      .maybeSingle();
+    if (taller && taller.activo === false) {
+      clearSettings();
+      await supabase.auth.signOut().catch(() => {});
+      throw redirect({ to: "/auth", search: { disabled: "1" } as never });
+    }
   },
   component: AppLayout,
 });

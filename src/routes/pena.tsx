@@ -31,6 +31,7 @@ export const Route = createFileRoute("/pena")({
       saveRedirectPath(location.href);
       throw redirect({ to: "/auth" });
     }
+    if (p.role === "admin") throw redirect({ to: "/admin/talleres" });
     if (p.role !== "pena") throw redirect({ to: "/app" });
   },
   component: PenaPage,
