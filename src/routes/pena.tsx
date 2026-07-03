@@ -13,12 +13,17 @@ import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 
 import { redirect } from "@tanstack/react-router";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
+import { clearSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/pena")({
   ssr: false,
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/auth" });
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      clearSettings();
+      await supabase.auth.signOut().catch(() => {});
+      throw redirect({ to: "/auth" });
+    }
     const p = await syncProfileToSettings();
     if (!p) throw redirect({ to: "/auth" });
     if (p.role !== "pena") throw redirect({ to: "/app" });

@@ -7,6 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { clearSettings } from "@/lib/mptc/profiles";
 
 import appCss from "../styles.css?url";
 
@@ -117,6 +120,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Al cerrar y reabrir el PWA la sesión puede haber caducado. Escuchamos
+    // cambios de estado de auth para invalidar el router y forzar que las
+    // guardas de /app y /pena se re-ejecuten (y redirijan a /auth).
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        clearSettings();
+        queryClient.clear();
+        router.invalidate();
+      } else if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "TOKEN_REFRESHED") {
+        router.invalidate();
+      }
+    });
+    return () => { data.subscription.unsubscribe(); };
+  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
