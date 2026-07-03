@@ -7,6 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { clearSettings } from "@/lib/mptc/profiles";
 
 import appCss from "../styles.css?url";
 
