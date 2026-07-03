@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PenaRouteImport } from './routes/pena'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PedidoPenaTokenRouteImport } from './routes/pedido-pena.$token'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as AppNuevaRouteImport } from './routes/app.nueva'
@@ -22,6 +24,7 @@ import { Route as AppHistorialRouteImport } from './routes/app.historial'
 import { Route as AppFamiliasRouteImport } from './routes/app.familias'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
+import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
 
 const PenaRoute = PenaRouteImport.update({
   id: '/pena',
@@ -38,6 +41,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -47,6 +55,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const PedidoPenaTokenRoute = PedidoPenaTokenRouteImport.update({
   id: '/pedido-pena/$token',
@@ -88,12 +101,19 @@ const AppAjustesRoute = AppAjustesRouteImport.update({
   path: '/ajustes',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminTalleresRoute = AdminTalleresRouteImport.update({
+  id: '/talleres',
+  path: '/talleres',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/admin/talleres': typeof AdminTalleresRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -102,12 +122,14 @@ export interface FileRoutesByFullPath {
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/admin/talleres': typeof AdminTalleresRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -116,14 +138,17 @@ export interface FileRoutesByTo {
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/admin/talleres': typeof AdminTalleresRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -132,15 +157,18 @@ export interface FileRoutesById {
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/pena'
+    | '/admin/talleres'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -149,12 +177,14 @@ export interface FileRouteTypes {
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
+    | '/admin/'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/pena'
+    | '/admin/talleres'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -163,13 +193,16 @@ export interface FileRouteTypes {
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
+    | '/admin'
     | '/app'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/app'
     | '/auth'
     | '/pena'
+    | '/admin/talleres'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -178,11 +211,13 @@ export interface FileRouteTypes {
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
+    | '/admin/'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   PenaRoute: typeof PenaRoute
@@ -213,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -226,6 +268,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/pedido-pena/$token': {
       id: '/pedido-pena/$token'
@@ -283,8 +332,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAjustesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/talleres': {
+      id: '/admin/talleres'
+      path: '/talleres'
+      fullPath: '/admin/talleres'
+      preLoaderRoute: typeof AdminTalleresRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminTalleresRoute: typeof AdminTalleresRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminTalleresRoute: AdminTalleresRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppRouteChildren {
   AppAjustesRoute: typeof AppAjustesRoute
@@ -310,6 +378,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   PenaRoute: PenaRoute,
