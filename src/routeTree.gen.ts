@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PenaRouteImport } from './routes/pena'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
@@ -25,6 +26,11 @@ import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
 const PenaRoute = PenaRouteImport.update({
   id: '/pena',
   path: '/pena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -86,6 +92,7 @@ const AppAjustesRoute = AppAjustesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/auth'
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/auth'
     | '/pena'
     | '/app/ajustes'
     | '/app/clientes'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
   PenaRoute: typeof PenaRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
   PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       path: '/pena'
       fullPath: '/pena'
       preLoaderRoute: typeof PenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -291,6 +311,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
   PenaRoute: PenaRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
   PedidoPenaTokenRoute: PedidoPenaTokenRoute,
