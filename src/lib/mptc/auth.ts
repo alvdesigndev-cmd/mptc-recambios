@@ -4,6 +4,7 @@ import {
   loadSettings,
   saveSettings,
   settingsFromProfile,
+  TALLER_INFO,
   type ProfileRow,
   type Role,
 } from "./profiles";
