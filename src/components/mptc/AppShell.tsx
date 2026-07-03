@@ -24,7 +24,7 @@ export function AppShell({ children }: Props) {
 
   useEffect(() => {
     const s = loadSettings();
-    if (!s) { navigate({ to: "/" }); return; }
+    if (!s) { navigate({ to: "/auth" }); return; }
     setSettings(s);
     if (s.theme === "dark") document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
@@ -33,9 +33,9 @@ export function AppShell({ children }: Props) {
   if (!settings) return null;
   const isPena = settings.role === "pena";
 
-  const onExit = () => {
-    clearSettings();
-    navigate({ to: "/" });
+  const onExit = async () => {
+    await signOut();
+    navigate({ to: "/auth" });
   };
 
   return (
