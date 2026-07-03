@@ -307,6 +307,33 @@ export type Database = {
           },
         ]
       }
+      talleres: {
+        Row: {
+          activo: boolean
+          ciudad: string
+          created_at: string
+          nombre: string
+          taller_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          ciudad?: string
+          created_at?: string
+          nombre: string
+          taller_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          ciudad?: string
+          created_at?: string
+          nombre?: string
+          taller_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -345,6 +372,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_taller_id: { Args: { _uid: string }; Returns: string }
+      is_admin: { Args: { _uid: string }; Returns: boolean }
       is_pena: { Args: { _uid: string }; Returns: boolean }
       rechazar_gestion: {
         Args: { _token: string }
@@ -354,6 +382,10 @@ export type Database = {
           matricula: string
           previous_estado: string
         }[]
+      }
+      rename_taller_id: {
+        Args: { _new: string; _old: string }
+        Returns: undefined
       }
     }
     Enums: {
