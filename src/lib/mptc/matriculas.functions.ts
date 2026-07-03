@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const PlateSchema = z.object({
   plate: z.string().trim().toUpperCase().min(4).max(10).regex(/^[A-Z0-9]+$/, "Matrícula inválida"),
@@ -13,9 +14,13 @@ export type PlateLookupResult = {
 };
 
 export const lookupPlate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => PlateSchema.parse(data))
   .handler(async ({ data }): Promise<PlateLookupResult> => {
-    const apiKey = process.env.RAPIDAPI_PLATE_KEY ?? "828a4daeeemsh70039a30f2d1de2p13f5a3jsn9d8c314d8463";
+    const apiKey = process.env.RAPIDAPI_PLATE_KEY;
+    if (!apiKey) {
+      return { ok: false, plate: data.plate, error: "Servicio no configurado" };
+    }
     try {
       const url = `https://matriculas-espana1.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
       const res = await fetch(url, {
