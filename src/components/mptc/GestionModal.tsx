@@ -542,11 +542,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
         {g.fotos && g.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {g.fotos.map((u, i) => (
-              <a key={i} href={u} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
-                <img src={u} alt="" className="aspect-square w-full object-cover" />
-              </a>
-            ))}
+            {g.fotos.map((u, i) => {
+              const src = fotoSigned[i] || u;
+              return (
+                <a key={i} href={src} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </a>
+              );
+            })}
           </div>
         )}
 
