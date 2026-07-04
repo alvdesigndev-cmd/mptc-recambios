@@ -136,6 +136,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       }
       const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
       urls.push(data.publicUrl);
+      // Note: bucket is private; the modal preview replaces this with a signed URL below.
     }
     setNuevas((prev) => {
       const arr = [...prev];
