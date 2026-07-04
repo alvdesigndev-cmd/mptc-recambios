@@ -231,7 +231,11 @@ function UsuariosAdminPage() {
         <header className="mb-4 flex items-center gap-2">
           <History className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Historial de auditoría</h2>
-          <span className="ml-auto text-[11px] text-muted-foreground">Últimos 200 eventos</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">
+            {auditTotal === 0
+              ? "Sin eventos"
+              : `${auditOffset + 1}–${Math.min(auditOffset + audit.length, auditTotal)} de ${auditTotal}`}
+          </span>
         </header>
         <div className="rounded-2xl border border-border bg-surface">
           {loadingAudit ? (
@@ -262,6 +266,27 @@ function UsuariosAdminPage() {
             </ul>
           )}
         </div>
+        {auditTotal > AUDIT_PAGE_SIZE && (
+          <div className="mt-3 flex items-center justify-between">
+            <button
+              onClick={() => loadAudit(Math.max(auditOffset - AUDIT_PAGE_SIZE, 0))}
+              disabled={loadingAudit || auditOffset === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
+            >
+              ← Anteriores
+            </button>
+            <span className="text-[11px] text-muted-foreground">
+              Página {Math.floor(auditOffset / AUDIT_PAGE_SIZE) + 1} de {Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE))}
+            </span>
+            <button
+              onClick={() => loadAudit(auditOffset + AUDIT_PAGE_SIZE)}
+              disabled={loadingAudit || auditOffset + audit.length >= auditTotal}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
+            >
+              Siguientes →
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );
