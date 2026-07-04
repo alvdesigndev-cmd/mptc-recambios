@@ -428,10 +428,12 @@ function TallerDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {gestiones.length === 0 && (
-                    <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">No hay gestiones en este taller.</td></tr>
+                  {gestionesFiltradas.length === 0 && (
+                    <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                      {gestiones.length === 0 ? "No hay gestiones en este taller." : "Ninguna gestión coincide con la búsqueda."}
+                    </td></tr>
                   )}
-                  {gestiones.map((g) => {
+                  {gestionesFiltradas.map((g) => {
                     const badge = estadoBadge(g.estado);
                     return (
                       <tr key={g.id} className="border-t border-border">
