@@ -67,6 +67,13 @@ export const createAdminUser = createServerFn({ method: "POST" })
       },
     });
     if (error) throw new Error(error.message);
+    await logAdminAction(supabaseAdmin, {
+      action: "admin.create",
+      actor_user_id: context.userId,
+      target_user_id: created.user?.id ?? null,
+      target_email: data.email,
+      metadata: { taller_name: data.tallerName },
+    });
     return { ok: true as const, userId: created.user?.id ?? null };
   });
 
