@@ -178,15 +178,34 @@ export interface AuditRow {
   created_at: string;
 }
 
-export const listAdminAuditLog = createServerFn({ method: "GET" })
+export interface AuditPage {
+  rows: AuditRow[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export const listAdminAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<AuditRow[]> => {
+  .inputValidator((data: { offset?: number; limit?: number } | undefined) => {
+    const raw = data ?? {};
+    const limit = Math.min(Math.max(Number(raw.limit ?? 50) || 50, 1), 200);
+    const offset = Math.max(Number(raw.offset ?? 0) || 0, 0);
+    return { offset, limit };
+  })
+  .handler(async ({ data, context }): Promise<AuditPage> => {
     await ensureAdmin(context);
-    const { data, error } = await context.supabase
+    const { data: rows, error, count } = await context.supabase
       .from("admin_audit_log")
-      .select("id,action,target_email,target_user_id,actor_email,actor_user_id,metadata,created_at")
+      .select("id,action,target_email,target_user_id,actor_email,actor_user_id,metadata,created_at", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(200);
+      .range(data.offset, data.offset + data.limit - 1);
     if (error) throw new Error(error.message);
-    return (data ?? []) as AuditRow[];
+    return {
+      rows: (rows ?? []) as AuditRow[],
+      total: count ?? 0,
+      offset: data.offset,
+      limit: data.limit,
+    };
   });
+
