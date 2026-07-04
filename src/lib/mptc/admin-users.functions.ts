@@ -174,7 +174,7 @@ export interface AuditRow {
   target_user_id: string | null;
   actor_email: string | null;
   actor_user_id: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: string;
 }
 
