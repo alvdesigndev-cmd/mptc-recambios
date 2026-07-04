@@ -6,6 +6,7 @@ import { buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
+import { resolveFotoUrls } from "@/lib/mptc/fotos";
 
 interface Props {
   gestion: Gestion | null;
@@ -52,6 +53,15 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   } | null>(null);
   const [clienteNotificado, setClienteNotificado] = useState(false);
   const [penaNotificado, setPenaNotificado] = useState(false);
+  const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    const fotos = gestion?.fotos || [];
+    if (!fotos.length) { setFotoSigned([]); return; }
+    resolveFotoUrls(fotos).then((urls) => { if (alive) setFotoSigned(urls); });
+    return () => { alive = false; };
+  }, [gestion?.id, gestion?.fotos]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -126,6 +136,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       }
       const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
       urls.push(data.publicUrl);
+      // Note: bucket is private; the modal preview replaces this with a signed URL below.
     }
     setNuevas((prev) => {
       const arr = [...prev];
@@ -532,11 +543,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
         {g.fotos && g.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {g.fotos.map((u, i) => (
-              <a key={i} href={u} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
-                <img src={u} alt="" className="aspect-square w-full object-cover" />
-              </a>
-            ))}
+            {g.fotos.map((u, i) => {
+              const src = fotoSigned[i] || u;
+              return (
+                <a key={i} href={src} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </a>
+              );
+            })}
           </div>
         )}
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon,
+  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon, Search, X as XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,11 @@ function TallerDetailPage() {
     vehiculo: "", subfamilia: "", importe: "", descripcion: "", piezas: "",
   });
   const [savingNew, setSavingNew] = useState(false);
+
+  // Filtros de búsqueda de gestiones
+  const [q, setQ] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
@@ -164,12 +169,33 @@ function TallerDetailPage() {
     }
   };
 
+  const gestionesFiltradas = useMemo(() => {
+    const qn = q.trim().toLowerCase();
+    const desde = fechaDesde ? new Date(fechaDesde + "T00:00:00").getTime() : null;
+    const hasta = fechaHasta ? new Date(fechaHasta + "T23:59:59").getTime() : null;
+    return gestiones.filter((g) => {
+      if (desde !== null || hasta !== null) {
+        const t = new Date(g.created_at).getTime();
+        if (desde !== null && t < desde) return false;
+        if (hasta !== null && t > hasta) return false;
+      }
+      if (qn) {
+        const hay = [g.matricula, g.cliente_nombre, g.cliente_telefono, g.vehiculo, g.subfamilia]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(qn)) return false;
+      }
+      return true;
+    });
+  }, [gestiones, q, fechaDesde, fechaHasta]);
+
   const totalImporte = useMemo(() => {
-    return gestiones.reduce((acc, g) => {
+    return gestionesFiltradas.reduce((acc, g) => {
       const n = parseFloat((g.importe || "0").replace(",", "."));
       return acc + (isNaN(n) ? 0 : n);
     }, 0);
-  }, [gestiones]);
+  }, [gestionesFiltradas]);
+
+  const hasFilter = !!(q.trim() || fechaDesde || fechaHasta);
 
   return (
     <div className="space-y-5">
@@ -277,7 +303,10 @@ function TallerDetailPage() {
               <div>
                 <div className="text-sm font-semibold">Gestiones</div>
                 <div className="text-[11px] text-muted-foreground">
-                  {gestiones.length} en total · Importe acumulado: {totalImporte.toFixed(2)} €
+                  {hasFilter
+                    ? `${gestionesFiltradas.length} de ${gestiones.length}`
+                    : `${gestiones.length} en total`}
+                  {" "}· Importe {hasFilter ? "filtrado" : "acumulado"}: {totalImporte.toFixed(2)} €
                 </div>
               </div>
               <button
@@ -286,6 +315,57 @@ function TallerDetailPage() {
               >
                 <Plus className="h-4 w-4" /> {creating ? "Cerrar" : "Nueva gestión"}
               </button>
+            </div>
+
+            {/* Filtros de búsqueda */}
+            <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+              <label className="text-xs">
+                <span className="text-muted-foreground">Buscar por matrícula, cliente, teléfono…</span>
+                <div className="relative mt-1">
+                  <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Ej: 1234ABC o Juan Pérez"
+                    className="w-full rounded-lg border border-border bg-surface-2 py-2 pl-7 pr-8 text-sm"
+                  />
+                  {q && (
+                    <button
+                      onClick={() => setQ("")}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-surface-3"
+                      title="Limpiar"
+                    >
+                      <XIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </label>
+              <label className="text-xs">
+                <span className="text-muted-foreground">Desde</span>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs">
+                <span className="text-muted-foreground">Hasta</span>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-2 text-sm"
+                />
+              </label>
+              {hasFilter && (
+                <button
+                  onClick={() => { setQ(""); setFechaDesde(""); setFechaHasta(""); }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted-foreground hover:bg-surface-3"
+                >
+                  <XIcon className="h-3.5 w-3.5" /> Limpiar
+                </button>
+              )}
             </div>
 
             {creating && (
@@ -348,10 +428,12 @@ function TallerDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {gestiones.length === 0 && (
-                    <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">No hay gestiones en este taller.</td></tr>
+                  {gestionesFiltradas.length === 0 && (
+                    <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                      {gestiones.length === 0 ? "No hay gestiones en este taller." : "Ninguna gestión coincide con la búsqueda."}
+                    </td></tr>
                   )}
-                  {gestiones.map((g) => {
+                  {gestionesFiltradas.map((g) => {
                     const badge = estadoBadge(g.estado);
                     return (
                       <tr key={g.id} className="border-t border-border">
