@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pencil, Save, X, Power, Plus, Store, Loader2 } from "lucide-react";
+import { Pencil, Save, X, Power, Plus, Store, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/admin/talleres")({
   component: TalleresAdminPage,
