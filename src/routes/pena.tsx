@@ -10,6 +10,8 @@ import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
+import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
+import { resolveFotoUrls } from "@/lib/mptc/fotos";
 
 import { redirect } from "@tanstack/react-router";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
