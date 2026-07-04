@@ -169,12 +169,33 @@ function TallerDetailPage() {
     }
   };
 
+  const gestionesFiltradas = useMemo(() => {
+    const qn = q.trim().toLowerCase();
+    const desde = fechaDesde ? new Date(fechaDesde + "T00:00:00").getTime() : null;
+    const hasta = fechaHasta ? new Date(fechaHasta + "T23:59:59").getTime() : null;
+    return gestiones.filter((g) => {
+      if (desde !== null || hasta !== null) {
+        const t = new Date(g.created_at).getTime();
+        if (desde !== null && t < desde) return false;
+        if (hasta !== null && t > hasta) return false;
+      }
+      if (qn) {
+        const hay = [g.matricula, g.cliente_nombre, g.cliente_telefono, g.vehiculo, g.subfamilia]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(qn)) return false;
+      }
+      return true;
+    });
+  }, [gestiones, q, fechaDesde, fechaHasta]);
+
   const totalImporte = useMemo(() => {
-    return gestiones.reduce((acc, g) => {
+    return gestionesFiltradas.reduce((acc, g) => {
       const n = parseFloat((g.importe || "0").replace(",", "."));
       return acc + (isNaN(n) ? 0 : n);
     }, 0);
-  }, [gestiones]);
+  }, [gestionesFiltradas]);
+
+  const hasFilter = !!(q.trim() || fechaDesde || fechaHasta);
 
   return (
     <div className="space-y-5">
