@@ -53,6 +53,9 @@ function TallerDetailPage() {
   const [q, setQ] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
