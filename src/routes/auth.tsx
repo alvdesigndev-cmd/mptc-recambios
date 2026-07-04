@@ -113,8 +113,6 @@ function AuthPage() {
                 ].filter((o) => !activeTallerIds || activeTallerIds.has(o.id))
                   .map((o) => <option key={o.r} value={o.r}>{o.label}</option>)}
                 <option value="pena">Grupo Peña (proveedor)</option>
-                <option value="admin">Administrador</option>
-
               </select>
             </label>
             <label className="block text-sm">
