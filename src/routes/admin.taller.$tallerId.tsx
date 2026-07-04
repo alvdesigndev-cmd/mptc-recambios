@@ -134,6 +134,8 @@ function TallerDetailPage() {
       toast.error("Introduce al menos matrícula o cliente");
       return;
     }
+    const label = newG.matricula.trim().toUpperCase() || newG.cliente_nombre.trim();
+    if (!confirm(`¿Crear nueva gestión (${label}) en ${taller.nombre}?`)) return;
     setSavingNew(true);
     try {
       const { error } = await supabase.from("gestiones").insert({
