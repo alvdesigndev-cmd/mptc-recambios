@@ -56,6 +56,13 @@ function AdminLayout() {
             >
               <Store className="h-4 w-4" /> Talleres
             </Link>
+            <Link
+              to="/admin/usuarios"
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              activeProps={{ className: "inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm bg-surface-2 text-foreground" }}
+            >
+              <ShieldPlus className="h-4 w-4" /> Admins
+            </Link>
           </nav>
           <button onClick={onExit} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Salir">
             <LogOut className="h-5 w-5" />
