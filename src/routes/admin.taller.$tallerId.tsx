@@ -53,6 +53,9 @@ function TallerDetailPage() {
   const [q, setQ] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
@@ -173,7 +176,7 @@ function TallerDetailPage() {
     const qn = q.trim().toLowerCase();
     const desde = fechaDesde ? new Date(fechaDesde + "T00:00:00").getTime() : null;
     const hasta = fechaHasta ? new Date(fechaHasta + "T23:59:59").getTime() : null;
-    return gestiones.filter((g) => {
+    const filtered = gestiones.filter((g) => {
       if (desde !== null || hasta !== null) {
         const t = new Date(g.created_at).getTime();
         if (desde !== null && t < desde) return false;
@@ -186,7 +189,13 @@ function TallerDetailPage() {
       }
       return true;
     });
-  }, [gestiones, q, fechaDesde, fechaHasta]);
+    const sorted = [...filtered].sort((a, b) => {
+      const da = new Date(a.created_at).getTime();
+      const db = new Date(b.created_at).getTime();
+      return sortDir === "desc" ? db - da : da - db;
+    });
+    return sorted;
+  }, [gestiones, q, fechaDesde, fechaHasta, sortDir]);
 
   const totalImporte = useMemo(() => {
     return gestionesFiltradas.reduce((acc, g) => {
@@ -194,6 +203,19 @@ function TallerDetailPage() {
       return acc + (isNaN(n) ? 0 : n);
     }, 0);
   }, [gestionesFiltradas]);
+
+  const totalPages = Math.max(1, Math.ceil(gestionesFiltradas.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const gestionesPaginadas = useMemo(
+    () => gestionesFiltradas.slice(pageStart, pageStart + pageSize),
+    [gestionesFiltradas, pageStart, pageSize],
+  );
+
+  // Reset a página 1 cuando cambian filtros/orden/tamaño
+  useEffect(() => { setPage(1); }, [q, fechaDesde, fechaHasta, sortDir, pageSize]);
+
+
 
   const hasFilter = !!(q.trim() || fechaDesde || fechaHasta);
 
@@ -418,7 +440,15 @@ function TallerDetailPage() {
               <table className="w-full text-sm">
                 <thead className="bg-surface-2 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th className="px-3 py-2">Fecha</th>
+                    <th className="px-3 py-2">
+                      <button
+                        onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+                        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground"
+                        title={sortDir === "desc" ? "Más recientes primero" : "Más antiguas primero"}
+                      >
+                        Fecha <span aria-hidden="true">{sortDir === "desc" ? "↓" : "↑"}</span>
+                      </button>
+                    </th>
                     <th className="px-3 py-2">Matrícula</th>
                     <th className="px-3 py-2">Cliente</th>
                     <th className="px-3 py-2">Subfamilia</th>
@@ -433,7 +463,7 @@ function TallerDetailPage() {
                       {gestiones.length === 0 ? "No hay gestiones en este taller." : "Ninguna gestión coincide con la búsqueda."}
                     </td></tr>
                   )}
-                  {gestionesFiltradas.map((g) => {
+                  {gestionesPaginadas.map((g) => {
                     const badge = estadoBadge(g.estado);
                     return (
                       <tr key={g.id} className="border-t border-border">
@@ -465,6 +495,52 @@ function TallerDetailPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Paginación */}
+            {gestionesFiltradas.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <div>
+                  Mostrando <span className="font-semibold text-foreground">{pageStart + 1}</span>–
+                  <span className="font-semibold text-foreground">{Math.min(pageStart + pageSize, gestionesFiltradas.length)}</span>
+                  {" "}de <span className="font-semibold text-foreground">{gestionesFiltradas.length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex items-center gap-1">
+                    <span>Por página</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+                      className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs"
+                    >
+                      {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage(1)}
+                      disabled={currentPage <= 1}
+                      className="rounded-md border border-border bg-surface-2 px-2 py-1 disabled:opacity-40"
+                    >«</button>
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                      className="rounded-md border border-border bg-surface-2 px-2 py-1 disabled:opacity-40"
+                    >‹</button>
+                    <span className="px-2">Página <span className="font-semibold text-foreground">{currentPage}</span> / {totalPages}</span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="rounded-md border border-border bg-surface-2 px-2 py-1 disabled:opacity-40"
+                    >›</button>
+                    <button
+                      onClick={() => setPage(totalPages)}
+                      disabled={currentPage >= totalPages}
+                      className="rounded-md border border-border bg-surface-2 px-2 py-1 disabled:opacity-40"
+                    >»</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
