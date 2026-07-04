@@ -77,6 +77,7 @@ function TallerDetailPage() {
 
   const saveHeader = async () => {
     if (!taller) return;
+    if (!confirm(`¿Guardar cambios del taller "${taller.nombre}"?`)) return;
     setSavingHeader(true); setErr(null);
     try {
       const { error } = await supabase
@@ -87,7 +88,9 @@ function TallerDetailPage() {
       toast.success("Taller actualizado");
       await load();
     } catch (e: any) {
-      setErr(e?.message || "No se pudo guardar");
+      const msg = e?.message || "No se pudo guardar";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setSavingHeader(false);
     }
