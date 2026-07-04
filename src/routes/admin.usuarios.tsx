@@ -10,6 +10,7 @@ import {
   listAdminAuditLog,
   type AdminRow,
   type AuditRow,
+  type AuditCursor,
 } from "@/lib/mptc/admin-users.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -37,8 +38,11 @@ function UsuariosAdminPage() {
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
-  const [auditOffset, setAuditOffset] = useState(0);
-  const [auditTotal, setAuditTotal] = useState(0);
+  // Pila de cursores usada para navegar hacia atrás (keyset pagination).
+  // La primera página se pide con cursor=null; cada avance añade el cursor
+  // usado para pedir la nueva página.
+  const [cursorStack, setCursorStack] = useState<(AuditCursor | null)[]>([null]);
+  const [nextCursor, setNextCursor] = useState<AuditCursor | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [auditErr, setAuditErr] = useState<string | null>(null);
 
@@ -61,13 +65,12 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  const loadAudit = useCallback(async (offset = 0) => {
+  const loadAudit = useCallback(async (cursor: AuditCursor | null) => {
     setLoadingAudit(true); setAuditErr(null);
     try {
-      const page = await fetchAudit({ data: { offset, limit: AUDIT_PAGE_SIZE } });
+      const page = await fetchAudit({ data: { cursor, limit: AUDIT_PAGE_SIZE } });
       setAudit(page.rows);
-      setAuditOffset(page.offset);
-      setAuditTotal(page.total);
+      setNextCursor(page.nextCursor);
     } catch (err: any) {
       setAuditErr(err?.message || "No se pudo cargar el historial");
     } finally {
@@ -75,9 +78,31 @@ function UsuariosAdminPage() {
     }
   }, [fetchAudit]);
 
-  useEffect(() => { load(); loadAudit(0); }, [load, loadAudit]);
+  const resetAudit = useCallback(() => {
+    setCursorStack([null]);
+    loadAudit(null);
+  }, [loadAudit]);
 
-  const refreshAll = useCallback(() => { load(); loadAudit(0); }, [load, loadAudit]);
+  useEffect(() => { load(); resetAudit(); }, [load, resetAudit]);
+
+  const refreshAll = useCallback(() => { load(); resetAudit(); }, [load, resetAudit]);
+
+  const goNextAudit = () => {
+    if (!nextCursor) return;
+    setCursorStack((s) => [...s, nextCursor]);
+    loadAudit(nextCursor);
+  };
+
+  const goPrevAudit = () => {
+    setCursorStack((s) => {
+      if (s.length <= 1) return s;
+      const nextStack = s.slice(0, -1);
+      loadAudit(nextStack[nextStack.length - 1] ?? null);
+      return nextStack;
+    });
+  };
+
+
 
 
   const submit = async (e: React.FormEvent) => {
@@ -232,9 +257,7 @@ function UsuariosAdminPage() {
           <History className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Historial de auditoría</h2>
           <span className="ml-auto text-[11px] text-muted-foreground">
-            {auditTotal === 0
-              ? "Sin eventos"
-              : `${auditOffset + 1}–${Math.min(auditOffset + audit.length, auditTotal)} de ${auditTotal}`}
+            Página {cursorStack.length}
           </span>
         </header>
         <div className="rounded-2xl border border-border bg-surface">
@@ -266,21 +289,21 @@ function UsuariosAdminPage() {
             </ul>
           )}
         </div>
-        {auditTotal > AUDIT_PAGE_SIZE && (
+        {(cursorStack.length > 1 || nextCursor) && (
           <div className="mt-3 flex items-center justify-between">
             <button
-              onClick={() => loadAudit(Math.max(auditOffset - AUDIT_PAGE_SIZE, 0))}
-              disabled={loadingAudit || auditOffset === 0}
+              onClick={goPrevAudit}
+              disabled={loadingAudit || cursorStack.length <= 1}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
             >
               ← Anteriores
             </button>
             <span className="text-[11px] text-muted-foreground">
-              Página {Math.floor(auditOffset / AUDIT_PAGE_SIZE) + 1} de {Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE))}
+              {audit.length} eventos · página {cursorStack.length}
             </span>
             <button
-              onClick={() => loadAudit(auditOffset + AUDIT_PAGE_SIZE)}
-              disabled={loadingAudit || auditOffset + audit.length >= auditTotal}
+              onClick={goNextAudit}
+              disabled={loadingAudit || !nextCursor}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
             >
               Siguientes →

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS admin_audit_log_keyset_idx ON public.admin_audit_log (created_at DESC, id DESC);
