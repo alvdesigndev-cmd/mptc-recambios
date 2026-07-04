@@ -65,9 +65,6 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  const loadAudit = useCallback(async (offset = 0) => {
-    setLoadingAudit(true); setAuditErr(null);
-    try {
   const loadAudit = useCallback(async (cursor: AuditCursor | null) => {
     setLoadingAudit(true); setAuditErr(null);
     try {
