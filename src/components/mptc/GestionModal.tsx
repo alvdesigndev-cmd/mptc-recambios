@@ -55,7 +55,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [clienteNotificado, setClienteNotificado] = useState(false);
   const [penaNotificado, setPenaNotificado] = useState(false);
   const [fotoSigned, setFotoSigned] = useState<string[]>([]);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+
 
   useEffect(() => {
     let alive = true;
@@ -551,7 +552,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 <button
                   type="button"
                   key={i}
-                  onClick={() => setLightbox(src)}
+                  onClick={() => setLightbox(i)}
                   className="overflow-hidden rounded-xl bg-surface-2"
                 >
                   <img src={src} alt="" className="aspect-square w-full object-cover" />
@@ -560,7 +561,13 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             })}
           </div>
         )}
-        <PhotoLightbox src={lightbox} onClose={() => setLightbox(null)} />
+        <PhotoLightbox
+          images={fotoSigned.length ? fotoSigned : g.fotos || []}
+          startIndex={lightbox ?? 0}
+          open={lightbox !== null}
+          onClose={() => setLightbox(null)}
+        />
+
 
         {/* Panel de avisos tras añadir averías nuevas */}
         {avisoPendiente && !editing && (

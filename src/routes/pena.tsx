@@ -314,8 +314,9 @@ function PedidoModal({
   const [confirmDel, setConfirmDel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fotoSigned, setFotoSigned] = useState<string[]>([]);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const [form, setForm] = useState({
+
     matricula: item.matricula || "",
     vehiculo: item.vehiculo || "",
     piezas: item.piezas || "",
@@ -475,7 +476,7 @@ function PedidoModal({
                 <button
                   type="button"
                   key={i}
-                  onClick={() => setLightbox(src)}
+                  onClick={() => setLightbox(i)}
                   className="overflow-hidden rounded-xl bg-surface-2"
                 >
                   <img src={src} alt="" className="aspect-square w-full object-cover" />
@@ -484,7 +485,13 @@ function PedidoModal({
             })}
           </div>
         )}
-        <PhotoLightbox src={lightbox} onClose={() => setLightbox(null)} />
+        <PhotoLightbox
+          images={fotoSigned.length ? fotoSigned : item.fotos || []}
+          startIndex={lightbox ?? 0}
+          open={lightbox !== null}
+          onClose={() => setLightbox(null)}
+        />
+
 
         {!editing && kind === "d" && (
           <div className="mt-5">
