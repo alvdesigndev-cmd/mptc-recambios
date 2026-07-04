@@ -53,6 +53,15 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   } | null>(null);
   const [clienteNotificado, setClienteNotificado] = useState(false);
   const [penaNotificado, setPenaNotificado] = useState(false);
+  const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    const fotos = gestion?.fotos || [];
+    if (!fotos.length) { setFotoSigned([]); return; }
+    resolveFotoUrls(fotos).then((urls) => { if (alive) setFotoSigned(urls); });
+    return () => { alive = false; };
+  }, [gestion?.id, gestion?.fotos]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
