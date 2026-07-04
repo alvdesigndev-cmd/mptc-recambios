@@ -67,42 +67,49 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  const loadAudit = useCallback(async (cursor: AuditCursor | null) => {
+  const loadMoreAudit = useCallback(async () => {
+    if (loadingRef.current || !hasMoreRef.current) return;
+    loadingRef.current = true;
     setLoadingAudit(true); setAuditErr(null);
     try {
-      const page = await fetchAudit({ data: { cursor, limit: AUDIT_PAGE_SIZE } });
-      setAudit(page.rows);
+      const page = await fetchAudit({ data: { cursor: cursorRef.current, limit: AUDIT_PAGE_SIZE } });
+      setAudit((prev) => cursorRef.current === null ? page.rows : [...prev, ...page.rows]);
+      cursorRef.current = page.nextCursor;
+      hasMoreRef.current = page.nextCursor !== null;
       setNextCursor(page.nextCursor);
+      setHasMore(page.nextCursor !== null);
     } catch (err: any) {
       setAuditErr(err?.message || "No se pudo cargar el historial");
     } finally {
+      loadingRef.current = false;
       setLoadingAudit(false);
     }
   }, [fetchAudit]);
 
   const resetAudit = useCallback(() => {
-    setCursorStack([null]);
-    loadAudit(null);
-  }, [loadAudit]);
+    cursorRef.current = null;
+    hasMoreRef.current = true;
+    setAudit([]);
+    setNextCursor(null);
+    setHasMore(true);
+    loadMoreAudit();
+  }, [loadMoreAudit]);
 
   useEffect(() => { load(); resetAudit(); }, [load, resetAudit]);
 
   const refreshAll = useCallback(() => { load(); resetAudit(); }, [load, resetAudit]);
 
-  const goNextAudit = () => {
-    if (!nextCursor) return;
-    setCursorStack((s) => [...s, nextCursor]);
-    loadAudit(nextCursor);
-  };
+  // Infinite scroll: observa un sentinel al final y carga la siguiente página.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMoreAudit();
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loadMoreAudit]);
 
-  const goPrevAudit = () => {
-    setCursorStack((s) => {
-      if (s.length <= 1) return s;
-      const nextStack = s.slice(0, -1);
-      loadAudit(nextStack[nextStack.length - 1] ?? null);
-      return nextStack;
-    });
-  };
 
 
 
