@@ -35,7 +35,10 @@ function UsuariosAdminPage() {
   const [listErr, setListErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [auditOffset, setAuditOffset] = useState(0);
+  const [auditTotal, setAuditTotal] = useState(0);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [auditErr, setAuditErr] = useState<string | null>(null);
 
@@ -58,11 +61,13 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  const loadAudit = useCallback(async () => {
+  const loadAudit = useCallback(async (offset = 0) => {
     setLoadingAudit(true); setAuditErr(null);
     try {
-      const data = await fetchAudit();
-      setAudit(data);
+      const page = await fetchAudit({ data: { offset, limit: AUDIT_PAGE_SIZE } });
+      setAudit(page.rows);
+      setAuditOffset(page.offset);
+      setAuditTotal(page.total);
     } catch (err: any) {
       setAuditErr(err?.message || "No se pudo cargar el historial");
     } finally {
@@ -70,9 +75,9 @@ function UsuariosAdminPage() {
     }
   }, [fetchAudit]);
 
-  useEffect(() => { load(); loadAudit(); }, [load, loadAudit]);
+  useEffect(() => { load(); loadAudit(0); }, [load, loadAudit]);
 
-  const refreshAll = useCallback(() => { load(); loadAudit(); }, [load, loadAudit]);
+  const refreshAll = useCallback(() => { load(); loadAudit(0); }, [load, loadAudit]);
 
 
   const submit = async (e: React.FormEvent) => {
