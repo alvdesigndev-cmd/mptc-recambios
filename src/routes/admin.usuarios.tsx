@@ -1,29 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck } from "lucide-react";
+import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History } from "lucide-react";
 import {
   createAdminUser,
   listAdmins,
   setAdminBanned,
   deleteAdmin,
+  listAdminAuditLog,
   type AdminRow,
+  type AuditRow,
 } from "@/lib/mptc/admin-users.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosAdminPage,
 });
 
+const ACTION_LABEL: Record<string, string> = {
+  "admin.create": "Creación",
+  "admin.deactivate": "Desactivación",
+  "admin.reactivate": "Reactivación",
+  "admin.delete": "Eliminación",
+};
+
 function UsuariosAdminPage() {
   const createAdmin = useServerFn(createAdminUser);
   const fetchAdmins = useServerFn(listAdmins);
   const toggleBan = useServerFn(setAdminBanned);
   const removeAdmin = useServerFn(deleteAdmin);
+  const fetchAudit = useServerFn(listAdminAuditLog);
 
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listErr, setListErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(true);
+  const [auditErr, setAuditErr] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +58,22 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadAudit = useCallback(async () => {
+    setLoadingAudit(true); setAuditErr(null);
+    try {
+      const data = await fetchAudit();
+      setAudit(data);
+    } catch (err: any) {
+      setAuditErr(err?.message || "No se pudo cargar el historial");
+    } finally {
+      setLoadingAudit(false);
+    }
+  }, [fetchAudit]);
+
+  useEffect(() => { load(); loadAudit(); }, [load, loadAudit]);
+
+  const refreshAll = useCallback(() => { load(); loadAudit(); }, [load, loadAudit]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
