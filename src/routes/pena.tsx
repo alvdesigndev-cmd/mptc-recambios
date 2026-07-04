@@ -313,6 +313,8 @@ function PedidoModal({
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [form, setForm] = useState({
     matricula: item.matricula || "",
     vehiculo: item.vehiculo || "",
