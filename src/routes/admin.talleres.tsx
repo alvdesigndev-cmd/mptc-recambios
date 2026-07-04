@@ -217,6 +217,13 @@ function TalleresAdminPage() {
                         </>
                       ) : (
                         <>
+                          <Link
+                            to="/admin/taller/$tallerId"
+                            params={{ tallerId: t.taller_id }}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/20"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                          </Link>
                           <button onClick={() => startEdit(t)}
                             className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground">
                             <Pencil className="h-3.5 w-3.5" /> Editar
@@ -229,6 +236,7 @@ function TalleresAdminPage() {
                             <Power className="h-3.5 w-3.5" /> {t.activo ? "Desactivar" : "Activar"}
                           </button>
                         </>
+
                       )}
                     </div>
                   </td>
