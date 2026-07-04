@@ -10,6 +10,7 @@ import {
   listAdminAuditLog,
   type AdminRow,
   type AuditRow,
+  type AuditCursor,
 } from "@/lib/mptc/admin-users.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -37,8 +38,11 @@ function UsuariosAdminPage() {
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
-  const [auditOffset, setAuditOffset] = useState(0);
-  const [auditTotal, setAuditTotal] = useState(0);
+  // Pila de cursores usada para navegar hacia atrás (keyset pagination).
+  // La primera página se pide con cursor=null; cada avance añade el cursor
+  // usado para pedir la nueva página.
+  const [cursorStack, setCursorStack] = useState<(AuditCursor | null)[]>([null]);
+  const [nextCursor, setNextCursor] = useState<AuditCursor | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [auditErr, setAuditErr] = useState<string | null>(null);
 
@@ -64,10 +68,12 @@ function UsuariosAdminPage() {
   const loadAudit = useCallback(async (offset = 0) => {
     setLoadingAudit(true); setAuditErr(null);
     try {
-      const page = await fetchAudit({ data: { offset, limit: AUDIT_PAGE_SIZE } });
+  const loadAudit = useCallback(async (cursor: AuditCursor | null) => {
+    setLoadingAudit(true); setAuditErr(null);
+    try {
+      const page = await fetchAudit({ data: { cursor, limit: AUDIT_PAGE_SIZE } });
       setAudit(page.rows);
-      setAuditOffset(page.offset);
-      setAuditTotal(page.total);
+      setNextCursor(page.nextCursor);
     } catch (err: any) {
       setAuditErr(err?.message || "No se pudo cargar el historial");
     } finally {
@@ -75,9 +81,31 @@ function UsuariosAdminPage() {
     }
   }, [fetchAudit]);
 
-  useEffect(() => { load(); loadAudit(0); }, [load, loadAudit]);
+  const resetAudit = useCallback(() => {
+    setCursorStack([null]);
+    loadAudit(null);
+  }, [loadAudit]);
 
-  const refreshAll = useCallback(() => { load(); loadAudit(0); }, [load, loadAudit]);
+  useEffect(() => { load(); resetAudit(); }, [load, resetAudit]);
+
+  const refreshAll = useCallback(() => { load(); resetAudit(); }, [load, resetAudit]);
+
+  const goNextAudit = () => {
+    if (!nextCursor) return;
+    setCursorStack((s) => [...s, nextCursor]);
+    loadAudit(nextCursor);
+  };
+
+  const goPrevAudit = () => {
+    setCursorStack((s) => {
+      if (s.length <= 1) return s;
+      const nextStack = s.slice(0, -1);
+      loadAudit(nextStack[nextStack.length - 1] ?? null);
+      return nextStack;
+    });
+  };
+
+
 
 
   const submit = async (e: React.FormEvent) => {
