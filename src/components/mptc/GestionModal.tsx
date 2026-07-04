@@ -7,6 +7,7 @@ import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
+import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 
 interface Props {
   gestion: Gestion | null;
@@ -54,6 +55,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [clienteNotificado, setClienteNotificado] = useState(false);
   const [penaNotificado, setPenaNotificado] = useState(false);
   const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -546,13 +548,19 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             {g.fotos.map((u, i) => {
               const src = fotoSigned[i] || u;
               return (
-                <a key={i} href={src} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => setLightbox(src)}
+                  className="overflow-hidden rounded-xl bg-surface-2"
+                >
                   <img src={src} alt="" className="aspect-square w-full object-cover" />
-                </a>
+                </button>
               );
             })}
           </div>
         )}
+        <PhotoLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
         {/* Panel de avisos tras añadir averías nuevas */}
         {avisoPendiente && !editing && (

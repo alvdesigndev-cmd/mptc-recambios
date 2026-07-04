@@ -10,6 +10,8 @@ import { buildWAUrl } from "@/lib/mptc/wa";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionActions";
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
+import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
+import { resolveFotoUrls } from "@/lib/mptc/fotos";
 
 import { redirect } from "@tanstack/react-router";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
@@ -311,6 +313,8 @@ function PedidoModal({
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [form, setForm] = useState({
     matricula: item.matricula || "",
     vehiculo: item.vehiculo || "",
@@ -323,6 +327,14 @@ function PedidoModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    let alive = true;
+    const fotos = item.fotos || [];
+    if (!fotos.length) { setFotoSigned([]); return; }
+    resolveFotoUrls(fotos).then((urls) => { if (alive) setFotoSigned(urls); });
+    return () => { alive = false; };
+  }, [item.id, item.fotos]);
 
   const setEstadoDirecto = async (estado: string) => {
     await supabase.from("pedidos_pena").update({ estado }).eq("id", item.id);
@@ -457,13 +469,22 @@ function PedidoModal({
 
         {!editing && item.fotos && item.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {item.fotos.map((u, i) => (
-              <a key={i} href={u} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
-                <img src={u} alt="" className="aspect-square w-full object-cover" />
-              </a>
-            ))}
+            {item.fotos.map((u, i) => {
+              const src = fotoSigned[i] || u;
+              return (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => setLightbox(src)}
+                  className="overflow-hidden rounded-xl bg-surface-2"
+                >
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </button>
+              );
+            })}
           </div>
         )}
+        <PhotoLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
         {!editing && kind === "d" && (
           <div className="mt-5">
