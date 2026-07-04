@@ -469,13 +469,22 @@ function PedidoModal({
 
         {!editing && item.fotos && item.fotos.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2">
-            {item.fotos.map((u, i) => (
-              <a key={i} href={u} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl bg-surface-2">
-                <img src={u} alt="" className="aspect-square w-full object-cover" />
-              </a>
-            ))}
+            {item.fotos.map((u, i) => {
+              const src = fotoSigned[i] || u;
+              return (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => setLightbox(src)}
+                  className="overflow-hidden rounded-xl bg-surface-2"
+                >
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </button>
+              );
+            })}
           </div>
         )}
+        <PhotoLightbox src={lightbox} onClose={() => setLightbox(null)} />
 
         {!editing && kind === "d" && (
           <div className="mt-5">
