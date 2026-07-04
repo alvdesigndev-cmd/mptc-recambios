@@ -49,6 +49,11 @@ function TallerDetailPage() {
   });
   const [savingNew, setSavingNew] = useState(false);
 
+  // Filtros de búsqueda de gestiones
+  const [q, setQ] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
     try {
