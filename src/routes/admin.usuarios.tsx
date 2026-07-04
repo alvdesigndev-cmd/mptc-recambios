@@ -38,13 +38,15 @@ function UsuariosAdminPage() {
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
-  // Pila de cursores usada para navegar hacia atrás (keyset pagination).
-  // La primera página se pide con cursor=null; cada avance añade el cursor
-  // usado para pedir la nueva página.
-  const [cursorStack, setCursorStack] = useState<(AuditCursor | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<AuditCursor | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [auditErr, setAuditErr] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
+  const cursorRef = useRef<AuditCursor | null>(null);
+  const hasMoreRef = useRef(true);
+
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
