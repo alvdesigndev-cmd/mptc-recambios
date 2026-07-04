@@ -7,6 +7,7 @@ import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
+import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 
 interface Props {
   gestion: Gestion | null;
