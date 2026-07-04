@@ -13,6 +13,34 @@ async function ensureAdmin(context: { supabase: any; userId: string }) {
   if (!isAdmin) throw new Error("Solo un administrador puede realizar esta acción");
 }
 
+async function getActorEmail(supabaseAdmin: any, userId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+    return data?.user?.email ?? null;
+  } catch { return null; }
+}
+
+async function logAdminAction(
+  supabaseAdmin: any,
+  entry: {
+    action: string;
+    actor_user_id: string;
+    target_user_id?: string | null;
+    target_email?: string | null;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  const actor_email = await getActorEmail(supabaseAdmin, entry.actor_user_id);
+  await supabaseAdmin.from("admin_audit_log").insert({
+    action: entry.action,
+    actor_user_id: entry.actor_user_id,
+    actor_email,
+    target_user_id: entry.target_user_id ?? null,
+    target_email: entry.target_email ?? null,
+    metadata: entry.metadata ?? {},
+  });
+}
+
 export const createAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: CreateAdminInput) => {
@@ -39,6 +67,13 @@ export const createAdminUser = createServerFn({ method: "POST" })
       },
     });
     if (error) throw new Error(error.message);
+    await logAdminAction(supabaseAdmin, {
+      action: "admin.create",
+      actor_user_id: context.userId,
+      target_user_id: created.user?.id ?? null,
+      target_email: data.email,
+      metadata: { taller_name: data.tallerName },
+    });
     return { ok: true as const, userId: created.user?.id ?? null };
   });
 
@@ -96,10 +131,17 @@ export const setAdminBanned = createServerFn({ method: "POST" })
     await ensureAdmin(context);
     if (data.userId === context.userId) throw new Error("No puedes desactivar tu propia cuenta");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const target_email = await getActorEmail(supabaseAdmin, data.userId);
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.banned ? "876000h" : "none",
     } as any);
     if (error) throw new Error(error.message);
+    await logAdminAction(supabaseAdmin, {
+      action: data.banned ? "admin.deactivate" : "admin.reactivate",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email,
+    });
     return { ok: true as const };
   });
 
@@ -113,8 +155,38 @@ export const deleteAdmin = createServerFn({ method: "POST" })
     await ensureAdmin(context);
     if (data.userId === context.userId) throw new Error("No puedes eliminar tu propia cuenta");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const target_email = await getActorEmail(supabaseAdmin, data.userId);
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
-    // Perfil se elimina en cascada por FK a auth.users.
+    await logAdminAction(supabaseAdmin, {
+      action: "admin.delete",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email,
+    });
     return { ok: true as const };
+  });
+
+export interface AuditRow {
+  id: string;
+  action: string;
+  target_email: string | null;
+  target_user_id: string | null;
+  actor_email: string | null;
+  actor_user_id: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export const listAdminAuditLog = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AuditRow[]> => {
+    await ensureAdmin(context);
+    const { data, error } = await context.supabase
+      .from("admin_audit_log")
+      .select("id,action,target_email,target_user_id,actor_email,actor_user_id,metadata,created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as AuditRow[];
   });

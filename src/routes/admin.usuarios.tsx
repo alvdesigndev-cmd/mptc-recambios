@@ -1,29 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck } from "lucide-react";
+import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History } from "lucide-react";
 import {
   createAdminUser,
   listAdmins,
   setAdminBanned,
   deleteAdmin,
+  listAdminAuditLog,
   type AdminRow,
+  type AuditRow,
 } from "@/lib/mptc/admin-users.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: UsuariosAdminPage,
 });
 
+const ACTION_LABEL: Record<string, string> = {
+  "admin.create": "Creación",
+  "admin.deactivate": "Desactivación",
+  "admin.reactivate": "Reactivación",
+  "admin.delete": "Eliminación",
+};
+
 function UsuariosAdminPage() {
   const createAdmin = useServerFn(createAdminUser);
   const fetchAdmins = useServerFn(listAdmins);
   const toggleBan = useServerFn(setAdminBanned);
   const removeAdmin = useServerFn(deleteAdmin);
+  const fetchAudit = useServerFn(listAdminAuditLog);
 
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listErr, setListErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(true);
+  const [auditErr, setAuditErr] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +58,22 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadAudit = useCallback(async () => {
+    setLoadingAudit(true); setAuditErr(null);
+    try {
+      const data = await fetchAudit();
+      setAudit(data);
+    } catch (err: any) {
+      setAuditErr(err?.message || "No se pudo cargar el historial");
+    } finally {
+      setLoadingAudit(false);
+    }
+  }, [fetchAudit]);
+
+  useEffect(() => { load(); loadAudit(); }, [load, loadAudit]);
+
+  const refreshAll = useCallback(() => { load(); loadAudit(); }, [load, loadAudit]);
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +82,7 @@ function UsuariosAdminPage() {
       await createAdmin({ data: { email, password, tallerName } });
       setInfo(`Administrador creado: ${email}`);
       setEmail(""); setPassword(""); setTallerName("");
-      load();
+      refreshAll();
     } catch (err: any) {
       setError(err?.message || "No se pudo crear el administrador");
     } finally {
@@ -68,7 +97,7 @@ function UsuariosAdminPage() {
     setBusyId(row.user_id);
     try {
       await toggleBan({ data: { userId: row.user_id, banned: !row.banned } });
-      await load();
+      refreshAll();
     } catch (err: any) {
       alert(err?.message || "No se pudo actualizar");
     } finally {
@@ -82,7 +111,7 @@ function UsuariosAdminPage() {
     setBusyId(row.user_id);
     try {
       await removeAdmin({ data: { userId: row.user_id } });
-      await load();
+      refreshAll();
     } catch (err: any) {
       alert(err?.message || "No se pudo eliminar");
     } finally {
@@ -97,7 +126,7 @@ function UsuariosAdminPage() {
           <ShieldCheck className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-semibold">Administradores</h1>
           <button
-            onClick={load}
+            onClick={refreshAll}
             className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
             aria-label="Recargar"
           >
@@ -191,6 +220,43 @@ function UsuariosAdminPage() {
             Solo los administradores existentes pueden crear otros administradores. La cuenta se crea con el email ya confirmado.
           </p>
         </form>
+      </section>
+
+      <section>
+        <header className="mb-4 flex items-center gap-2">
+          <History className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Historial de auditoría</h2>
+          <span className="ml-auto text-[11px] text-muted-foreground">Últimos 200 eventos</span>
+        </header>
+        <div className="rounded-2xl border border-border bg-surface">
+          {loadingAudit ? (
+            <div className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+            </div>
+          ) : auditErr ? (
+            <p className="p-5 text-sm text-red-500">{auditErr}</p>
+          ) : audit.length === 0 ? (
+            <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {audit.map((row) => (
+                <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
+                        {ACTION_LABEL[row.action] ?? row.action}
+                      </span>
+                      <span className="truncate font-medium">{row.target_email ?? "—"}</span>
+                    </div>
+                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      Por {row.actor_email ?? "sistema"} · {new Date(row.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     </div>
   );
