@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, Link } from "@tanstack/react-router";
-import { LogOut, Store } from "lucide-react";
+import { LogOut, Store, ShieldPlus } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
