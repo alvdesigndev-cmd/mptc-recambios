@@ -328,6 +328,14 @@ function PedidoModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    let alive = true;
+    const fotos = item.fotos || [];
+    if (!fotos.length) { setFotoSigned([]); return; }
+    resolveFotoUrls(fotos).then((urls) => { if (alive) setFotoSigned(urls); });
+    return () => { alive = false; };
+  }, [item.id, item.fotos]);
+
   const setEstadoDirecto = async (estado: string) => {
     await supabase.from("pedidos_pena").update({ estado }).eq("id", item.id);
     onChanged();
