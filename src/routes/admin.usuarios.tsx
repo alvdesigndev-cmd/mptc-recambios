@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History } from "lucide-react";
 import {
   createAdminUser,
@@ -38,13 +38,15 @@ function UsuariosAdminPage() {
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
-  // Pila de cursores usada para navegar hacia atrás (keyset pagination).
-  // La primera página se pide con cursor=null; cada avance añade el cursor
-  // usado para pedir la nueva página.
-  const [cursorStack, setCursorStack] = useState<(AuditCursor | null)[]>([null]);
   const [nextCursor, setNextCursor] = useState<AuditCursor | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [auditErr, setAuditErr] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
+  const cursorRef = useRef<AuditCursor | null>(null);
+  const hasMoreRef = useRef(true);
+
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,42 +67,49 @@ function UsuariosAdminPage() {
     }
   }, [fetchAdmins]);
 
-  const loadAudit = useCallback(async (cursor: AuditCursor | null) => {
+  const loadMoreAudit = useCallback(async () => {
+    if (loadingRef.current || !hasMoreRef.current) return;
+    loadingRef.current = true;
     setLoadingAudit(true); setAuditErr(null);
     try {
-      const page = await fetchAudit({ data: { cursor, limit: AUDIT_PAGE_SIZE } });
-      setAudit(page.rows);
+      const page = await fetchAudit({ data: { cursor: cursorRef.current, limit: AUDIT_PAGE_SIZE } });
+      setAudit((prev) => cursorRef.current === null ? page.rows : [...prev, ...page.rows]);
+      cursorRef.current = page.nextCursor;
+      hasMoreRef.current = page.nextCursor !== null;
       setNextCursor(page.nextCursor);
+      setHasMore(page.nextCursor !== null);
     } catch (err: any) {
       setAuditErr(err?.message || "No se pudo cargar el historial");
     } finally {
+      loadingRef.current = false;
       setLoadingAudit(false);
     }
   }, [fetchAudit]);
 
   const resetAudit = useCallback(() => {
-    setCursorStack([null]);
-    loadAudit(null);
-  }, [loadAudit]);
+    cursorRef.current = null;
+    hasMoreRef.current = true;
+    setAudit([]);
+    setNextCursor(null);
+    setHasMore(true);
+    loadMoreAudit();
+  }, [loadMoreAudit]);
 
   useEffect(() => { load(); resetAudit(); }, [load, resetAudit]);
 
   const refreshAll = useCallback(() => { load(); resetAudit(); }, [load, resetAudit]);
 
-  const goNextAudit = () => {
-    if (!nextCursor) return;
-    setCursorStack((s) => [...s, nextCursor]);
-    loadAudit(nextCursor);
-  };
+  // Infinite scroll: observa un sentinel al final y carga la siguiente página.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) loadMoreAudit();
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loadMoreAudit]);
 
-  const goPrevAudit = () => {
-    setCursorStack((s) => {
-      if (s.length <= 1) return s;
-      const nextStack = s.slice(0, -1);
-      loadAudit(nextStack[nextStack.length - 1] ?? null);
-      return nextStack;
-    });
-  };
 
 
 
@@ -257,17 +266,13 @@ function UsuariosAdminPage() {
           <History className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Historial de auditoría</h2>
           <span className="ml-auto text-[11px] text-muted-foreground">
-            Página {cursorStack.length}
+            {audit.length} evento{audit.length === 1 ? "" : "s"}
           </span>
         </header>
         <div className="rounded-2xl border border-border bg-surface">
-          {loadingAudit ? (
-            <div className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
-            </div>
-          ) : auditErr ? (
+          {auditErr ? (
             <p className="p-5 text-sm text-red-500">{auditErr}</p>
-          ) : audit.length === 0 ? (
+          ) : audit.length === 0 && !loadingAudit ? (
             <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
           ) : (
             <ul className="divide-y divide-border">
@@ -288,29 +293,18 @@ function UsuariosAdminPage() {
               ))}
             </ul>
           )}
+          <div ref={sentinelRef} />
+          {loadingAudit && (
+            <div className="flex items-center justify-center gap-2 p-4 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Cargando…
+            </div>
+          )}
+          {!hasMore && audit.length > 0 && (
+            <p className="p-4 text-center text-[11px] text-muted-foreground">No hay más eventos.</p>
+          )}
         </div>
-        {(cursorStack.length > 1 || nextCursor) && (
-          <div className="mt-3 flex items-center justify-between">
-            <button
-              onClick={goPrevAudit}
-              disabled={loadingAudit || cursorStack.length <= 1}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
-            >
-              ← Anteriores
-            </button>
-            <span className="text-[11px] text-muted-foreground">
-              {audit.length} eventos · página {cursorStack.length}
-            </span>
-            <button
-              onClick={goNextAudit}
-              disabled={loadingAudit || !nextCursor}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
-            >
-              Siguientes →
-            </button>
-          </div>
-        )}
       </section>
+
     </div>
   );
 }
