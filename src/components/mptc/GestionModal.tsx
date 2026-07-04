@@ -6,6 +6,7 @@ import { buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
+import { resolveFotoUrls } from "@/lib/mptc/fotos";
 
 interface Props {
   gestion: Gestion | null;
