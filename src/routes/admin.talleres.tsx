@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Save, X, Power, Plus, Store, Loader2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -46,11 +47,13 @@ function TalleresAdminPage() {
   const cancelEdit = () => { setEditing(null); setErr(null); };
 
   const saveEdit = async (original: Taller) => {
+    const newId = form.taller_id.trim();
+    if (!newId) { toast.error("El identificador no puede estar vacío"); return; }
+    if (newId !== original.taller_id) {
+      if (!confirm(`¿Renombrar identificador "${original.taller_id}" → "${newId}"?\n\nEsto actualiza en cascada perfiles, clientes, gestiones y pedidos asociados.`)) return;
+    }
     setSaving(true); setErr(null);
     try {
-      const newId = form.taller_id.trim();
-      if (!newId) throw new Error("El identificador no puede estar vacío");
-      // Si cambia el taller_id, llamamos a la RPC (renombra en cascada).
       if (newId !== original.taller_id) {
         const { error } = await supabase.rpc("rename_taller_id" as never, { _old: original.taller_id, _new: newId } as never);
         if (error) throw error;
@@ -60,10 +63,13 @@ function TalleresAdminPage() {
         .update({ nombre: form.nombre.trim() || original.nombre, ciudad: form.ciudad.trim() })
         .eq("taller_id", newId);
       if (uerr) throw uerr;
+      toast.success("Taller actualizado");
       setEditing(null);
       await load();
     } catch (e: any) {
-      setErr(e?.message || "No se pudo guardar");
+      const msg = e?.message || "No se pudo guardar";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -75,15 +81,20 @@ function TalleresAdminPage() {
       : `¿Reactivar ${t.nombre}?`;
     if (!confirm(confirmMsg)) return;
     const { error } = await supabase.from("talleres").update({ activo: !t.activo }).eq("taller_id", t.taller_id);
-    if (error) { setErr(error.message); return; }
+    if (error) { setErr(error.message); toast.error(error.message); return; }
+    toast.success(t.activo ? "Taller desactivado" : "Taller reactivado");
     load();
   };
 
   const createTaller = async () => {
+    const id = newForm.taller_id.trim();
+    if (!id || !newForm.nombre.trim()) {
+      toast.error("Identificador y nombre son obligatorios");
+      return;
+    }
+    if (!confirm(`¿Crear el taller "${newForm.nombre.trim()}" con identificador "${id}"?`)) return;
     setSaving(true); setErr(null);
     try {
-      const id = newForm.taller_id.trim();
-      if (!id || !newForm.nombre.trim()) throw new Error("Identificador y nombre son obligatorios");
       const { error } = await supabase.from("talleres").insert({
         taller_id: id,
         nombre: newForm.nombre.trim(),
@@ -91,11 +102,14 @@ function TalleresAdminPage() {
         activo: true,
       });
       if (error) throw error;
+      toast.success("Taller creado");
       setCreating(false);
       setNewForm({ taller_id: "", nombre: "", ciudad: "" });
       await load();
     } catch (e: any) {
-      setErr(e?.message || "No se pudo crear el taller");
+      const msg = e?.message || "No se pudo crear el taller";
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
