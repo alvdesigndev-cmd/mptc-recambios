@@ -178,34 +178,56 @@ export interface AuditRow {
   created_at: string;
 }
 
+export interface AuditCursor {
+  createdAt: string;
+  id: string;
+}
+
 export interface AuditPage {
   rows: AuditRow[];
-  total: number;
-  offset: number;
+  nextCursor: AuditCursor | null;
   limit: number;
 }
 
 export const listAdminAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { offset?: number; limit?: number } | undefined) => {
+  .inputValidator((data: { cursor?: AuditCursor | null; limit?: number } | undefined) => {
     const raw = data ?? {};
     const limit = Math.min(Math.max(Number(raw.limit ?? 50) || 50, 1), 200);
-    const offset = Math.max(Number(raw.offset ?? 0) || 0, 0);
-    return { offset, limit };
+    let cursor: AuditCursor | null = null;
+    if (raw.cursor && typeof raw.cursor.createdAt === "string" && typeof raw.cursor.id === "string") {
+      cursor = { createdAt: raw.cursor.createdAt, id: raw.cursor.id };
+    }
+    return { cursor, limit };
   })
   .handler(async ({ data, context }): Promise<AuditPage> => {
     await ensureAdmin(context);
-    const { data: rows, error, count } = await context.supabase
+    // Keyset (created_at DESC, id DESC): trae limit+1 para saber si hay más
+    // sin necesidad de contar filas totales (mucho más rápido en tablas grandes).
+    let q = context.supabase
       .from("admin_audit_log")
-      .select("id,action,target_email,target_user_id,actor_email,actor_user_id,metadata,created_at", { count: "exact" })
+      .select("id,action,target_email,target_user_id,actor_email,actor_user_id,metadata,created_at")
       .order("created_at", { ascending: false })
-      .range(data.offset, data.offset + data.limit - 1);
+      .order("id", { ascending: false })
+      .limit(data.limit + 1);
+    if (data.cursor) {
+      // (created_at, id) < (cursor.createdAt, cursor.id) en orden descendente:
+      // created_at < C.createdAt  OR  (created_at = C.createdAt AND id < C.id)
+      q = q.or(
+        `created_at.lt.${data.cursor.createdAt},and(created_at.eq.${data.cursor.createdAt},id.lt.${data.cursor.id})`,
+      );
+    }
+    const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
+    const all = (rows ?? []) as AuditRow[];
+    const hasMore = all.length > data.limit;
+    const page = hasMore ? all.slice(0, data.limit) : all;
+    const last = page[page.length - 1];
     return {
-      rows: (rows ?? []) as AuditRow[],
-      total: count ?? 0,
-      offset: data.offset,
+      rows: page,
+      nextCursor: hasMore && last ? { createdAt: last.created_at, id: last.id } : null,
       limit: data.limit,
     };
   });
+
 
