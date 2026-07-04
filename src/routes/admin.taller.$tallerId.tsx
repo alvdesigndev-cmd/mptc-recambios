@@ -176,7 +176,7 @@ function TallerDetailPage() {
     const qn = q.trim().toLowerCase();
     const desde = fechaDesde ? new Date(fechaDesde + "T00:00:00").getTime() : null;
     const hasta = fechaHasta ? new Date(fechaHasta + "T23:59:59").getTime() : null;
-    return gestiones.filter((g) => {
+    const filtered = gestiones.filter((g) => {
       if (desde !== null || hasta !== null) {
         const t = new Date(g.created_at).getTime();
         if (desde !== null && t < desde) return false;
@@ -189,7 +189,13 @@ function TallerDetailPage() {
       }
       return true;
     });
-  }, [gestiones, q, fechaDesde, fechaHasta]);
+    const sorted = [...filtered].sort((a, b) => {
+      const da = new Date(a.created_at).getTime();
+      const db = new Date(b.created_at).getTime();
+      return sortDir === "desc" ? db - da : da - db;
+    });
+    return sorted;
+  }, [gestiones, q, fechaDesde, fechaHasta, sortDir]);
 
   const totalImporte = useMemo(() => {
     return gestionesFiltradas.reduce((acc, g) => {
@@ -197,6 +203,19 @@ function TallerDetailPage() {
       return acc + (isNaN(n) ? 0 : n);
     }, 0);
   }, [gestionesFiltradas]);
+
+  const totalPages = Math.max(1, Math.ceil(gestionesFiltradas.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const gestionesPaginadas = useMemo(
+    () => gestionesFiltradas.slice(pageStart, pageStart + pageSize),
+    [gestionesFiltradas, pageStart, pageSize],
+  );
+
+  // Reset a página 1 cuando cambian filtros/orden/tamaño
+  useEffect(() => { setPage(1); }, [q, fechaDesde, fechaHasta, sortDir, pageSize]);
+
+
 
   const hasFilter = !!(q.trim() || fechaDesde || fechaHasta);
 
