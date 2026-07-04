@@ -542,7 +542,6 @@ function TallerDetailPage() {
               </div>
             )}
           </div>
-          </div>
         </>
       )}
 
