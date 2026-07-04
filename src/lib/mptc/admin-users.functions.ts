@@ -13,6 +13,34 @@ async function ensureAdmin(context: { supabase: any; userId: string }) {
   if (!isAdmin) throw new Error("Solo un administrador puede realizar esta acción");
 }
 
+async function getActorEmail(supabaseAdmin: any, userId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+    return data?.user?.email ?? null;
+  } catch { return null; }
+}
+
+async function logAdminAction(
+  supabaseAdmin: any,
+  entry: {
+    action: string;
+    actor_user_id: string;
+    target_user_id?: string | null;
+    target_email?: string | null;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  const actor_email = await getActorEmail(supabaseAdmin, entry.actor_user_id);
+  await supabaseAdmin.from("admin_audit_log").insert({
+    action: entry.action,
+    actor_user_id: entry.actor_user_id,
+    actor_email,
+    target_user_id: entry.target_user_id ?? null,
+    target_email: entry.target_email ?? null,
+    metadata: entry.metadata ?? {},
+  });
+}
+
 export const createAdminUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: CreateAdminInput) => {
