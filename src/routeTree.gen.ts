@@ -24,6 +24,7 @@ import { Route as AppHistorialRouteImport } from './routes/app.historial'
 import { Route as AppFamiliasRouteImport } from './routes/app.familias'
 import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
 
 const PenaRoute = PenaRouteImport.update({
@@ -101,6 +102,11 @@ const AppAjustesRoute = AppAjustesRouteImport.update({
   path: '/ajustes',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminTalleresRoute = AdminTalleresRouteImport.update({
   id: '/talleres',
   path: '/talleres',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/admin/talleres': typeof AdminTalleresRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/admin/talleres': typeof AdminTalleresRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
   '/admin/talleres': typeof AdminTalleresRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pena'
     | '/admin/talleres'
+    | '/admin/usuarios'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pena'
     | '/admin/talleres'
+    | '/admin/usuarios'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/pena'
     | '/admin/talleres'
+    | '/admin/usuarios'
     | '/app/ajustes'
     | '/app/clientes'
     | '/app/familias'
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAjustesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/talleres': {
       id: '/admin/talleres'
       path: '/talleres'
@@ -344,11 +363,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminTalleresRoute: typeof AdminTalleresRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminTalleresRoute: AdminTalleresRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
