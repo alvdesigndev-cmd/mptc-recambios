@@ -55,6 +55,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [clienteNotificado, setClienteNotificado] = useState(false);
   const [penaNotificado, setPenaNotificado] = useState(false);
   const [fotoSigned, setFotoSigned] = useState<string[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
