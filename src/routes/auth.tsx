@@ -6,7 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
 
-const REMEMBER_KEY = "mptc_remember_v1";
+// Solo guardamos el email para autocompletar en el próximo acceso.
+// La contraseña la gestiona el navegador (password manager) mediante los
+// atributos estándar `autoComplete` del formulario.
+const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
+// Clave legacy que llegó a guardar email+contraseña ofuscados en base64;
+// la limpiamos al arrancar para no dejar credenciales en localStorage.
+const LEGACY_REMEMBER_KEY = "mptc_remember_v1";
 
 function translateAuthError(msg: string): string {
   const m = (msg || "").toLowerCase();
@@ -22,27 +28,24 @@ function translateAuthError(msg: string): string {
   return msg;
 }
 
-function loadRemembered(): { email: string; password: string } | null {
+function loadRememberedEmail(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(REMEMBER_KEY);
-    if (!raw) return null;
-    const { e, p } = JSON.parse(atob(raw));
-    if (typeof e !== "string" || typeof p !== "string") return null;
-    return { email: e, password: p };
+    // Migración: elimina la clave legacy que guardaba también la contraseña.
+    window.localStorage.removeItem(LEGACY_REMEMBER_KEY);
+    const v = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
+    return v && typeof v === "string" ? v : null;
   } catch { return null; }
 }
 
-function saveRemembered(email: string, password: string) {
+function saveRememberedEmail(email: string) {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(REMEMBER_KEY, btoa(JSON.stringify({ e: email, p: password })));
-  } catch { /* noop */ }
+  try { window.localStorage.setItem(REMEMBER_EMAIL_KEY, email); } catch { /* noop */ }
 }
 
-function clearRemembered() {
+function clearRememberedEmail() {
   if (typeof window === "undefined") return;
-  try { window.localStorage.removeItem(REMEMBER_KEY); } catch { /* noop */ }
+  try { window.localStorage.removeItem(REMEMBER_EMAIL_KEY); } catch { /* noop */ }
 }
 
 export const Route = createFileRoute("/auth")({
