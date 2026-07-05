@@ -1,9 +1,49 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
+
+const REMEMBER_KEY = "mptc_remember_v1";
+
+function translateAuthError(msg: string): string {
+  const m = (msg || "").toLowerCase();
+  if (m.includes("password is known to be weak") || m.includes("pwned") || m.includes("weak and easy to guess")) {
+    return "La contraseña es demasiado débil o ha aparecido en filtraciones conocidas. Elige otra distinta.";
+  }
+  if (m.includes("invalid login credentials")) return "Email o contraseña incorrectos.";
+  if (m.includes("email not confirmed")) return "Debes confirmar tu email antes de iniciar sesión.";
+  if (m.includes("user already registered") || m.includes("already registered")) return "Ya existe una cuenta con ese email.";
+  if (m.includes("password should be at least")) return "La contraseña debe tener al menos 6 caracteres.";
+  if (m.includes("rate limit") || m.includes("too many requests")) return "Demasiados intentos. Espera unos segundos e inténtalo de nuevo.";
+  if (m.includes("network")) return "Error de red. Comprueba tu conexión e inténtalo de nuevo.";
+  return msg;
+}
+
+function loadRemembered(): { email: string; password: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return null;
+    const { e, p } = JSON.parse(atob(raw));
+    if (typeof e !== "string" || typeof p !== "string") return null;
+    return { email: e, password: p };
+  } catch { return null; }
+}
+
+function saveRemembered(email: string, password: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(REMEMBER_KEY, btoa(JSON.stringify({ e: email, p: password })));
+  } catch { /* noop */ }
+}
+
+function clearRemembered() {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.removeItem(REMEMBER_KEY); } catch { /* noop */ }
+}
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -45,6 +85,8 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [options, setOptions] = useState<TallerOption[] | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
@@ -53,6 +95,9 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
+    // Prefill credenciales recordadas
+    const saved = loadRemembered();
+    if (saved) { setEmail(saved.email); setPassword(saved.password); setRemember(true); }
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled || !data.session) return;
@@ -90,6 +135,7 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
+        if (remember) saveRemembered(email, password); else clearRemembered();
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
@@ -117,7 +163,7 @@ function AuthPage() {
         setMode("login");
       }
     } catch (err: any) {
-      setError(err?.message || "No se pudo completar la acción");
+      setError(translateAuthError(err?.message || "No se pudo completar la acción"));
     } finally {
       setLoading(false);
     }
@@ -135,14 +181,43 @@ function AuthPage() {
 
         <label className="block text-sm">
           <span className="text-muted-foreground">Email</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
         </label>
         <label className="block text-sm">
           <span className="text-muted-foreground">Contraseña</span>
-          <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+          <div className="relative mt-1">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={6}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-10 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </label>
+
+        {mode === "login" && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            Recordar usuario y contraseña en este dispositivo
+          </label>
+        )}
 
         {mode === "signup" && (
           <>
