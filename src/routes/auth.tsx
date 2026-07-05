@@ -185,7 +185,7 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        if (remember) saveRememberedEmail(email); else clearRememberedEmail();
+        if (remember) saveRemembered(email, password); else clearRemembered();
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
