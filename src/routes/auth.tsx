@@ -128,9 +128,11 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
-    // Prefill del email recordado (la contraseña la autocompleta el navegador).
-    const savedEmail = loadRememberedEmail();
-    if (savedEmail) { setEmail(savedEmail); setRemember(true); }
+    // Prefill del email y contraseña recordados.
+    const saved = loadRemembered();
+    if (saved.email) { setEmail(saved.email); setRemember(true); }
+    if (saved.password) { setPassword(saved.password); }
+
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled || !data.session) return;
