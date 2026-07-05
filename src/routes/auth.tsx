@@ -1,9 +1,49 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
+
+const REMEMBER_KEY = "mptc_remember_v1";
+
+function translateAuthError(msg: string): string {
+  const m = (msg || "").toLowerCase();
+  if (m.includes("password is known to be weak") || m.includes("pwned") || m.includes("weak and easy to guess")) {
+    return "La contraseña es demasiado débil o ha aparecido en filtraciones conocidas. Elige otra distinta.";
+  }
+  if (m.includes("invalid login credentials")) return "Email o contraseña incorrectos.";
+  if (m.includes("email not confirmed")) return "Debes confirmar tu email antes de iniciar sesión.";
+  if (m.includes("user already registered") || m.includes("already registered")) return "Ya existe una cuenta con ese email.";
+  if (m.includes("password should be at least")) return "La contraseña debe tener al menos 6 caracteres.";
+  if (m.includes("rate limit") || m.includes("too many requests")) return "Demasiados intentos. Espera unos segundos e inténtalo de nuevo.";
+  if (m.includes("network")) return "Error de red. Comprueba tu conexión e inténtalo de nuevo.";
+  return msg;
+}
+
+function loadRemembered(): { email: string; password: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return null;
+    const { e, p } = JSON.parse(atob(raw));
+    if (typeof e !== "string" || typeof p !== "string") return null;
+    return { email: e, password: p };
+  } catch { return null; }
+}
+
+function saveRemembered(email: string, password: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(REMEMBER_KEY, btoa(JSON.stringify({ e: email, p: password })));
+  } catch { /* noop */ }
+}
+
+function clearRemembered() {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.removeItem(REMEMBER_KEY); } catch { /* noop */ }
+}
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
