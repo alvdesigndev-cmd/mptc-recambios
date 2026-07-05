@@ -16,25 +16,39 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const PREDEFINED: { role: Role; id: string; label: string }[] = [
+  { role: "taller-1", id: "taller-1-mtc-recambios", label: "Taller 1" },
+  { role: "taller-2", id: "taller-2-mtc-recambios", label: "Taller 2" },
+  { role: "taller-3", id: "taller-3-tecniauto-express-marbella", label: "TecniAuto Express Marbella" },
+  { role: "taller-4", id: "taller-4-mecanica-autofran", label: "Mecánica Autofran" },
+  { role: "taller-5", id: "taller-5-boxes-team-marbella", label: "Boxes Team Marbella" },
+];
+
+interface TallerOption {
+  value: string; // "pena" o taller_id
+  label: string;
+  role: Role;
+  tallerId?: string; // override para talleres dinámicos
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>("taller-1");
+  const [selected, setSelected] = useState<string>("pena"); // valor por defecto tras cargar
   const [tallerName, setTallerName] = useState("");
   const [mecanico, setMecanico] = useState("");
   const [ciudad, setCiudad] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
-  const [activeTallerIds, setActiveTallerIds] = useState<Set<string> | null>(null);
+  const [options, setOptions] = useState<TallerOption[] | null>(null);
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
 
   useEffect(() => {
-    // Aviso si /app nos redirigió con ?disabled=1
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
@@ -44,10 +58,25 @@ function AuthPage() {
       const p = await syncProfileToSettings();
       navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
     });
-    // Carga la lista de talleres activos para el registro.
-    supabase.from("talleres").select("taller_id,activo").then(({ data }) => {
-      if (cancelled || !data) return;
-      setActiveTallerIds(new Set(data.filter((t: any) => t.activo).map((t: any) => t.taller_id as string)));
+    supabase.from("talleres").select("taller_id,nombre,activo").then(({ data }) => {
+      if (cancelled) return;
+      const rows = (data || []).filter((t: any) => t.activo);
+      const opts: TallerOption[] = [];
+      // Talleres predefinidos que sigan activos: usan su rol propio.
+      for (const p of PREDEFINED) {
+        if (rows.some((t: any) => t.taller_id === p.id)) {
+          const nombre = rows.find((t: any) => t.taller_id === p.id)?.nombre || p.label;
+          opts.push({ value: p.id, label: nombre, role: p.role });
+        }
+      }
+      // Talleres dinámicos (no predefinidos): usan role="taller-1" con override de taller_id.
+      for (const t of rows as any[]) {
+        if (PREDEFINED.some((p) => p.id === t.taller_id)) continue;
+        opts.push({ value: t.taller_id, label: t.nombre, role: "taller-1", tallerId: t.taller_id });
+      }
+      opts.push({ value: "pena", label: "Grupo Peña (proveedor)", role: "pena" });
+      setOptions(opts);
+      if (opts.length && opts[0].value !== "pena") setSelected(opts[0].value);
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -62,9 +91,13 @@ function AuthPage() {
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
+        const opt = (options || []).find((o) => o.value === selected);
+        if (!opt) throw new Error("Selecciona un taller");
         const { error } = await signUp({
-          email, password, role,
-          tallerName: tallerName || (role === "pena" ? "Grupo Peña" : "Taller"),
+          email, password,
+          role: opt.role,
+          tallerId: opt.tallerId,
+          tallerName: tallerName || (opt.role === "pena" ? "Grupo Peña" : opt.label),
           ciudad, mecanico,
         });
         if (error) throw error;
@@ -77,6 +110,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="mptc-splash-bg flex min-h-[100dvh] items-center justify-center px-6 py-10">
