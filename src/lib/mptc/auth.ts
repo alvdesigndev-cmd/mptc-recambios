@@ -39,13 +39,15 @@ export interface SignUpInput {
   tallerName: string;
   ciudad?: string;
   mecanico?: string;
+  /** Override opcional del taller_id (para talleres creados dinámicamente). */
+  tallerId?: string;
 }
 
 export async function signUp(input: SignUpInput) {
   const redirect = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
   const isPena = input.role === "pena";
   const isAdmin = input.role === "admin";
-  const taller_id = isPena
+  const default_taller_id = isPena
     ? "grupo-pena"
     : isAdmin
       ? "admin"
@@ -55,6 +57,7 @@ export async function signUp(input: SignUpInput) {
     : isAdmin
       ? "Administración"
       : TALLER_INFO[input.role as Exclude<Role, "pena" | "admin">].name;
+  const taller_id = input.tallerId && !isPena && !isAdmin ? input.tallerId : default_taller_id;
   return await supabase.auth.signUp({
     email: input.email,
     password: input.password,
@@ -68,6 +71,7 @@ export async function signUp(input: SignUpInput) {
         mecanico: input.mecanico ?? "",
       },
     },
+
   });
 }
 
