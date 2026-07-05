@@ -153,10 +153,13 @@ function AuthPage() {
         } else {
           const opt = (options || []).find((o) => o.value === selected);
           if (!opt) throw new Error("Selecciona un taller");
+          // opt.value ES siempre el taller_id definitivo en BD (talleres
+          // predefinidos y dinámicos), así garantizamos que el perfil se
+          // crea vinculado al taller seleccionado y no al fallback por rol.
           const { error } = await signUp({
             email, password,
             role: opt.role,
-            tallerId: opt.tallerId,
+            tallerId: opt.value,
             tallerName: tallerName || opt.label,
             ciudad, mecanico,
           });
