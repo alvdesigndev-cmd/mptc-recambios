@@ -147,32 +147,45 @@ function AuthPage() {
         {mode === "signup" && (
           <>
             <label className="block text-sm">
-              <span className="text-muted-foreground">Taller</span>
-              <select value={selected} onChange={(e) => setSelected(e.target.value)}
+              <span className="text-muted-foreground">Tipo de cuenta</span>
+              <select value={accountType} onChange={(e) => setAccountType(e.target.value as "taller" | "pena")}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
-                {(options || []).map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
+                <option value="taller">Taller</option>
+                <option value="pena">Grupo Peña (comercial)</option>
               </select>
             </label>
 
-            <label className="block text-sm">
-              <span className="text-muted-foreground">Nombre del taller</span>
-              <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Ciudad</span>
-                <input value={ciudad} onChange={(e) => setCiudad(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-              </label>
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Mecánico</span>
-                <input value={mecanico} onChange={(e) => setMecanico(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-              </label>
-            </div>
+            {accountType === "taller" && (
+              <>
+                <label className="block text-sm">
+                  <span className="text-muted-foreground">Taller</span>
+                  <select value={selected} onChange={(e) => setSelected(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
+                    {(options || []).map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block text-sm">
+                  <span className="text-muted-foreground">Nombre del taller (opcional)</span>
+                  <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm">
+                    <span className="text-muted-foreground">Ciudad</span>
+                    <input value={ciudad} onChange={(e) => setCiudad(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-muted-foreground">Mecánico</span>
+                    <input value={mecanico} onChange={(e) => setMecanico(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                  </label>
+                </div>
+              </>
+            )}
           </>
         )}
 
