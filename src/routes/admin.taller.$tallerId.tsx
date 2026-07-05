@@ -2,13 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon, Search, X as XIcon,
+  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon, Search, X as XIcon, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
-import { listTallerUsers, setTallerUserPassword, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+import { listTallerUsers, setTallerUserPassword, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+
 
 export const Route = createFileRoute("/admin/taller/$tallerId")({
   component: TallerDetailPage,
