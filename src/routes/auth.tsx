@@ -6,12 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
 
-// Solo guardamos el email para autocompletar en el próximo acceso.
-// La contraseña la gestiona el navegador (password manager) mediante los
-// atributos estándar `autoComplete` del formulario.
+// Guardamos email y contraseña (ofuscada en base64) cuando el usuario marca
+// "Recordar mi usuario" para que en el próximo acceso el formulario ya venga
+// relleno y solo tenga que pulsar "Entrar".
 const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
-// Clave legacy que llegó a guardar email+contraseña ofuscados en base64;
-// la limpiamos al arrancar para no dejar credenciales en localStorage.
+const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
+// Clave legacy previa: la limpiamos al arrancar.
 const LEGACY_REMEMBER_KEY = "mptc_remember_v1";
 
 function translateAuthError(msg: string): string {
@@ -28,25 +28,42 @@ function translateAuthError(msg: string): string {
   return msg;
 }
 
-function loadRememberedEmail(): string | null {
-  if (typeof window === "undefined") return null;
+function encodePass(v: string): string {
+  try { return btoa(unescape(encodeURIComponent(v))); } catch { return ""; }
+}
+function decodePass(v: string): string {
+  try { return decodeURIComponent(escape(atob(v))); } catch { return ""; }
+}
+
+function loadRemembered(): { email: string | null; password: string | null } {
+  if (typeof window === "undefined") return { email: null, password: null };
   try {
-    // Migración: elimina la clave legacy que guardaba también la contraseña.
     window.localStorage.removeItem(LEGACY_REMEMBER_KEY);
-    const v = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
-    return v && typeof v === "string" ? v : null;
-  } catch { return null; }
+    const email = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
+    const passEnc = window.localStorage.getItem(REMEMBER_PASS_KEY);
+    return {
+      email: email && typeof email === "string" ? email : null,
+      password: passEnc ? decodePass(passEnc) || null : null,
+    };
+  } catch { return { email: null, password: null }; }
 }
 
-function saveRememberedEmail(email: string) {
+function saveRemembered(email: string, password: string) {
   if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(REMEMBER_EMAIL_KEY, email); } catch { /* noop */ }
+  try {
+    window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+    window.localStorage.setItem(REMEMBER_PASS_KEY, encodePass(password));
+  } catch { /* noop */ }
 }
 
-function clearRememberedEmail() {
+function clearRemembered() {
   if (typeof window === "undefined") return;
-  try { window.localStorage.removeItem(REMEMBER_EMAIL_KEY); } catch { /* noop */ }
+  try {
+    window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    window.localStorage.removeItem(REMEMBER_PASS_KEY);
+  } catch { /* noop */ }
 }
+
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -111,9 +128,11 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
-    // Prefill del email recordado (la contraseña la autocompleta el navegador).
-    const savedEmail = loadRememberedEmail();
-    if (savedEmail) { setEmail(savedEmail); setRemember(true); }
+    // Prefill del email y contraseña recordados.
+    const saved = loadRemembered();
+    if (saved.email) { setEmail(saved.email); setRemember(true); }
+    if (saved.password) { setPassword(saved.password); }
+
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled || !data.session) return;
@@ -166,7 +185,7 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        if (remember) saveRememberedEmail(email); else clearRememberedEmail();
+        if (remember) saveRemembered(email, password); else clearRemembered();
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
