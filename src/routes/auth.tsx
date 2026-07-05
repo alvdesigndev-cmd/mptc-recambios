@@ -75,9 +75,10 @@ function AuthPage() {
         if (PREDEFINED.some((p) => p.id === t.taller_id)) continue;
         opts.push({ value: t.taller_id, label: t.nombre, role: "taller-1", tallerId: t.taller_id });
       }
-      opts.push({ value: "pena", label: "Grupo Peña (proveedor)", role: "pena" });
+      // NOTA: la opción "Grupo Peña" ya no forma parte de este listado; ahora
+      // se elige mediante el selector superior "Tipo de cuenta".
       setOptions(opts);
-      if (opts.length && opts[0].value !== "pena") setSelected(opts[0].value);
+      if (opts.length) setSelected(opts[0].value);
     });
     return () => { cancelled = true; };
   }, [navigate]);
