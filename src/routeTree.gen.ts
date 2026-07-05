@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PenaRouteImport } from './routes/pena'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -27,7 +28,10 @@ import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AdminTallerTallerIdRouteImport } from './routes/admin.taller.$tallerId'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -37,6 +41,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PenaRoute = PenaRouteImport.update({
   id: '/pena',
   path: '/pena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -119,19 +128,40 @@ const AdminTalleresRoute = AdminTalleresRouteImport.update({
   path: '/talleres',
   getParentRoute: () => AdminRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminTallerTallerIdRoute = AdminTallerTallerIdRouteImport.update({
   id: '/taller/$tallerId',
   path: '/taller/$tallerId',
   getParentRoute: () => AdminRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
   '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -144,13 +174,17 @@ export interface FileRoutesByFullPath {
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
   '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -163,6 +197,7 @@ export interface FileRoutesByTo {
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
 }
 export interface FileRoutesById {
@@ -171,8 +206,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
   '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -185,6 +223,7 @@ export interface FileRoutesById {
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
 }
 export interface FileRouteTypes {
@@ -194,8 +233,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/mcp'
     | '/pena'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -208,13 +250,17 @@ export interface FileRouteTypes {
     | '/pedido-pena/$token'
     | '/admin/'
     | '/app/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/mcp'
     | '/pena'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -227,6 +273,7 @@ export interface FileRouteTypes {
     | '/pedido-pena/$token'
     | '/admin'
     | '/app'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
   id:
     | '__root__'
@@ -234,8 +281,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/mcp'
     | '/pena'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -248,6 +298,7 @@ export interface FileRouteTypes {
     | '/pedido-pena/$token'
     | '/admin/'
     | '/app/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
   fileRoutesById: FileRoutesById
 }
@@ -256,10 +307,14 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  McpRoute: typeof McpRoute
   PenaRoute: typeof PenaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
   PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -276,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/pena'
       fullPath: '/pena'
       preLoaderRoute: typeof PenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -390,12 +452,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTalleresRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/taller/$tallerId': {
       id: '/admin/taller/$tallerId'
       path: '/taller/$tallerId'
       fullPath: '/admin/taller/$tallerId'
       preLoaderRoute: typeof AdminTallerTallerIdRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -443,10 +526,15 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  McpRoute: McpRoute,
   PenaRoute: PenaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
   PedidoPenaTokenRoute: PedidoPenaTokenRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
