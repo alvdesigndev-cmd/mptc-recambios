@@ -93,16 +93,26 @@ function AuthPage() {
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
-        const opt = (options || []).find((o) => o.value === selected);
-        if (!opt) throw new Error("Selecciona un taller");
-        const { error } = await signUp({
-          email, password,
-          role: opt.role,
-          tallerId: opt.tallerId,
-          tallerName: tallerName || (opt.role === "pena" ? "Grupo Peña" : opt.label),
-          ciudad, mecanico,
-        });
-        if (error) throw error;
+        if (accountType === "pena") {
+          const { error } = await signUp({
+            email, password,
+            role: "pena",
+            tallerName: tallerName || "Grupo Peña",
+            ciudad, mecanico,
+          });
+          if (error) throw error;
+        } else {
+          const opt = (options || []).find((o) => o.value === selected);
+          if (!opt) throw new Error("Selecciona un taller");
+          const { error } = await signUp({
+            email, password,
+            role: opt.role,
+            tallerId: opt.tallerId,
+            tallerName: tallerName || opt.label,
+            ciudad, mecanico,
+          });
+          if (error) throw error;
+        }
         setInfo("Cuenta creada. Revisa tu correo si se requiere confirmación e inicia sesión.");
         setMode("login");
       }
