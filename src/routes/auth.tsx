@@ -194,7 +194,9 @@ function AuthPage() {
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-border-strong bg-surface p-6">
         <header className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary text-xl font-black">M</div>
-          <h1 className="mt-3 text-xl font-bold">{mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h1>
+          <h1 className="mt-3 text-xl font-bold">
+            {mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear cuenta" : "Recuperar contraseña"}
+          </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">MPTC · Taller Conectado</p>
         </header>
 
