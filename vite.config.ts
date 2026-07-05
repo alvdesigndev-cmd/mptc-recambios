@@ -6,6 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
@@ -15,6 +16,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
+      mcpPlugin(),
       VitePWA({
         registerType: "autoUpdate",
         injectRegister: null, // solo registramos desde el wrapper protegido
@@ -23,7 +25,7 @@ export default defineConfig({
         devOptions: { enabled: false },
         workbox: {
           navigateFallback: "/",
-          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/\.mcp\//],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: false, // controlamos la activación con el toast

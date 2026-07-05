@@ -35,9 +35,12 @@ export function consumeRedirectPath(): string | null {
 export function pickPostLoginPath(fallback: string): string {
   const saved = consumeRedirectPath();
   if (!saved) return fallback;
+  // La página de consentimiento OAuth (MCP) es común a todos los roles.
+  if (saved.startsWith("/.lovable/oauth/consent")) return saved;
   // Coherencia de rol: /pena solo para 'pena', /app para talleres, /admin para admin.
   if (fallback === "/pena" && !saved.startsWith("/pena")) return fallback;
   if (fallback === "/app" && !saved.startsWith("/app")) return fallback;
   if (fallback.startsWith("/admin") && !saved.startsWith("/admin")) return fallback;
   return saved;
 }
+

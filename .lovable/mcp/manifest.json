@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://knevephvddzlevehneqt.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "mptc-recambios-mcp",
+      "version": "0.1.0",
+      "title": "MPTC Recambios"
+    },
+    "tools": [
+      {
+        "name": "list_gestiones",
+        "title": "Listar gestiones",
+        "description": "Lista las gestiones más recientes del taller del usuario autenticado. Se puede filtrar por matrícula, estado o categoría.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "matricula": {
+              "description": "Filtrar por matrícula (búsqueda parcial).",
+              "type": "string"
+            },
+            "estado": {
+              "description": "Filtrar por estado exacto (p. ej. 'pendiente', 'confirmada').",
+              "type": "string"
+            },
+            "categoria": {
+              "description": "Filtrar por familia/categoría (slug).",
+              "type": "string"
+            },
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_clientes",
+        "title": "Buscar clientes",
+        "description": "Busca clientes del taller del usuario autenticado por matrícula, teléfono o nombre (búsqueda parcial insensible a mayúsculas).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Texto a buscar en matrícula, teléfono o nombre."
+            },
+            "limit": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_perfil",
+        "title": "Mi perfil",
+        "description": "Devuelve el perfil (rol, taller, ciudad, mecánico) del usuario autenticado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
