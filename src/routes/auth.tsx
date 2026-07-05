@@ -164,8 +164,11 @@ function AuthPage() {
             ciudad, mecanico,
           });
           if (error) throw error;
+          setInfo(`Cuenta creada y vinculada a "${opt.label}" (taller_id: ${opt.value}). Inicia sesión para continuar.`);
+          setMode("login");
+          return;
         }
-        setInfo("Cuenta creada. Revisa tu correo si se requiere confirmación e inicia sesión.");
+        setInfo("Cuenta creada como Grupo Peña. Inicia sesión para continuar.");
         setMode("login");
       }
     } catch (err: any) {
