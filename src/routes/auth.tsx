@@ -163,7 +163,7 @@ function AuthPage() {
         setMode("login");
       }
     } catch (err: any) {
-      setError(err?.message || "No se pudo completar la acción");
+      setError(translateAuthError(err?.message || "No se pudo completar la acción"));
     } finally {
       setLoading(false);
     }
