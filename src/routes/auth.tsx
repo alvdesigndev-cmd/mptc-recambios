@@ -36,7 +36,8 @@ function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selected, setSelected] = useState<string>("pena"); // valor por defecto tras cargar
+  const [accountType, setAccountType] = useState<"taller" | "pena">("taller");
+  const [selected, setSelected] = useState<string>(""); // taller_id seleccionado (solo si accountType === "taller")
   const [tallerName, setTallerName] = useState("");
   const [mecanico, setMecanico] = useState("");
   const [ciudad, setCiudad] = useState("");
