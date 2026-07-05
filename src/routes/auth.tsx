@@ -74,7 +74,7 @@ const ALLOWED_TALLER_ROLES: Role[] = ["taller-1", "taller-2", "taller-3", "talle
 // Deriva el rol a partir del prefijo del taller_id ("taller-3-xxx" → "taller-3").
 // Devuelve null si el taller_id no cumple con el patrón permitido.
 function deriveRoleFromTallerId(id: string): Role | null {
-  const m = /^(taller-[1-5])-/.exec(id || "");
+  const m = /^(taller-[1-5])(?:-.*)?$/.exec(id || "");
   if (!m) return null;
   const r = m[1] as Role;
   return ALLOWED_TALLER_ROLES.includes(r) ? r : null;
