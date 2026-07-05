@@ -44,6 +44,12 @@ function TallerDetailPage() {
   const [pwd, setPwd] = useState<Record<string, string>>({});
   const [savingPwd, setSavingPwd] = useState<string | null>(null);
 
+  // New user form
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", mecanico: "" });
+  const [savingNewUser, setSavingNewUser] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+
   // New gestion quick form
   const [creating, setCreating] = useState(false);
   const [newG, setNewG] = useState({
