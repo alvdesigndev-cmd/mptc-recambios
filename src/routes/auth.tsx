@@ -251,6 +251,22 @@ function AuthPage() {
                   </select>
                 </label>
 
+                {(() => {
+                  const opt = (options || []).find((o) => o.value === selected);
+                  if (!opt) return null;
+                  return (
+                    <div className="rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
+                      <div>
+                        Se guardará vinculado a <span className="font-medium text-foreground">{opt.label}</span>
+                      </div>
+                      <div className="mt-0.5">
+                        <span className="text-muted-foreground/80">taller_id:</span>{" "}
+                        <code className="rounded bg-surface px-1.5 py-0.5 text-[11px] text-foreground">{opt.value}</code>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <label className="block text-sm">
                   <span className="text-muted-foreground">Nombre del taller (opcional)</span>
                   <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
