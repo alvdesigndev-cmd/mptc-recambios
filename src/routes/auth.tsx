@@ -135,6 +135,16 @@ function AuthPage() {
     e.preventDefault();
     setError(null); setInfo(null); setLoading(true);
     try {
+      if (mode === "forgot") {
+        if (!email) throw new Error("Introduce tu email");
+        const redirectTo = typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password`
+          : undefined;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        setInfo("Te hemos enviado un correo con un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).");
+        return;
+      }
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
