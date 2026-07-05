@@ -67,8 +67,21 @@ const PREDEFINED: { role: Role; id: string; label: string }[] = [
   { role: "taller-5", id: "taller-5-boxes-team-marbella", label: "Boxes Team Marbella" },
 ];
 
+// Roles de taller válidos (deben coincidir con los prefijos aceptados por el
+// trigger `handle_new_user` en la base de datos).
+const ALLOWED_TALLER_ROLES: Role[] = ["taller-1", "taller-2", "taller-3", "taller-4", "taller-5"];
+
+// Deriva el rol a partir del prefijo del taller_id ("taller-3-xxx" → "taller-3").
+// Devuelve null si el taller_id no cumple con el patrón permitido.
+function deriveRoleFromTallerId(id: string): Role | null {
+  const m = /^(taller-[1-5])-/.exec(id || "");
+  if (!m) return null;
+  const r = m[1] as Role;
+  return ALLOWED_TALLER_ROLES.includes(r) ? r : null;
+}
+
 interface TallerOption {
-  value: string; // "pena" o taller_id
+  value: string; // taller_id
   label: string;
   role: Role;
   tallerId?: string; // override para talleres dinámicos
