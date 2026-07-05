@@ -75,13 +75,20 @@ function AjustesPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="mb-3 text-sm font-semibold">Catálogo</h2>
+      <section className="space-y-2 rounded-2xl border border-border bg-surface p-5">
+        <h2 className="mb-1 text-sm font-semibold">Catálogo</h2>
         <Link
           to="/app/familias"
           className="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-medium hover:border-primary hover:text-primary"
         >
           <span>Gestionar familias y mensajes</span>
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+        <Link
+          to="/connect"
+          className="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm font-medium hover:border-primary hover:text-primary"
+        >
+          <span>Conectar ChatGPT o Claude</span>
           <ChevronRight className="h-4 w-4" />
         </Link>
       </section>
