@@ -324,10 +324,69 @@ function TallerDetailPage() {
 
           {/* Users + password reset */}
           <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <UserIcon className="h-4 w-4 text-primary" /> Usuarios del taller
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <UserIcon className="h-4 w-4 text-primary" /> Usuarios del taller
+              </div>
+              <button
+                onClick={() => setCreatingUser((v) => !v)}
+                disabled={!taller.activo}
+                title={!taller.activo ? "Reactiva el taller para crear usuarios" : ""}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60 active:scale-95"
+              >
+                <UserPlus className="h-4 w-4" /> {creatingUser ? "Cerrar" : "Nuevo usuario"}
+              </button>
             </div>
-            {users.length === 0 && (
+
+            {creatingUser && (
+              <div className="mb-4 rounded-xl border border-border bg-surface-2 p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Email</span>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      placeholder="usuario@ejemplo.com"
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Contraseña</span>
+                    <input
+                      type="text"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="Mín. 8 caracteres"
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Mecánico (opcional)</span>
+                    <input
+                      value={newUser.mecanico}
+                      onChange={(e) => setNewUser({ ...newUser, mecanico: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button onClick={() => setCreatingUser(false)} className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-3">Cancelar</button>
+                  <button
+                    onClick={createUser}
+                    disabled={savingNewUser}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                  >
+                    {savingNewUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Crear cuenta
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  La cuenta queda confirmada automáticamente y asignada a <span className="font-mono">{taller.taller_id}</span>. El usuario podrá entrar en <span className="font-mono">/auth</span> con este email y contraseña.
+                </p>
+              </div>
+            )}
+
+            {users.length === 0 && !creatingUser && (
               <div className="text-sm text-muted-foreground">No hay usuarios registrados para este taller.</div>
             )}
             <div className="space-y-3">
@@ -338,6 +397,13 @@ function TallerDetailPage() {
                       <div className="truncate text-sm font-semibold">{u.email || "(sin email)"}</div>
                       <div className="text-[11px] text-muted-foreground">Rol: {u.role}{u.mecanico ? ` · ${u.mecanico}` : ""}</div>
                     </div>
+                    <button
+                      onClick={() => removeUser(u)}
+                      disabled={deletingUser === u.user_id}
+                      className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/20 disabled:opacity-60"
+                    >
+                      {deletingUser === u.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Eliminar
+                    </button>
                   </div>
                   <div className="mt-2 flex flex-wrap items-end gap-2">
                     <label className="flex-1 min-w-[220px] text-xs">
@@ -363,6 +429,7 @@ function TallerDetailPage() {
               ))}
             </div>
           </div>
+
 
           {/* Gestiones */}
           <div className="rounded-2xl border border-border bg-surface p-4">
