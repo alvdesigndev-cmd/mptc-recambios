@@ -280,12 +280,21 @@ function AuthPage() {
                 <label className="block text-sm">
                   <span className="text-muted-foreground">Taller</span>
                   <select value={selected} onChange={(e) => setSelected(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
+                    required
+                    disabled={!options || options.length === 0}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm disabled:opacity-60">
+                    {options === null && <option value="">Cargando talleres…</option>}
+                    {options && options.length === 0 && <option value="">No hay talleres disponibles</option>}
                     {(options || []).map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </label>
+                {options && options.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    No hay talleres activos válidos. Contacta con el administrador antes de crear la cuenta.
+                  </p>
+                )}
 
                 {(() => {
                   const opt = (options || []).find((o) => o.value === selected);
