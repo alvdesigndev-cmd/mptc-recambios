@@ -308,12 +308,35 @@ function AuthPage() {
 
         <button type="submit" disabled={loading}
           className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {loading ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}
+          {loading
+            ? "Procesando…"
+            : mode === "login"
+              ? "Entrar"
+              : mode === "signup"
+                ? "Crear cuenta"
+                : "Enviar enlace de recuperación"}
         </button>
 
-        <button type="button" onClick={() => { setError(null); setInfo(null); setMode(mode === "login" ? "signup" : "login"); }}
+        {mode === "login" && (
+          <button type="button"
+            onClick={() => { setError(null); setInfo(null); setPassword(""); setMode("forgot"); }}
+            className="w-full text-xs text-muted-foreground hover:text-foreground">
+            ¿Olvidaste tu contraseña?
+          </button>
+        )}
+
+        <button type="button"
+          onClick={() => {
+            setError(null); setInfo(null);
+            if (mode === "forgot") setMode("login");
+            else setMode(mode === "login" ? "signup" : "login");
+          }}
           className="w-full text-xs text-muted-foreground hover:text-foreground">
-          {mode === "login" ? "¿No tienes cuenta? Crear una" : "Ya tengo cuenta"}
+          {mode === "login"
+            ? "¿No tienes cuenta? Crear una"
+            : mode === "signup"
+              ? "Ya tengo cuenta"
+              : "Volver al inicio de sesión"}
         </button>
       </form>
     </div>
