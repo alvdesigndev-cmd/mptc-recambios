@@ -27,6 +27,8 @@ function TallerDetailPage() {
   const navigate = useNavigate();
   const fetchUsers = useServerFn(listTallerUsers);
   const fetchSetPwd = useServerFn(setTallerUserPassword);
+  const fetchCreateUser = useServerFn(createTallerUser);
+  const fetchDeleteUser = useServerFn(deleteTallerUser);
 
   const [taller, setTaller] = useState<Taller | null>(null);
   const [nombre, setNombre] = useState("");
