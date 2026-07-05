@@ -173,6 +173,7 @@ function TallerDetailPage() {
     }
   };
 
+  const deleteGestion = async (g: Gestion) => {
     if (!confirm(`¿Eliminar la gestión ${g.matricula || g.id}? Esta acción no se puede deshacer.`)) return;
     const { error } = await supabase.from("gestiones").delete().eq("id", g.id);
     if (error) { toast.error(error.message); return; }
