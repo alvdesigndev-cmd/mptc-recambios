@@ -36,7 +36,8 @@ function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selected, setSelected] = useState<string>("pena"); // valor por defecto tras cargar
+  const [accountType, setAccountType] = useState<"taller" | "pena">("taller");
+  const [selected, setSelected] = useState<string>(""); // taller_id seleccionado (solo si accountType === "taller")
   const [tallerName, setTallerName] = useState("");
   const [mecanico, setMecanico] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -74,9 +75,10 @@ function AuthPage() {
         if (PREDEFINED.some((p) => p.id === t.taller_id)) continue;
         opts.push({ value: t.taller_id, label: t.nombre, role: "taller-1", tallerId: t.taller_id });
       }
-      opts.push({ value: "pena", label: "Grupo Peña (proveedor)", role: "pena" });
+      // NOTA: la opción "Grupo Peña" ya no forma parte de este listado; ahora
+      // se elige mediante el selector superior "Tipo de cuenta".
       setOptions(opts);
-      if (opts.length && opts[0].value !== "pena") setSelected(opts[0].value);
+      if (opts.length) setSelected(opts[0].value);
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -91,16 +93,26 @@ function AuthPage() {
         const p = await syncProfileToSettings();
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
       } else {
-        const opt = (options || []).find((o) => o.value === selected);
-        if (!opt) throw new Error("Selecciona un taller");
-        const { error } = await signUp({
-          email, password,
-          role: opt.role,
-          tallerId: opt.tallerId,
-          tallerName: tallerName || (opt.role === "pena" ? "Grupo Peña" : opt.label),
-          ciudad, mecanico,
-        });
-        if (error) throw error;
+        if (accountType === "pena") {
+          const { error } = await signUp({
+            email, password,
+            role: "pena",
+            tallerName: tallerName || "Grupo Peña",
+            ciudad, mecanico,
+          });
+          if (error) throw error;
+        } else {
+          const opt = (options || []).find((o) => o.value === selected);
+          if (!opt) throw new Error("Selecciona un taller");
+          const { error } = await signUp({
+            email, password,
+            role: opt.role,
+            tallerId: opt.tallerId,
+            tallerName: tallerName || opt.label,
+            ciudad, mecanico,
+          });
+          if (error) throw error;
+        }
         setInfo("Cuenta creada. Revisa tu correo si se requiere confirmación e inicia sesión.");
         setMode("login");
       }
@@ -135,32 +147,45 @@ function AuthPage() {
         {mode === "signup" && (
           <>
             <label className="block text-sm">
-              <span className="text-muted-foreground">Taller</span>
-              <select value={selected} onChange={(e) => setSelected(e.target.value)}
+              <span className="text-muted-foreground">Tipo de cuenta</span>
+              <select value={accountType} onChange={(e) => setAccountType(e.target.value as "taller" | "pena")}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
-                {(options || []).map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
+                <option value="taller">Taller</option>
+                <option value="pena">Grupo Peña (comercial)</option>
               </select>
             </label>
 
-            <label className="block text-sm">
-              <span className="text-muted-foreground">Nombre del taller</span>
-              <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Ciudad</span>
-                <input value={ciudad} onChange={(e) => setCiudad(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-              </label>
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Mecánico</span>
-                <input value={mecanico} onChange={(e) => setMecanico(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
-              </label>
-            </div>
+            {accountType === "taller" && (
+              <>
+                <label className="block text-sm">
+                  <span className="text-muted-foreground">Taller</span>
+                  <select value={selected} onChange={(e) => setSelected(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
+                    {(options || []).map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block text-sm">
+                  <span className="text-muted-foreground">Nombre del taller (opcional)</span>
+                  <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm">
+                    <span className="text-muted-foreground">Ciudad</span>
+                    <input value={ciudad} onChange={(e) => setCiudad(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-muted-foreground">Mecánico</span>
+                    <input value={mecanico} onChange={(e) => setMecanico(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
+                  </label>
+                </div>
+              </>
+            )}
           </>
         )}
 
