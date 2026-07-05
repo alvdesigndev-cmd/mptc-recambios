@@ -31,6 +31,15 @@ export function PhotoLightbox({ images, startIndex, open, onClose }: Props) {
     };
   }, [open, images.length, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const neighbors = [index - 1, index + 1].filter((i) => i >= 0 && i < images.length);
+    neighbors.forEach((i) => {
+      const img = new Image();
+      img.src = images[i];
+    });
+  }, [open, index, images]);
+
   if (!open || !images.length) return null;
 
   const src = images[index];
