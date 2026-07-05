@@ -131,15 +131,20 @@ function AuthPage() {
           opts.push({ value: p.id, label: nombre, role: p.role });
         }
       }
-      // Talleres dinámicos (no predefinidos): usan role="taller-1" con override de taller_id.
+      // Talleres dinámicos (no predefinidos): sólo se aceptan si su taller_id
+      // sigue el patrón "taller-N-..." (N = 1..5). Esto refleja la validación
+      // del trigger `handle_new_user`, que rechaza cualquier taller_id que no
+      // comience por el prefijo del rol. Los que no cumplan quedan fuera del
+      // desplegable para evitar que el usuario seleccione opciones no válidas.
       for (const t of rows as any[]) {
         if (PREDEFINED.some((p) => p.id === t.taller_id)) continue;
-        opts.push({ value: t.taller_id, label: t.nombre, role: "taller-1", tallerId: t.taller_id });
+        const role = deriveRoleFromTallerId(t.taller_id);
+        if (!role) continue;
+        opts.push({ value: t.taller_id, label: t.nombre, role, tallerId: t.taller_id });
       }
-      // NOTA: la opción "Grupo Peña" ya no forma parte de este listado; ahora
-      // se elige mediante el selector superior "Tipo de cuenta".
       setOptions(opts);
       if (opts.length) setSelected(opts[0].value);
+      else setSelected("");
     });
     return () => { cancelled = true; };
   }, [navigate]);
