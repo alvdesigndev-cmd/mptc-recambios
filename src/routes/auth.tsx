@@ -67,8 +67,21 @@ const PREDEFINED: { role: Role; id: string; label: string }[] = [
   { role: "taller-5", id: "taller-5-boxes-team-marbella", label: "Boxes Team Marbella" },
 ];
 
+// Roles de taller válidos (deben coincidir con los prefijos aceptados por el
+// trigger `handle_new_user` en la base de datos).
+const ALLOWED_TALLER_ROLES: Role[] = ["taller-1", "taller-2", "taller-3", "taller-4", "taller-5"];
+
+// Deriva el rol a partir del prefijo del taller_id ("taller-3-xxx" → "taller-3").
+// Devuelve null si el taller_id no cumple con el patrón permitido.
+function deriveRoleFromTallerId(id: string): Role | null {
+  const m = /^(taller-[1-5])-/.exec(id || "");
+  if (!m) return null;
+  const r = m[1] as Role;
+  return ALLOWED_TALLER_ROLES.includes(r) ? r : null;
+}
+
 interface TallerOption {
-  value: string; // "pena" o taller_id
+  value: string; // taller_id
   label: string;
   role: Role;
   tallerId?: string; // override para talleres dinámicos
@@ -118,15 +131,20 @@ function AuthPage() {
           opts.push({ value: p.id, label: nombre, role: p.role });
         }
       }
-      // Talleres dinámicos (no predefinidos): usan role="taller-1" con override de taller_id.
+      // Talleres dinámicos (no predefinidos): sólo se aceptan si su taller_id
+      // sigue el patrón "taller-N-..." (N = 1..5). Esto refleja la validación
+      // del trigger `handle_new_user`, que rechaza cualquier taller_id que no
+      // comience por el prefijo del rol. Los que no cumplan quedan fuera del
+      // desplegable para evitar que el usuario seleccione opciones no válidas.
       for (const t of rows as any[]) {
         if (PREDEFINED.some((p) => p.id === t.taller_id)) continue;
-        opts.push({ value: t.taller_id, label: t.nombre, role: "taller-1", tallerId: t.taller_id });
+        const role = deriveRoleFromTallerId(t.taller_id);
+        if (!role) continue;
+        opts.push({ value: t.taller_id, label: t.nombre, role, tallerId: t.taller_id });
       }
-      // NOTA: la opción "Grupo Peña" ya no forma parte de este listado; ahora
-      // se elige mediante el selector superior "Tipo de cuenta".
       setOptions(opts);
       if (opts.length) setSelected(opts[0].value);
+      else setSelected("");
     });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -162,10 +180,14 @@ function AuthPage() {
           if (error) throw error;
         } else {
           const opt = (options || []).find((o) => o.value === selected);
-          if (!opt) throw new Error("Selecciona un taller");
-          // opt.value ES siempre el taller_id definitivo en BD (talleres
-          // predefinidos y dinámicos), así garantizamos que el perfil se
-          // crea vinculado al taller seleccionado y no al fallback por rol.
+          if (!opt) throw new Error("Selecciona un taller válido");
+          // Validación cliente: el taller_id debe coincidir con el prefijo
+          // del rol permitido. Esto refleja la comprobación del trigger en
+          // la base de datos y evita enviar una petición condenada a fallar.
+          const derived = deriveRoleFromTallerId(opt.value);
+          if (!derived || derived !== opt.role) {
+            throw new Error("El taller seleccionado no es válido para el rol asignado.");
+          }
           const { error } = await signUp({
             email, password,
             role: opt.role,
@@ -258,12 +280,21 @@ function AuthPage() {
                 <label className="block text-sm">
                   <span className="text-muted-foreground">Taller</span>
                   <select value={selected} onChange={(e) => setSelected(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
+                    required
+                    disabled={!options || options.length === 0}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm disabled:opacity-60">
+                    {options === null && <option value="">Cargando talleres…</option>}
+                    {options && options.length === 0 && <option value="">No hay talleres disponibles</option>}
                     {(options || []).map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </label>
+                {options && options.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    No hay talleres activos válidos. Contacta con el administrador antes de crear la cuenta.
+                  </p>
+                )}
 
                 {(() => {
                   const opt = (options || []).find((o) => o.value === selected);
