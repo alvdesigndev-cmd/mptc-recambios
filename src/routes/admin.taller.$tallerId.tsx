@@ -2,13 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon, Search, X as XIcon,
+  ArrowLeft, Loader2, Save, KeyRound, Trash2, Eye, Plus, Power, User as UserIcon, Search, X as XIcon, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
-import { listTallerUsers, setTallerUserPassword, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+import { listTallerUsers, setTallerUserPassword, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+
 
 export const Route = createFileRoute("/admin/taller/$tallerId")({
   component: TallerDetailPage,
@@ -26,6 +27,8 @@ function TallerDetailPage() {
   const navigate = useNavigate();
   const fetchUsers = useServerFn(listTallerUsers);
   const fetchSetPwd = useServerFn(setTallerUserPassword);
+  const fetchCreateUser = useServerFn(createTallerUser);
+  const fetchDeleteUser = useServerFn(deleteTallerUser);
 
   const [taller, setTaller] = useState<Taller | null>(null);
   const [nombre, setNombre] = useState("");
@@ -40,6 +43,12 @@ function TallerDetailPage() {
   // Password state per user
   const [pwd, setPwd] = useState<Record<string, string>>({});
   const [savingPwd, setSavingPwd] = useState<string | null>(null);
+
+  // New user form
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", mecanico: "" });
+  const [savingNewUser, setSavingNewUser] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
 
   // New gestion quick form
   const [creating, setCreating] = useState(false);
@@ -125,6 +134,42 @@ function TallerDetailPage() {
       toast.error(e?.message || "No se pudo cambiar la contraseña");
     } finally {
       setSavingPwd(null);
+    }
+  };
+
+  const createUser = async () => {
+    if (!taller) return;
+    const email = newUser.email.trim().toLowerCase();
+    const password = newUser.password;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email no válido"); return; }
+    if (password.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
+    if (!confirm(`¿Crear cuenta ${email} en ${taller.nombre}?`)) return;
+    setSavingNewUser(true);
+    try {
+      await fetchCreateUser({ data: { tallerId: taller.taller_id, email, password, mecanico: newUser.mecanico.trim() } });
+      toast.success("Cuenta creada");
+      setCreatingUser(false);
+      setNewUser({ email: "", password: "", mecanico: "" });
+      const list = await fetchUsers({ data: { tallerId: taller.taller_id } });
+      setUsers(list);
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo crear la cuenta");
+    } finally {
+      setSavingNewUser(false);
+    }
+  };
+
+  const removeUser = async (u: TallerUser) => {
+    if (!confirm(`¿Eliminar la cuenta ${u.email || u.user_id}? Esta acción no se puede deshacer.`)) return;
+    setDeletingUser(u.user_id);
+    try {
+      await fetchDeleteUser({ data: { userId: u.user_id } });
+      toast.success("Cuenta eliminada");
+      setUsers((prev) => prev.filter((x) => x.user_id !== u.user_id));
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo eliminar la cuenta");
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -279,10 +324,69 @@ function TallerDetailPage() {
 
           {/* Users + password reset */}
           <div className="rounded-2xl border border-border bg-surface p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              <UserIcon className="h-4 w-4 text-primary" /> Usuarios del taller
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <UserIcon className="h-4 w-4 text-primary" /> Usuarios del taller
+              </div>
+              <button
+                onClick={() => setCreatingUser((v) => !v)}
+                disabled={!taller.activo}
+                title={!taller.activo ? "Reactiva el taller para crear usuarios" : ""}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60 active:scale-95"
+              >
+                <UserPlus className="h-4 w-4" /> {creatingUser ? "Cerrar" : "Nuevo usuario"}
+              </button>
             </div>
-            {users.length === 0 && (
+
+            {creatingUser && (
+              <div className="mb-4 rounded-xl border border-border bg-surface-2 p-3">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Email</span>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      placeholder="usuario@ejemplo.com"
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Contraseña</span>
+                    <input
+                      type="text"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="Mín. 8 caracteres"
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    <span className="text-muted-foreground">Mecánico (opcional)</span>
+                    <input
+                      value={newUser.mecanico}
+                      onChange={(e) => setNewUser({ ...newUser, mecanico: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button onClick={() => setCreatingUser(false)} className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-3">Cancelar</button>
+                  <button
+                    onClick={createUser}
+                    disabled={savingNewUser}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                  >
+                    {savingNewUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Crear cuenta
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  La cuenta queda confirmada automáticamente y asignada a <span className="font-mono">{taller.taller_id}</span>. El usuario podrá entrar en <span className="font-mono">/auth</span> con este email y contraseña.
+                </p>
+              </div>
+            )}
+
+            {users.length === 0 && !creatingUser && (
               <div className="text-sm text-muted-foreground">No hay usuarios registrados para este taller.</div>
             )}
             <div className="space-y-3">
@@ -293,6 +397,13 @@ function TallerDetailPage() {
                       <div className="truncate text-sm font-semibold">{u.email || "(sin email)"}</div>
                       <div className="text-[11px] text-muted-foreground">Rol: {u.role}{u.mecanico ? ` · ${u.mecanico}` : ""}</div>
                     </div>
+                    <button
+                      onClick={() => removeUser(u)}
+                      disabled={deletingUser === u.user_id}
+                      className="inline-flex items-center gap-1 rounded-lg bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/20 disabled:opacity-60"
+                    >
+                      {deletingUser === u.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Eliminar
+                    </button>
                   </div>
                   <div className="mt-2 flex flex-wrap items-end gap-2">
                     <label className="flex-1 min-w-[220px] text-xs">
@@ -318,6 +429,7 @@ function TallerDetailPage() {
               ))}
             </div>
           </div>
+
 
           {/* Gestiones */}
           <div className="rounded-2xl border border-border bg-surface p-4">
