@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PenaRouteImport } from './routes/pena'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -28,6 +29,11 @@ import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
 import { Route as AdminTallerTallerIdRouteImport } from './routes/admin.taller.$tallerId'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PenaRoute = PenaRouteImport.update({
   id: '/pena',
   path: '/pena',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/pena': typeof PenaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/pena'
+    | '/reset-password'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pena'
+    | '/reset-password'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/pena'
+    | '/reset-password'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -245,12 +257,20 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   PenaRoute: typeof PenaRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
   PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pena': {
       id: '/pena'
       path: '/pena'
@@ -424,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   PenaRoute: PenaRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
   PedidoPenaTokenRoute: PedidoPenaTokenRoute,
 }

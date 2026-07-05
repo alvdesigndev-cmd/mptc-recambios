@@ -76,7 +76,7 @@ interface TallerOption {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState<"taller" | "pena">("taller");
@@ -135,6 +135,16 @@ function AuthPage() {
     e.preventDefault();
     setError(null); setInfo(null); setLoading(true);
     try {
+      if (mode === "forgot") {
+        if (!email) throw new Error("Introduce tu email");
+        const redirectTo = typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password`
+          : undefined;
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        setInfo("Te hemos enviado un correo con un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).");
+        return;
+      }
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
@@ -184,7 +194,9 @@ function AuthPage() {
       <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-border-strong bg-surface p-6">
         <header className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary text-xl font-black">M</div>
-          <h1 className="mt-3 text-xl font-bold">{mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h1>
+          <h1 className="mt-3 text-xl font-bold">
+            {mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear cuenta" : "Recuperar contraseña"}
+          </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">MPTC · Taller Conectado</p>
         </header>
 
@@ -193,28 +205,30 @@ function AuthPage() {
           <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
         </label>
-        <label className="block text-sm">
-          <span className="text-muted-foreground">Contraseña</span>
-          <div className="relative mt-1">
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={6}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-10 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </label>
+        {mode !== "forgot" && (
+          <label className="block text-sm">
+            <span className="text-muted-foreground">Contraseña</span>
+            <div className="relative mt-1">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-10 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </label>
+        )}
 
         {mode === "login" && (
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -294,12 +308,35 @@ function AuthPage() {
 
         <button type="submit" disabled={loading}
           className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {loading ? "Procesando…" : mode === "login" ? "Entrar" : "Crear cuenta"}
+          {loading
+            ? "Procesando…"
+            : mode === "login"
+              ? "Entrar"
+              : mode === "signup"
+                ? "Crear cuenta"
+                : "Enviar enlace de recuperación"}
         </button>
 
-        <button type="button" onClick={() => { setError(null); setInfo(null); setMode(mode === "login" ? "signup" : "login"); }}
+        {mode === "login" && (
+          <button type="button"
+            onClick={() => { setError(null); setInfo(null); setPassword(""); setMode("forgot"); }}
+            className="w-full text-xs text-muted-foreground hover:text-foreground">
+            ¿Olvidaste tu contraseña?
+          </button>
+        )}
+
+        <button type="button"
+          onClick={() => {
+            setError(null); setInfo(null);
+            if (mode === "forgot") setMode("login");
+            else setMode(mode === "login" ? "signup" : "login");
+          }}
           className="w-full text-xs text-muted-foreground hover:text-foreground">
-          {mode === "login" ? "¿No tienes cuenta? Crear una" : "Ya tengo cuenta"}
+          {mode === "login"
+            ? "¿No tienes cuenta? Crear una"
+            : mode === "signup"
+              ? "Ya tengo cuenta"
+              : "Volver al inicio de sesión"}
         </button>
       </form>
     </div>
