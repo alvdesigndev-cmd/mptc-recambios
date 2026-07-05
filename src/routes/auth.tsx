@@ -218,7 +218,7 @@ function AuthPage() {
               onChange={(e) => setRemember(e.target.checked)}
               className="h-4 w-4 rounded border-border"
             />
-            Recordar usuario y contraseña en este dispositivo
+            Recordar mi usuario en este dispositivo
           </label>
         )}
 
