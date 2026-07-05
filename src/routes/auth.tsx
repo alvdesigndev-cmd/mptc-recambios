@@ -205,28 +205,30 @@ function AuthPage() {
           <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm" />
         </label>
-        <label className="block text-sm">
-          <span className="text-muted-foreground">Contraseña</span>
-          <div className="relative mt-1">
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={6}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-10 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </label>
+        {mode !== "forgot" && (
+          <label className="block text-sm">
+            <span className="text-muted-foreground">Contraseña</span>
+            <div className="relative mt-1">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 pr-10 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </label>
+        )}
 
         {mode === "login" && (
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
