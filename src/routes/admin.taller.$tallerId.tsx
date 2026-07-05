@@ -137,7 +137,42 @@ function TallerDetailPage() {
     }
   };
 
-  const deleteGestion = async (g: Gestion) => {
+  const createUser = async () => {
+    if (!taller) return;
+    const email = newUser.email.trim().toLowerCase();
+    const password = newUser.password;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email no válido"); return; }
+    if (password.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
+    if (!confirm(`¿Crear cuenta ${email} en ${taller.nombre}?`)) return;
+    setSavingNewUser(true);
+    try {
+      await fetchCreateUser({ data: { tallerId: taller.taller_id, email, password, mecanico: newUser.mecanico.trim() } });
+      toast.success("Cuenta creada");
+      setCreatingUser(false);
+      setNewUser({ email: "", password: "", mecanico: "" });
+      const list = await fetchUsers({ data: { tallerId: taller.taller_id } });
+      setUsers(list);
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo crear la cuenta");
+    } finally {
+      setSavingNewUser(false);
+    }
+  };
+
+  const removeUser = async (u: TallerUser) => {
+    if (!confirm(`¿Eliminar la cuenta ${u.email || u.user_id}? Esta acción no se puede deshacer.`)) return;
+    setDeletingUser(u.user_id);
+    try {
+      await fetchDeleteUser({ data: { userId: u.user_id } });
+      toast.success("Cuenta eliminada");
+      setUsers((prev) => prev.filter((x) => x.user_id !== u.user_id));
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo eliminar la cuenta");
+    } finally {
+      setDeletingUser(null);
+    }
+  };
+
     if (!confirm(`¿Eliminar la gestión ${g.matricula || g.id}? Esta acción no se puede deshacer.`)) return;
     const { error } = await supabase.from("gestiones").delete().eq("id", g.id);
     if (error) { toast.error(error.message); return; }
