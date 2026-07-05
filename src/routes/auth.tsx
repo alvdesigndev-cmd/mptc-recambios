@@ -135,20 +135,15 @@ function AuthPage() {
         {mode === "signup" && (
           <>
             <label className="block text-sm">
-              <span className="text-muted-foreground">Rol</span>
-              <select value={role} onChange={(e) => setRole(e.target.value as Role)}
+              <span className="text-muted-foreground">Taller</span>
+              <select value={selected} onChange={(e) => setSelected(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm">
-                {[
-                  { r: "taller-1", id: "taller-1-mtc-recambios", label: "Taller 1" },
-                  { r: "taller-2", id: "taller-2-mtc-recambios", label: "Taller 2" },
-                  { r: "taller-3", id: "taller-3-tecniauto-express-marbella", label: "TecniAuto Express Marbella" },
-                  { r: "taller-4", id: "taller-4-mecanica-autofran", label: "Mecánica Autofran" },
-                  { r: "taller-5", id: "taller-5-boxes-team-marbella", label: "Boxes Team Marbella" },
-                ].filter((o) => !activeTallerIds || activeTallerIds.has(o.id))
-                  .map((o) => <option key={o.r} value={o.r}>{o.label}</option>)}
-                <option value="pena">Grupo Peña (proveedor)</option>
+                {(options || []).map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
               </select>
             </label>
+
             <label className="block text-sm">
               <span className="text-muted-foreground">Nombre del taller</span>
               <input value={tallerName} onChange={(e) => setTallerName(e.target.value)}
