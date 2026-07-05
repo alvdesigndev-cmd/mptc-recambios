@@ -25,7 +25,7 @@ export default defineConfig({
         devOptions: { enabled: false },
         workbox: {
           navigateFallback: "/",
-          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/\.mcp\//],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: false, // controlamos la activación con el toast
