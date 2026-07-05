@@ -85,6 +85,8 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [options, setOptions] = useState<TallerOption[] | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
