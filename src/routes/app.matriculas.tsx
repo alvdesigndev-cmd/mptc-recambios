@@ -257,7 +257,10 @@ function MatriculasPage() {
 
   const submit = async (raw: string) => {
     const p = normalizeMatricula(raw).replace(/[^A-Z0-9]/g, "");
-    if (p.length < 4) return;
+    const check = validatePlateInput(p);
+    if (!check.ok) return;
+    if (p === lastSubmittedRef.current) return;
+    lastSubmittedRef.current = p;
     setPlate(p);
     setLoading(true);
     setResult(null);
@@ -290,6 +293,8 @@ function MatriculasPage() {
       setLoading(false);
     }
   };
+  submitRef.current = submit;
+
 
   const startGestion = (p: string, data: Record<string, unknown>) => {
     const m = mapApiData(data);
