@@ -13,6 +13,7 @@ import {
   PinOff,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
+  X,
 } from "lucide-react";
 import {
   listPlateHistory,
@@ -81,6 +82,7 @@ function HistorialMatriculasPage() {
   const [clearing, setClearing] = useState(false);
   const [pinned, setPinned] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOrder>("desc");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setPinned(loadPinned());
@@ -156,6 +158,18 @@ function HistorialMatriculasPage() {
     });
   };
 
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    if (!q) return items;
+    return items.filter((i) => {
+      const plate = i.plate.toUpperCase();
+      const vehiculo = (i.vehiculo || "").toUpperCase();
+      const marca = (i.marca || "").toUpperCase();
+      const modelo = (i.modelo || "").toUpperCase();
+      return plate.includes(q) || vehiculo.includes(q) || marca.includes(q) || modelo.includes(q);
+    });
+  }, [items, query]);
+
   const sortedItems = useMemo(() => {
     const pinSet = new Set(pinned);
     const byDate = (a: PlateHistoryItem, b: PlateHistoryItem) => {
@@ -163,10 +177,10 @@ function HistorialMatriculasPage() {
       const bv = new Date(b.created_at).getTime();
       return sort === "desc" ? bv - av : av - bv;
     };
-    const pins = items.filter((i) => pinSet.has(i.plate)).sort(byDate);
-    const rest = items.filter((i) => !pinSet.has(i.plate)).sort(byDate);
+    const pins = filteredItems.filter((i) => pinSet.has(i.plate)).sort(byDate);
+    const rest = filteredItems.filter((i) => !pinSet.has(i.plate)).sort(byDate);
     return { pins, rest };
-  }, [items, pinned, sort]);
+  }, [filteredItems, pinned, sort]);
 
   const renderItem = (it: PlateHistoryItem) => {
     const vehiculo = it.vehiculo || [it.marca, it.modelo].filter(Boolean).join(" ").trim();
@@ -283,6 +297,29 @@ function HistorialMatriculasPage() {
         </div>
       )}
 
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+          <Search className="h-4 w-4" />
+        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por matrícula, marca o modelo..."
+          className="w-full rounded-2xl border border-border bg-surface py-3 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute inset-y-0 right-2 flex items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label="Limpiar búsqueda"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-surface p-8 text-muted-foreground">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -292,11 +329,15 @@ function HistorialMatriculasPage() {
         <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
           Aún no has consultado ninguna matrícula.
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
+          Ninguna entrada coincide con “{query}”.
+        </div>
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              {items.length} {items.length === 1 ? "consulta" : "consultas"}
+              {filteredItems.length} de {items.length} {filteredItems.length === 1 ? "consulta" : "consultas"}
               {sortedItems.pins.length > 0 && ` · ${sortedItems.pins.length} fijada${sortedItems.pins.length === 1 ? "" : "s"}`}
             </p>
             <button
