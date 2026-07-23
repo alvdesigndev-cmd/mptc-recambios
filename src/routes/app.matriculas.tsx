@@ -135,22 +135,23 @@ export function buildTechDescripcion(
     const v = pickStr(data, ...keys);
     if (v) rows.push([label, v]);
   };
-  add("Matrícula", "MATRICULA", "matricula");
-  add("Marca", "MARCA", "marca");
-  add("Modelo", "MODELO", "modelo");
-  add("Cilindrada", "TPMOTOR", "tpmotor");
-  add("Tipo motor", "TYMOTOR", "tymotor");
-  add("Códigos motor", "MOTOR", "motor");
-  const kw = pickStr(data, "KWs", "kws", "KW", "kw");
+  add("Matrícula", "MATRICULA", "matricula", "plate");
+  add("Marca", "MARCA", "marca", "brand");
+  add("Modelo", "MODELO", "modelo", "model", "modelEn");
+  add("Versión", "VERSION", "version");
+  add("Cilindrada", "TPMOTOR", "tpmotor", "engineDisplacement");
+  add("Tipo motor", "TYMOTOR", "tymotor", "fuelType");
+  add("Códigos motor", "MOTOR", "motor", "engineCode");
+  const kw = pickStr(data, "KWs", "kws", "KW", "kw", "powerKW", "powerHp");
   if (kw) {
     const cv = Math.round(parseFloat(kw.replace(",", ".")) * 1.35962);
     rows.push(["Potencia", Number.isFinite(cv) && cv > 0 ? `${kw} kW (~${cv} CV)` : `${kw} kW`]);
   }
   add("Inyección", "INYECCION", "inyeccion");
-  add("País", "PAIS", "pais");
-  const vin = pickStr(data, "VIN", "vin");
+  add("País", "PAIS", "pais", "country");
+  const vin = pickStr(data, "VIN", "vin", "vinNumber");
   if (vin && isValidVin(vin)) rows.push(["VIN", vin.toUpperCase()]);
-  const fecha = normalizeFecha(pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion"));
+  const fecha = normalizeFecha(pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion", "firstRegistrationDate"));
   if (fecha) {
     const parts = fecha.split("/");
     const year = parts.length === 3 ? parseInt(parts[2], 10) : NaN;
