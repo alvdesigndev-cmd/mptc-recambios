@@ -1,0 +1,200 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
+import { ArrowLeft, History, Trash2, Loader2, Search, Database, AlertCircle } from "lucide-react";
+import {
+  listPlateHistory,
+  deletePlateHistoryItem,
+  clearPlateHistory,
+  type PlateHistoryItem,
+} from "@/lib/mptc/matriculas.functions";
+
+export const Route = createFileRoute("/app/matriculas/historial")({
+  component: HistorialMatriculasPage,
+  head: () => ({
+    meta: [
+      { title: "Historial de matrículas" },
+      { name: "description", content: "Consulta el historial de matrículas que has buscado." },
+    ],
+  }),
+});
+
+function formatDateTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function HistorialMatriculasPage() {
+  const listFn = useServerFn(listPlateHistory);
+  const deleteFn = useServerFn(deletePlateHistoryItem);
+  const clearFn = useServerFn(clearPlateHistory);
+  const [items, setItems] = useState<PlateHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await listFn({ data: { limit: 100 } });
+      setItems(res.items);
+    } catch (e: any) {
+      setError(e?.message ?? "No se pudo cargar el historial");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const removeOne = async (id: string) => {
+    setBusyId(id);
+    try {
+      await deleteFn({ data: { id } });
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch (e: any) {
+      setError(e?.message ?? "No se pudo eliminar");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const clearAll = async () => {
+    if (!confirm("¿Borrar todo el historial de matrículas?")) return;
+    setClearing(true);
+    try {
+      await clearFn({});
+      setItems([]);
+    } catch (e: any) {
+      setError(e?.message ?? "No se pudo borrar");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <header className="flex items-center gap-3">
+        <Link
+          to="/app/matriculas"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground hover:text-primary"
+          aria-label="Volver"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <History className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <h1 className="text-xl font-semibold">Historial de matrículas</h1>
+          <p className="text-xs text-muted-foreground">
+            Consultas realizadas desde tu cuenta
+          </p>
+        </div>
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={clearAll}
+            disabled={clearing}
+            className="flex items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Borrar todo
+          </button>
+        )}
+      </header>
+
+      {error && (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center rounded-2xl border border-border bg-surface p-8 text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Cargando…
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
+          Aún no has consultado ninguna matrícula.
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((it) => {
+            const vehiculo = it.vehiculo || [it.marca, it.modelo].filter(Boolean).join(" ").trim();
+            return (
+              <li
+                key={it.id}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Search className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/app/matriculas"
+                      search={{ q: it.plate } as any}
+                      className="font-mono text-base font-semibold tracking-wider text-foreground hover:text-primary"
+                    >
+                      {it.plate}
+                    </Link>
+                    {it.cached && (
+                      <span
+                        title="Resultado servido desde caché"
+                        className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        <Database className="h-3 w-3" />
+                        Caché
+                      </span>
+                    )}
+                    {!it.ok && (
+                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                        Sin datos
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {vehiculo || it.error || "—"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/80">
+                    {formatDateTime(it.created_at)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeOne(it.id)}
+                  disabled={busyId === it.id}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  aria-label="Eliminar"
+                >
+                  {busyId === it.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
