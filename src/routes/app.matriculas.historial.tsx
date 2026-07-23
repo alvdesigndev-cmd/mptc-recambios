@@ -13,6 +13,7 @@ import {
   PinOff,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
+  X,
 } from "lucide-react";
 import {
   listPlateHistory,
