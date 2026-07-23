@@ -145,6 +145,32 @@ export const setAdminBanned = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const setAdminPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string; password: string }) => {
+    if (!data || typeof data.userId !== "string" || typeof data.password !== "string") {
+      throw new Error("Datos inválidos");
+    }
+    if (data.password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres");
+    return { userId: data.userId, password: data.password };
+  })
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const target_email = await getActorEmail(supabaseAdmin, data.userId);
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    await logAdminAction(supabaseAdmin, {
+      action: "admin.password_reset",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email,
+    });
+    return { ok: true as const };
+  });
+
 export const deleteAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { userId: string }) => {
