@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
-import { listTallerUsers, setTallerUserPassword, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+import { listTallerUsers, setTallerUserPassword, setTallerUserEmail, setTallerUserMecanico, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
 
 
 export const Route = createFileRoute("/admin/taller/$tallerId")({
@@ -27,6 +27,8 @@ function TallerDetailPage() {
   const navigate = useNavigate();
   const fetchUsers = useServerFn(listTallerUsers);
   const fetchSetPwd = useServerFn(setTallerUserPassword);
+  const fetchSetEmail = useServerFn(setTallerUserEmail);
+  const fetchSetMecanico = useServerFn(setTallerUserMecanico);
   const fetchCreateUser = useServerFn(createTallerUser);
   const fetchDeleteUser = useServerFn(deleteTallerUser);
 
@@ -43,6 +45,10 @@ function TallerDetailPage() {
   // Password state per user
   const [pwd, setPwd] = useState<Record<string, string>>({});
   const [savingPwd, setSavingPwd] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  const [savingEmail, setSavingEmail] = useState<string | null>(null);
+  const [mecDraft, setMecDraft] = useState<Record<string, string>>({});
+  const [savingMec, setSavingMec] = useState<string | null>(null);
 
   // New user form
   const [creatingUser, setCreatingUser] = useState(false);
@@ -134,6 +140,40 @@ function TallerDetailPage() {
       toast.error(e?.message || "No se pudo cambiar la contraseña");
     } finally {
       setSavingPwd(null);
+    }
+  };
+
+  const changeEmail = async (u: TallerUser) => {
+    const email = (emailDraft[u.user_id] ?? "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email no válido"); return; }
+    if (email === (u.email || "").toLowerCase()) { toast.error("El email es el mismo"); return; }
+    if (!confirm(`¿Cambiar el email a ${email}?`)) return;
+    setSavingEmail(u.user_id);
+    try {
+      await fetchSetEmail({ data: { userId: u.user_id, email } });
+      toast.success("Email actualizado");
+      setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, email } : x));
+      setEmailDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cambiar el email");
+    } finally {
+      setSavingEmail(null);
+    }
+  };
+
+  const changeMecanico = async (u: TallerUser) => {
+    const mecanico = (mecDraft[u.user_id] ?? "").trim();
+    if (mecanico === (u.mecanico || "")) { toast.error("Sin cambios"); return; }
+    setSavingMec(u.user_id);
+    try {
+      await fetchSetMecanico({ data: { userId: u.user_id, mecanico } });
+      toast.success("Mecánico actualizado");
+      setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, mecanico } : x));
+      setMecDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo actualizar");
+    } finally {
+      setSavingMec(null);
     }
   };
 
@@ -405,25 +445,67 @@ function TallerDetailPage() {
                       {deletingUser === u.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} Eliminar
                     </button>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-end gap-2">
-                    <label className="flex-1 min-w-[220px] text-xs">
-                      <span className="text-muted-foreground">Nueva contraseña</span>
-                      <input
-                        type="text"
-                        value={pwd[u.user_id] || ""}
-                        onChange={(e) => setPwd({ ...pwd, [u.user_id]: e.target.value })}
-                        placeholder="Mín. 8 caracteres"
-                        className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <button
-                      onClick={() => changePassword(u.user_id)}
-                      disabled={savingPwd === u.user_id}
-                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-                    >
-                      {savingPwd === u.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                      Cambiar contraseña
-                    </button>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="flex-1 min-w-[220px] text-xs">
+                        <span className="text-muted-foreground">Email</span>
+                        <input
+                          type="email"
+                          value={emailDraft[u.user_id] ?? (u.email || "")}
+                          onChange={(e) => setEmailDraft({ ...emailDraft, [u.user_id]: e.target.value })}
+                          placeholder="usuario@ejemplo.com"
+                          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <button
+                        onClick={() => changeEmail(u)}
+                        disabled={savingEmail === u.user_id}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                      >
+                        {savingEmail === u.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Guardar email
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="flex-1 min-w-[220px] text-xs">
+                        <span className="text-muted-foreground">Mecánico</span>
+                        <input
+                          type="text"
+                          value={mecDraft[u.user_id] ?? (u.mecanico || "")}
+                          onChange={(e) => setMecDraft({ ...mecDraft, [u.user_id]: e.target.value })}
+                          placeholder="Nombre del mecánico"
+                          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <button
+                        onClick={() => changeMecanico(u)}
+                        disabled={savingMec === u.user_id}
+                        className="inline-flex items-center gap-2 rounded-lg bg-surface-3 px-3 py-2 text-sm font-semibold disabled:opacity-60"
+                      >
+                        {savingMec === u.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        Guardar
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="flex-1 min-w-[220px] text-xs">
+                        <span className="text-muted-foreground">Nueva contraseña</span>
+                        <input
+                          type="text"
+                          value={pwd[u.user_id] || ""}
+                          onChange={(e) => setPwd({ ...pwd, [u.user_id]: e.target.value })}
+                          placeholder="Mín. 8 caracteres"
+                          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <button
+                        onClick={() => changePassword(u.user_id)}
+                        disabled={savingPwd === u.user_id}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                      >
+                        {savingPwd === u.user_id ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                        Cambiar contraseña
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
