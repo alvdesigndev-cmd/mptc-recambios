@@ -326,7 +326,7 @@ function MatriculasPage() {
           <label htmlFor="plate" className="text-xs font-medium text-muted-foreground">
             Matrícula
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:flex-nowrap">
             <input
               id="plate"
               value={plate}
@@ -334,12 +334,12 @@ function MatriculasPage() {
               placeholder="1234ABC"
               maxLength={10}
               autoComplete="off"
-              className="flex-1 rounded-xl border border-border bg-background px-4 py-3 text-lg font-mono font-semibold tracking-widest uppercase outline-none focus:border-primary"
+              className="min-w-0 flex-1 basis-full rounded-xl border border-border bg-background px-4 py-3 text-lg font-mono font-semibold tracking-widest uppercase outline-none focus:border-primary sm:basis-auto"
             />
             <button
               type="button"
               onClick={() => setScannerOpen(true)}
-              className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary"
               aria-label="Escanear matrícula"
             >
               <ScanLine className="h-5 w-5" />
@@ -347,7 +347,7 @@ function MatriculasPage() {
             <button
               type="submit"
               disabled={loading || plate.length < 4}
-              className="flex h-12 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50"
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50 sm:flex-none"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Buscar
