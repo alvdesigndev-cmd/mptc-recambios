@@ -4,7 +4,5 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
-  "vars": {
-    "RAPIDAPI_PLATE_KEY": "828a4daeeemsh70039a30f2d1de2p13f5a3jsn9d8c314d8463"
-  }
+  "vars": {}
 }

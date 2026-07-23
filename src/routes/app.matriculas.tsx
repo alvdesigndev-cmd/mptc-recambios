@@ -98,11 +98,17 @@ export type MappedPlate = {
 };
 
 export function mapApiData(data: Record<string, unknown>): MappedPlate {
-  const marca = pickStr(data, "MARCA", "marca");
-  const modelo = pickStr(data, "MODELO", "modelo");
-  const motorRaw = pickStr(data, "MOTOR", "motor");
-  const vinRaw = pickStr(data, "VIN", "vin");
-  const fechaRaw = pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion");
+  const marca = pickStr(data, "MARCA", "marca", "brand");
+  const modelo = pickStr(data, "MODELO", "modelo", "model", "modelEn");
+  const motorRaw = pickStr(data, "MOTOR", "motor", "version", "engineCode");
+  const vinRaw = pickStr(data, "VIN", "vin", "vinNumber");
+  const fechaRaw = pickStr(
+    data,
+    "FECHA_MATRICULACION",
+    "fecha_matriculacion",
+    "firstRegistrationDateEs",
+    "firstRegistrationDate",
+  );
   const vin = isValidVin(vinRaw) ? vinRaw.toUpperCase() : "";
   const fechaMatriculacion = normalizeFecha(fechaRaw);
   const motor = motorRaw;
@@ -135,22 +141,29 @@ export function buildTechDescripcion(
     const v = pickStr(data, ...keys);
     if (v) rows.push([label, v]);
   };
-  add("Matrícula", "MATRICULA", "matricula");
-  add("Marca", "MARCA", "marca");
-  add("Modelo", "MODELO", "modelo");
-  add("Cilindrada", "TPMOTOR", "tpmotor");
-  add("Tipo motor", "TYMOTOR", "tymotor");
-  add("Códigos motor", "MOTOR", "motor");
-  const kw = pickStr(data, "KWs", "kws", "KW", "kw");
+  add("Matrícula", "MATRICULA", "matricula", "plate");
+  add("Marca", "MARCA", "marca", "brand");
+  add("Modelo", "MODELO", "modelo", "model", "modelEn");
+  add("Versión", "VERSION", "version");
+  add("Carrocería", "bodyType");
+  add("Tipo vehículo", "vehicleType");
+  const cil = pickStr(data, "TPMOTOR", "tpmotor", "displacementCcm", "engineCapacityLiters");
+  if (cil) rows.push(["Cilindrada", cil]);
+  add("Tipo motor", "TYMOTOR", "tymotor", "fuelType", "fuelSystem");
+  add("Códigos motor", "MOTOR", "motor", "engineCode", "platformCodes");
+  const kw = pickStr(data, "KWs", "kws", "KW", "kw", "powerKW", "powerHP");
   if (kw) {
     const cv = Math.round(parseFloat(kw.replace(",", ".")) * 1.35962);
     rows.push(["Potencia", Number.isFinite(cv) && cv > 0 ? `${kw} kW (~${cv} CV)` : `${kw} kW`]);
   }
+  add("Transmisión", "transmissionType", "gearboxType");
   add("Inyección", "INYECCION", "inyeccion");
-  add("País", "PAIS", "pais");
-  const vin = pickStr(data, "VIN", "vin");
+  add("País", "PAIS", "pais", "country");
+  const vin = pickStr(data, "VIN", "vin", "vinNumber");
   if (vin && isValidVin(vin)) rows.push(["VIN", vin.toUpperCase()]);
-  const fecha = normalizeFecha(pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion"));
+  const fecha = normalizeFecha(
+    pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion", "firstRegistrationDateEs", "firstRegistrationDate"),
+  );
   if (fecha) {
     const parts = fecha.split("/");
     const year = parts.length === 3 ? parseInt(parts[2], 10) : NaN;
@@ -158,9 +171,9 @@ export function buildTechDescripcion(
     rows.push(["Matriculación", Number.isFinite(antig) && antig >= 0 ? `${fecha} (${antig} años)` : fecha]);
   }
   const tecdoc: string[] = [];
-  const idMarca = pickStr(data, "ID_MARCA_TECDOC", "id_marca_tecdoc");
-  const idModelo = pickStr(data, "ID_MODELO_TECDOC", "id_modelo_tecdoc");
-  const idKtype = pickStr(data, "ID_KTYPE", "id_ktype");
+  const idMarca = pickStr(data, "ID_MARCA_TECDOC", "id_marca_tecdoc", "tecdocManufacturerId");
+  const idModelo = pickStr(data, "ID_MODELO_TECDOC", "id_modelo_tecdoc", "tecdocModelId");
+  const idKtype = pickStr(data, "ID_KTYPE", "id_ktype", "kType", "tecdocCarId");
   if (idMarca) tecdoc.push(`marca ${idMarca}`);
   if (idModelo) tecdoc.push(`modelo ${idModelo}`);
   if (idKtype) tecdoc.push(`ktype ${idKtype}`);
