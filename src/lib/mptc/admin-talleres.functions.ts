@@ -7,6 +7,44 @@ async function ensureAdmin(context: { supabase: any; userId: string }) {
   if (!isAdmin) throw new Error("Solo un administrador puede realizar esta acción");
 }
 
+async function getUserEmail(supabaseAdmin: any, userId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+    return data?.user?.email ?? null;
+  } catch { return null; }
+}
+
+async function logAudit(
+  supabaseAdmin: any,
+  entry: {
+    action: string;
+    actor_user_id: string;
+    target_user_id?: string | null;
+    target_email?: string | null;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  const actor_email = await getUserEmail(supabaseAdmin, entry.actor_user_id);
+  try {
+    await supabaseAdmin.from("admin_audit_log").insert({
+      action: entry.action,
+      actor_user_id: entry.actor_user_id,
+      actor_email,
+      target_user_id: entry.target_user_id ?? null,
+      target_email: entry.target_email ?? null,
+      metadata: entry.metadata ?? {},
+    });
+  } catch {
+    // no bloquear la operación si falla el log
+  }
+}
+
+function normalizeReason(reason: unknown): string | null {
+  if (typeof reason !== "string") return null;
+  const t = reason.trim().slice(0, 500);
+  return t.length ? t : null;
+}
+
 export interface TallerUser {
   user_id: string;
   email: string | null;
@@ -31,11 +69,7 @@ export const listTallerUsers = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const rows: TallerUser[] = [];
     for (const p of (profs as any[]) || []) {
-      let email: string | null = null;
-      try {
-        const { data: u } = await supabaseAdmin.auth.admin.getUserById(p.user_id);
-        email = u?.user?.email ?? null;
-      } catch {}
+      const email = await getUserEmail(supabaseAdmin, p.user_id);
       rows.push({
         user_id: p.user_id,
         email,
@@ -49,10 +83,10 @@ export const listTallerUsers = createServerFn({ method: "POST" })
 
 export const setTallerUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; password: string }) => {
+  .inputValidator((data: { userId: string; password: string; reason?: string }) => {
     if (!data?.userId || typeof data.password !== "string") throw new Error("Datos inválidos");
     if (data.password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres");
-    return { userId: data.userId, password: data.password };
+    return { userId: data.userId, password: data.password, reason: normalizeReason(data.reason) };
   })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
@@ -61,42 +95,79 @@ export const setTallerUserPassword = createServerFn({ method: "POST" })
       password: data.password,
     });
     if (error) throw new Error(error.message);
+    const email = await getUserEmail(supabaseAdmin, data.userId);
+    await logAudit(supabaseAdmin, {
+      action: "taller_user.password_reset",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email: email,
+      metadata: { reason: data.reason },
+    });
     return { ok: true as const };
   });
 
 export const setTallerUserEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; email: string }) => {
+  .inputValidator((data: { userId: string; email: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
     const email = (data.email || "").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Email no válido");
-    return { userId: data.userId, email };
+    return { userId: data.userId, email, reason: normalizeReason(data.reason) };
   })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const previousEmail = await getUserEmail(supabaseAdmin, data.userId);
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       email: data.email,
       email_confirm: true,
     } as any);
     if (error) throw new Error(error.message);
+    await logAudit(supabaseAdmin, {
+      action: "taller_user.email_change",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email: data.email,
+      metadata: { previous_email: previousEmail, new_email: data.email, reason: data.reason },
+    });
     return { ok: true as const };
   });
 
 export const setTallerUserMecanico = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; mecanico: string }) => {
+  .inputValidator((data: { userId: string; mecanico: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
-    return { userId: data.userId, mecanico: (data.mecanico || "").trim().slice(0, 120) };
+    return {
+      userId: data.userId,
+      mecanico: (data.mecanico || "").trim().slice(0, 120),
+      reason: normalizeReason(data.reason),
+    };
   })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prev } = await supabaseAdmin
+      .from("profiles")
+      .select("mecanico")
+      .eq("user_id", data.userId)
+      .maybeSingle();
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ mecanico: data.mecanico })
       .eq("user_id", data.userId);
     if (error) throw new Error(error.message);
+    const email = await getUserEmail(supabaseAdmin, data.userId);
+    await logAudit(supabaseAdmin, {
+      action: "taller_user.mecanico_change",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email: email,
+      metadata: {
+        previous_mecanico: prev?.mecanico ?? null,
+        new_mecanico: data.mecanico,
+        reason: data.reason,
+      },
+    });
     return { ok: true as const };
   });
 
@@ -111,7 +182,7 @@ const PREDEFINED_ROLE_BY_ID: Record<string, string> = {
 
 export const createTallerUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { tallerId: string; email: string; password: string; mecanico?: string }) => {
+  .inputValidator((data: { tallerId: string; email: string; password: string; mecanico?: string; reason?: string }) => {
     if (!data?.tallerId) throw new Error("tallerId requerido");
     if (!data?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) throw new Error("Email no válido");
     if (typeof data.password !== "string" || data.password.length < 8) {
@@ -122,13 +193,13 @@ export const createTallerUser = createServerFn({ method: "POST" })
       email: data.email.trim().toLowerCase(),
       password: data.password,
       mecanico: (data.mecanico || "").trim(),
+      reason: normalizeReason(data.reason),
     };
   })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Verifica que el taller existe y está activo
     const { data: t, error: te } = await supabaseAdmin
       .from("talleres")
       .select("taller_id,nombre,ciudad,activo")
@@ -153,21 +224,50 @@ export const createTallerUser = createServerFn({ method: "POST" })
       },
     });
     if (error) throw new Error(error.message);
+    await logAudit(supabaseAdmin, {
+      action: "taller_user.create",
+      actor_user_id: context.userId,
+      target_user_id: created.user?.id ?? null,
+      target_email: data.email,
+      metadata: {
+        taller_id: t.taller_id,
+        taller_name: t.nombre,
+        mecanico: data.mecanico,
+        reason: data.reason,
+      },
+    });
     return { ok: true as const, userId: created.user?.id ?? null };
   });
 
 export const deleteTallerUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) => {
+  .inputValidator((data: { userId: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
-    return { userId: data.userId };
+    return { userId: data.userId, reason: normalizeReason(data.reason) };
   })
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     if (data.userId === context.userId) throw new Error("No puedes eliminar tu propia cuenta");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = await getUserEmail(supabaseAdmin, data.userId);
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("taller_id, taller_name, mecanico")
+      .eq("user_id", data.userId)
+      .maybeSingle();
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
+    await logAudit(supabaseAdmin, {
+      action: "taller_user.delete",
+      actor_user_id: context.userId,
+      target_user_id: data.userId,
+      target_email: email,
+      metadata: {
+        taller_id: prof?.taller_id ?? null,
+        taller_name: prof?.taller_name ?? null,
+        mecanico: prof?.mecanico ?? null,
+        reason: data.reason,
+      },
+    });
     return { ok: true as const };
   });
-

@@ -19,12 +19,34 @@ export const Route = createFileRoute("/admin/usuarios")({
 });
 
 const ACTION_LABEL: Record<string, string> = {
-  "admin.create": "Creación",
-  "admin.deactivate": "Desactivación",
-  "admin.reactivate": "Reactivación",
-  "admin.delete": "Eliminación",
-  "admin.password_reset": "Cambio de contraseña",
+  "admin.create": "Creación admin",
+  "admin.deactivate": "Desactivación admin",
+  "admin.reactivate": "Reactivación admin",
+  "admin.delete": "Eliminación admin",
+  "admin.password_reset": "Cambio de contraseña (admin)",
+  "taller_user.create": "Creación usuario taller",
+  "taller_user.delete": "Eliminación usuario taller",
+  "taller_user.email_change": "Cambio de email",
+  "taller_user.mecanico_change": "Cambio de mecánico",
+  "taller_user.password_reset": "Cambio de contraseña",
 };
+
+function renderAuditDetails(row: AuditRow): string | null {
+  const m = row.metadata || {};
+  const parts: string[] = [];
+  if (row.action === "taller_user.email_change" && m.previous_email) {
+    parts.push(`${m.previous_email} → ${m.new_email ?? "?"}`);
+  }
+  if (row.action === "taller_user.mecanico_change") {
+    parts.push(`"${m.previous_mecanico ?? ""}" → "${m.new_mecanico ?? ""}"`);
+  }
+  if ((row.action === "taller_user.create" || row.action === "taller_user.delete") && m.taller_name) {
+    parts.push(`Taller: ${m.taller_name}`);
+  }
+  const reason = typeof m.reason === "string" && m.reason.trim() ? m.reason.trim() : null;
+  if (reason) parts.push(`Motivo: ${reason}`);
+  return parts.length ? parts.join(" · ") : null;
+}
 
 function UsuariosAdminPage() {
   const createAdmin = useServerFn(createAdminUser);
@@ -356,21 +378,27 @@ function UsuariosAdminPage() {
             <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {audit.map((row) => (
-                <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
-                        {ACTION_LABEL[row.action] ?? row.action}
-                      </span>
-                      <span className="truncate font-medium">{row.target_email ?? "—"}</span>
+              {audit.map((row) => {
+                const details = renderAuditDetails(row);
+                return (
+                  <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
+                          {ACTION_LABEL[row.action] ?? row.action}
+                        </span>
+                        <span className="truncate font-medium">{row.target_email ?? "—"}</span>
+                      </div>
+                      {details && (
+                        <div className="mt-1 text-[12px] text-foreground/80 break-words">{details}</div>
+                      )}
+                      <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        Por {row.actor_email ?? "sistema"} · {new Date(row.created_at).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      Por {row.actor_email ?? "sistema"} · {new Date(row.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
           <div ref={sentinelRef} />
