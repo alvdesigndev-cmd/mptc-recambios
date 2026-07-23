@@ -158,6 +158,18 @@ function HistorialMatriculasPage() {
     });
   };
 
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    if (!q) return items;
+    return items.filter((i) => {
+      const plate = i.plate.toUpperCase();
+      const vehiculo = (i.vehiculo || "").toUpperCase();
+      const marca = (i.marca || "").toUpperCase();
+      const modelo = (i.modelo || "").toUpperCase();
+      return plate.includes(q) || vehiculo.includes(q) || marca.includes(q) || modelo.includes(q);
+    });
+  }, [items, query]);
+
   const sortedItems = useMemo(() => {
     const pinSet = new Set(pinned);
     const byDate = (a: PlateHistoryItem, b: PlateHistoryItem) => {
@@ -165,10 +177,10 @@ function HistorialMatriculasPage() {
       const bv = new Date(b.created_at).getTime();
       return sort === "desc" ? bv - av : av - bv;
     };
-    const pins = items.filter((i) => pinSet.has(i.plate)).sort(byDate);
-    const rest = items.filter((i) => !pinSet.has(i.plate)).sort(byDate);
+    const pins = filteredItems.filter((i) => pinSet.has(i.plate)).sort(byDate);
+    const rest = filteredItems.filter((i) => !pinSet.has(i.plate)).sort(byDate);
     return { pins, rest };
-  }, [items, pinned, sort]);
+  }, [filteredItems, pinned, sort]);
 
   const renderItem = (it: PlateHistoryItem) => {
     const vehiculo = it.vehiculo || [it.marca, it.modelo].filter(Boolean).join(" ").trim();
