@@ -31,6 +31,7 @@ import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as AppMatriculasHistorialRouteImport } from './routes/app.matriculas.historial'
 import { Route as AdminTallerTallerIdRouteImport } from './routes/admin.taller.$tallerId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -147,6 +148,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppMatriculasHistorialRoute = AppMatriculasHistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => AppMatriculasRoute,
+} as any)
 const AdminTallerTallerIdRoute = AdminTallerTallerIdRouteImport.update({
   id: '/taller/$tallerId',
   path: '/taller/$tallerId',
@@ -181,7 +187,7 @@ export interface FileRoutesByFullPath {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
-  '/app/matriculas': typeof AppMatriculasRoute
+  '/app/matriculas': typeof AppMatriculasRouteWithChildren
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
+  '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -206,7 +213,7 @@ export interface FileRoutesByTo {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
-  '/app/matriculas': typeof AppMatriculasRoute
+  '/app/matriculas': typeof AppMatriculasRouteWithChildren
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
+  '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -234,7 +242,7 @@ export interface FileRoutesById {
   '/app/clientes': typeof AppClientesRoute
   '/app/familias': typeof AppFamiliasRoute
   '/app/historial': typeof AppHistorialRoute
-  '/app/matriculas': typeof AppMatriculasRoute
+  '/app/matriculas': typeof AppMatriculasRouteWithChildren
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
+  '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,6 +281,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
+    | '/app/matriculas/historial'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
+    | '/app/matriculas/historial'
   id:
     | '__root__'
     | '/'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/taller/$tallerId'
+    | '/app/matriculas/historial'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -499,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/matriculas/historial': {
+      id: '/app/matriculas/historial'
+      path: '/historial'
+      fullPath: '/app/matriculas/historial'
+      preLoaderRoute: typeof AppMatriculasHistorialRouteImport
+      parentRoute: typeof AppMatriculasRoute
+    }
     '/admin/taller/$tallerId': {
       id: '/admin/taller/$tallerId'
       path: '/taller/$tallerId'
@@ -539,12 +558,24 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AppMatriculasRouteChildren {
+  AppMatriculasHistorialRoute: typeof AppMatriculasHistorialRoute
+}
+
+const AppMatriculasRouteChildren: AppMatriculasRouteChildren = {
+  AppMatriculasHistorialRoute: AppMatriculasHistorialRoute,
+}
+
+const AppMatriculasRouteWithChildren = AppMatriculasRoute._addFileChildren(
+  AppMatriculasRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAjustesRoute: typeof AppAjustesRoute
   AppClientesRoute: typeof AppClientesRoute
   AppFamiliasRoute: typeof AppFamiliasRoute
   AppHistorialRoute: typeof AppHistorialRoute
-  AppMatriculasRoute: typeof AppMatriculasRoute
+  AppMatriculasRoute: typeof AppMatriculasRouteWithChildren
   AppNuevaRoute: typeof AppNuevaRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -554,7 +585,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClientesRoute: AppClientesRoute,
   AppFamiliasRoute: AppFamiliasRoute,
   AppHistorialRoute: AppHistorialRoute,
-  AppMatriculasRoute: AppMatriculasRoute,
+  AppMatriculasRoute: AppMatriculasRouteWithChildren,
   AppNuevaRoute: AppNuevaRoute,
   AppIndexRoute: AppIndexRoute,
 }
