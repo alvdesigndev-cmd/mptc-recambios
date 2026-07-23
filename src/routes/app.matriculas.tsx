@@ -298,7 +298,6 @@ function MatriculasPage() {
   const validation = plate ? validatePlateInput(plate) : null;
 
 
-
   const startGestion = (p: string, data: Record<string, unknown>) => {
     const m = mapApiData(data);
     const tech = buildTechDescripcion(p, data);
