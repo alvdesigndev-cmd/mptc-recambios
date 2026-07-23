@@ -681,47 +681,88 @@ function PlateScanner({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  type CamStatus = "requesting" | "ready" | "denied" | "unavailable" | "error";
+  const [camStatus, setCamStatus] = useState<CamStatus>("requesting");
   const [error, setError] = useState<string | null>(null);
   const [manualMode, setManualMode] = useState(false);
-  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState("");
+  const [showTips, setShowTips] = useState(false);
   const runOcr = useServerFn(ocrMatricula);
+
+  const startCamera = async () => {
+    setError(null);
+    setCamStatus("requesting");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamStatus("unavailable");
+      setError("Tu navegador no soporta el acceso a la cámara. Usa el modo manual.");
+      return null;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCamStatus("ready");
+      return stream;
+    } catch (e) {
+      const err = e as { name?: string; message?: string };
+      const name = err?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setCamStatus("denied");
+        setError(
+          "Permiso de cámara denegado. Actívalo en los ajustes del navegador (icono del candado junto a la URL) y vuelve a intentarlo.",
+        );
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        setCamStatus("unavailable");
+        setError("No se detectó ninguna cámara en este dispositivo.");
+      } else if (name === "NotReadableError") {
+        setCamStatus("error");
+        setError("La cámara está siendo usada por otra aplicación. Ciérrala e inténtalo de nuevo.");
+      } else {
+        setCamStatus("error");
+        setError("No se pudo abrir la cámara. Revisa los permisos o usa el modo manual.");
+      }
+      return null;
+    }
+  };
 
   useEffect(() => {
     let stream: MediaStream | null = null;
     let cancelled = false;
-
     (async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setManualMode(true);
-        setError("La cámara no está disponible en este dispositivo");
+      const s = await startCamera();
+      if (cancelled) {
+        s?.getTracks().forEach((t) => t.stop());
         return;
       }
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setReady(true);
-        }
-      } catch {
-        setError("No se pudo acceder a la cámara");
-        setManualMode(true);
-      }
+      stream = s;
     })();
-
     return () => {
       cancelled = true;
       stream?.getTracks().forEach((t) => t.stop());
+      const cur = videoRef.current?.srcObject as MediaStream | null;
+      cur?.getTracks().forEach((t) => t.stop());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const retry = async () => {
+    const cur = videoRef.current?.srcObject as MediaStream | null;
+    cur?.getTracks().forEach((t) => t.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
+    await startCamera();
+  };
+
+  const switchToManual = () => {
+    const cur = videoRef.current?.srcObject as MediaStream | null;
+    cur?.getTracks().forEach((t) => t.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setManualMode(true);
+  };
 
   const capture = async () => {
     const video = videoRef.current;
@@ -747,44 +788,118 @@ function PlateScanner({
       if (m.length >= 4) {
         onDetected(m);
       } else {
-        setError("No se detectó ninguna matrícula. Inténtalo de nuevo o introdúcela manualmente.");
+        setError("No se detectó ninguna matrícula. Acerca más la cámara y evita reflejos.");
       }
-    } catch (e) {
+    } catch {
       setError("No se pudo leer la matrícula. Inténtalo de nuevo.");
     } finally {
       setBusy(false);
     }
   };
 
+  const ready = camStatus === "ready";
+  const showCamProblem = camStatus === "denied" || camStatus === "unavailable" || camStatus === "error";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="font-semibold">Escanear matrícula</h2>
-          <button onClick={onClose} className="rounded-lg p-2 hover:bg-surface-2" aria-label="Cerrar">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {!manualMode && (
+              <button
+                type="button"
+                onClick={() => setShowTips((v) => !v)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2 hover:text-primary"
+                aria-label="Ver consejos"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={onClose} className="rounded-lg p-2 hover:bg-surface-2" aria-label="Cerrar">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
         {!manualMode ? (
           <>
             <div className="relative aspect-[4/3] bg-black">
-              <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-24 w-3/4 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
-              </div>
-              {error && (
-                <div className="absolute bottom-2 left-2 right-2 rounded bg-destructive/90 p-2 text-xs text-destructive-foreground">
-                  {error}
+              <video
+                ref={videoRef}
+                className={`h-full w-full object-cover ${ready ? "" : "opacity-0"}`}
+                playsInline
+                muted
+              />
+
+              {camStatus === "requesting" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 p-4 text-center text-sm text-white">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <div>Solicitando acceso a la cámara…</div>
+                  <div className="text-xs text-white/70">
+                    Acepta el permiso en el aviso del navegador.
+                  </div>
                 </div>
+              )}
+
+              {showCamProblem && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/75 p-4 text-center text-sm text-white">
+                  <CameraOff className="h-8 w-8 text-destructive" />
+                  <div className="max-w-xs text-xs leading-relaxed text-white/90">
+                    {error ?? "No se pudo abrir la cámara."}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={retry}
+                      className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+                    >
+                      Reintentar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={switchToManual}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                    >
+                      <Keyboard className="h-3.5 w-3.5" /> Modo manual
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {ready && (
+                <>
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="h-24 w-3/4 rounded-lg border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                  </div>
+                  <div className="pointer-events-none absolute left-2 right-2 top-2 rounded bg-black/50 px-2 py-1 text-center text-[11px] text-white">
+                    Encuadra la matrícula dentro del recuadro
+                  </div>
+                  {showTips && (
+                    <div className="absolute left-2 right-2 bottom-2 rounded-lg bg-black/80 p-3 text-[11px] leading-relaxed text-white">
+                      <div className="mb-1 font-semibold">Consejos para un buen escaneo</div>
+                      <ul className="list-disc space-y-0.5 pl-4 text-white/90">
+                        <li>Acércate a 30-50 cm de la matrícula.</li>
+                        <li>Evita reflejos y sombras directas.</li>
+                        <li>Mantén el móvil quieto un instante antes de capturar.</li>
+                        <li>Asegúrate de que la matrícula esté enfocada y horizontal.</li>
+                      </ul>
+                    </div>
+                  )}
+                  {error && !showTips && (
+                    <div className="absolute bottom-2 left-2 right-2 rounded bg-destructive/90 p-2 text-xs text-destructive-foreground">
+                      {error}
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div className="flex items-center justify-between gap-2 p-4">
               <button
                 type="button"
-                onClick={() => setManualMode(true)}
-                className="text-xs font-medium text-muted-foreground hover:text-primary"
+                onClick={switchToManual}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary"
               >
-                Introducir manualmente
+                <Keyboard className="h-3.5 w-3.5" /> Modo manual
               </button>
               <button
                 type="button"
@@ -806,9 +921,14 @@ function PlateScanner({
             }}
             className="space-y-3 p-4"
           >
-            <p className="text-xs text-muted-foreground">
-              {error ?? "Introduce la matrícula manualmente."}
-            </p>
+            <div className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted-foreground">
+              <Keyboard className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <div>
+                {error
+                  ? error
+                  : "Introduce la matrícula manualmente. Solo letras y números, sin espacios ni guiones."}
+              </div>
+            </div>
             <input
               autoFocus
               value={manual}
@@ -816,12 +936,28 @@ function PlateScanner({
               placeholder="1234ABC"
               className="w-full rounded-xl border border-border bg-background px-4 py-3 text-lg font-mono font-semibold tracking-widest uppercase"
             />
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground"
-            >
-              Buscar
-            </button>
+            <div className="flex items-center gap-2">
+              {camStatus !== "unavailable" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualMode(false);
+                    setError(null);
+                    retry();
+                  }}
+                  className="flex-1 rounded-xl border border-border bg-background py-3 text-sm font-medium text-muted-foreground hover:text-primary hover:border-primary"
+                >
+                  Volver a la cámara
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={manual.replace(/[^A-Z0-9]/g, "").length < 4}
+                className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-50"
+              >
+                Buscar
+              </button>
+            </div>
           </form>
         )}
       </div>
