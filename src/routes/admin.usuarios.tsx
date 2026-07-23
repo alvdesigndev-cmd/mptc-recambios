@@ -378,21 +378,27 @@ function UsuariosAdminPage() {
             <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {audit.map((row) => (
-                <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
-                        {ACTION_LABEL[row.action] ?? row.action}
-                      </span>
-                      <span className="truncate font-medium">{row.target_email ?? "—"}</span>
+              {audit.map((row) => {
+                const details = renderAuditDetails(row);
+                return (
+                  <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
+                          {ACTION_LABEL[row.action] ?? row.action}
+                        </span>
+                        <span className="truncate font-medium">{row.target_email ?? "—"}</span>
+                      </div>
+                      {details && (
+                        <div className="mt-1 text-[12px] text-foreground/80 break-words">{details}</div>
+                      )}
+                      <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        Por {row.actor_email ?? "sistema"} · {new Date(row.created_at).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      Por {row.actor_email ?? "sistema"} · {new Date(row.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
           <div ref={sentinelRef} />
