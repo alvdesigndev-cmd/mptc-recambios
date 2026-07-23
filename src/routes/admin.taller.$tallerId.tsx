@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
-import { listTallerUsers, setTallerUserPassword, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
+import { listTallerUsers, setTallerUserPassword, setTallerUserEmail, setTallerUserMecanico, createTallerUser, deleteTallerUser, type TallerUser } from "@/lib/mptc/admin-talleres.functions";
 
 
 export const Route = createFileRoute("/admin/taller/$tallerId")({
