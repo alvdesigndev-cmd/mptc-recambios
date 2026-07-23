@@ -126,6 +126,18 @@ function buildVehiculo(data: Record<string, unknown>): string {
   return mapApiData(data).vehiculo;
 }
 
+function validatePlateInput(p: string): { ok: boolean; error?: string } {
+  const s = normalizeMatricula(p).replace(/[^A-Z0-9]/g, "");
+  if (s.length === 0) return { ok: false };
+  if (s.length < 4) return { ok: false, error: "Mínimo 4 caracteres" };
+  if (s.length > 10) return { ok: false, error: "Máximo 10 caracteres" };
+  if (!/[A-Z]/.test(s) || !/[0-9]/.test(s)) {
+    return { ok: false, error: "Debe incluir letras y números" };
+  }
+  return { ok: true };
+}
+
+
 /**
  * Builds an auto-generated "Datos técnicos del vehículo" block using the
  * additional fields the API returns (cilindrada, potencia, tipo de motor,
