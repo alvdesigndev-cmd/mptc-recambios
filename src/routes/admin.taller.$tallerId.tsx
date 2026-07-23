@@ -176,6 +176,8 @@ function TallerDetailPage() {
       setSavingMec(null);
     }
   };
+
+  const createUser = async () => {
     if (!taller) return;
     const email = newUser.email.trim().toLowerCase();
     const password = newUser.password;
