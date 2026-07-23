@@ -145,19 +145,25 @@ export function buildTechDescripcion(
   add("Marca", "MARCA", "marca", "brand");
   add("Modelo", "MODELO", "modelo", "model", "modelEn");
   add("Versión", "VERSION", "version");
-  add("Cilindrada", "TPMOTOR", "tpmotor", "engineDisplacement");
-  add("Tipo motor", "TYMOTOR", "tymotor", "fuelType");
-  add("Códigos motor", "MOTOR", "motor", "engineCode");
-  const kw = pickStr(data, "KWs", "kws", "KW", "kw", "powerKW", "powerHp");
+  add("Carrocería", "bodyType");
+  add("Tipo vehículo", "vehicleType");
+  const cil = pickStr(data, "TPMOTOR", "tpmotor", "displacementCcm", "engineCapacityLiters");
+  if (cil) rows.push(["Cilindrada", cil]);
+  add("Tipo motor", "TYMOTOR", "tymotor", "fuelType", "fuelSystem");
+  add("Códigos motor", "MOTOR", "motor", "engineCode", "platformCodes");
+  const kw = pickStr(data, "KWs", "kws", "KW", "kw", "powerKW", "powerHP");
   if (kw) {
     const cv = Math.round(parseFloat(kw.replace(",", ".")) * 1.35962);
     rows.push(["Potencia", Number.isFinite(cv) && cv > 0 ? `${kw} kW (~${cv} CV)` : `${kw} kW`]);
   }
+  add("Transmisión", "transmissionType", "gearboxType");
   add("Inyección", "INYECCION", "inyeccion");
   add("País", "PAIS", "pais", "country");
   const vin = pickStr(data, "VIN", "vin", "vinNumber");
   if (vin && isValidVin(vin)) rows.push(["VIN", vin.toUpperCase()]);
-  const fecha = normalizeFecha(pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion", "firstRegistrationDate"));
+  const fecha = normalizeFecha(
+    pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion", "firstRegistrationDateEs", "firstRegistrationDate"),
+  );
   if (fecha) {
     const parts = fecha.split("/");
     const year = parts.length === 3 ? parseInt(parts[2], 10) : NaN;
@@ -165,9 +171,9 @@ export function buildTechDescripcion(
     rows.push(["Matriculación", Number.isFinite(antig) && antig >= 0 ? `${fecha} (${antig} años)` : fecha]);
   }
   const tecdoc: string[] = [];
-  const idMarca = pickStr(data, "ID_MARCA_TECDOC", "id_marca_tecdoc");
-  const idModelo = pickStr(data, "ID_MODELO_TECDOC", "id_modelo_tecdoc");
-  const idKtype = pickStr(data, "ID_KTYPE", "id_ktype");
+  const idMarca = pickStr(data, "ID_MARCA_TECDOC", "id_marca_tecdoc", "tecdocManufacturerId");
+  const idModelo = pickStr(data, "ID_MODELO_TECDOC", "id_modelo_tecdoc", "tecdocModelId");
+  const idKtype = pickStr(data, "ID_KTYPE", "id_ktype", "kType", "tecdocCarId");
   if (idMarca) tecdoc.push(`marca ${idMarca}`);
   if (idModelo) tecdoc.push(`modelo ${idModelo}`);
   if (idKtype) tecdoc.push(`ktype ${idKtype}`);
