@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History } from "lucide-react";
+import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History, KeyRound, Eye, EyeOff } from "lucide-react";
 import {
   createAdminUser,
   listAdmins,
   setAdminBanned,
   deleteAdmin,
+  setAdminPassword,
   listAdminAuditLog,
   type AdminRow,
   type AuditRow,
@@ -22,6 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   "admin.deactivate": "Desactivación",
   "admin.reactivate": "Reactivación",
   "admin.delete": "Eliminación",
+  "admin.password_reset": "Cambio de contraseña",
 };
 
 function UsuariosAdminPage() {
@@ -29,12 +31,19 @@ function UsuariosAdminPage() {
   const fetchAdmins = useServerFn(listAdmins);
   const toggleBan = useServerFn(setAdminBanned);
   const removeAdmin = useServerFn(deleteAdmin);
+  const changePassword = useServerFn(setAdminPassword);
   const fetchAudit = useServerFn(listAdminAuditLog);
 
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listErr, setListErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pwOpenId, setPwOpenId] = useState<string | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwShow, setPwShow] = useState(false);
+  const [pwErr, setPwErr] = useState<string | null>(null);
+  const [pwOk, setPwOk] = useState<string | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
@@ -158,6 +167,28 @@ function UsuariosAdminPage() {
     }
   };
 
+  const openPw = (row: AdminRow) => {
+    setPwOpenId((cur) => (cur === row.user_id ? null : row.user_id));
+    setPwValue(""); setPwErr(null); setPwOk(null); setPwShow(false);
+  };
+
+  const submitPw = async (row: AdminRow) => {
+    setPwErr(null); setPwOk(null);
+    if (pwValue.length < 8) { setPwErr("Mínimo 8 caracteres"); return; }
+    setPwBusy(true);
+    try {
+      await changePassword({ data: { userId: row.user_id, password: pwValue } });
+      setPwOk(`Contraseña actualizada para ${row.email ?? row.user_id}`);
+      setPwValue("");
+      setPwOpenId(null);
+      resetAudit();
+    } catch (err: any) {
+      setPwErr(err?.message || "No se pudo cambiar la contraseña");
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <section>
@@ -185,46 +216,95 @@ function UsuariosAdminPage() {
           ) : (
             <ul className="divide-y divide-border">
               {rows.map((row) => (
-                <li key={row.user_id} className="flex flex-wrap items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">{row.email ?? "(sin email)"}</span>
-                      {row.is_self && (
-                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">Tú</span>
-                      )}
-                      {row.banned && (
-                        <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-500">Desactivado</span>
-                      )}
+                <li key={row.user_id} className="p-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{row.email ?? "(sin email)"}</span>
+                        {row.is_self && (
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">Tú</span>
+                        )}
+                        {row.banned && (
+                          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-500">Desactivado</span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        {row.taller_name}
+                        {row.last_sign_in_at && ` · Último acceso ${new Date(row.last_sign_in_at).toLocaleString()}`}
+                      </div>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      {row.taller_name}
-                      {row.last_sign_in_at && ` · Último acceso ${new Date(row.last_sign_in_at).toLocaleString()}`}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => openPw(row)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                        title="Cambiar contraseña"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" /> Contraseña
+                      </button>
+                      <button
+                        disabled={row.is_self || busyId === row.user_id}
+                        onClick={() => onToggleBan(row)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
+                        title={row.is_self ? "No puedes desactivar tu propia cuenta" : row.banned ? "Reactivar" : "Desactivar"}
+                      >
+                        {busyId === row.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
+                        {row.banned ? "Reactivar" : "Desactivar"}
+                      </button>
+                      <button
+                        disabled={row.is_self || busyId === row.user_id}
+                        onClick={() => onDelete(row)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/10 disabled:opacity-40"
+                        title={row.is_self ? "No puedes eliminar tu propia cuenta" : "Eliminar"}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={row.is_self || busyId === row.user_id}
-                      onClick={() => onToggleBan(row)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
-                      title={row.is_self ? "No puedes desactivar tu propia cuenta" : row.banned ? "Reactivar" : "Desactivar"}
-                    >
-                      {busyId === row.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
-                      {row.banned ? "Reactivar" : "Desactivar"}
-                    </button>
-                    <button
-                      disabled={row.is_self || busyId === row.user_id}
-                      onClick={() => onDelete(row)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/10 disabled:opacity-40"
-                      title={row.is_self ? "No puedes eliminar tu propia cuenta" : "Eliminar"}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Eliminar
-                    </button>
-                  </div>
+                  {pwOpenId === row.user_id && (
+                    <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={pwShow ? "text" : "password"}
+                            value={pwValue}
+                            onChange={(e) => setPwValue(e.target.value)}
+                            placeholder="Nueva contraseña (mín. 8)"
+                            className="w-full rounded-lg border border-border bg-surface px-3 py-2 pr-9 text-sm"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setPwShow((v) => !v)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={pwShow ? "Ocultar" : "Mostrar"}
+                          >
+                            {pwShow ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <button
+                          disabled={pwBusy}
+                          onClick={() => submitPw(row)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                        >
+                          {pwBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => setPwOpenId(null)}
+                          className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-surface hover:text-foreground"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                      {pwErr && <p className="mt-2 text-xs text-red-500">{pwErr}</p>}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </div>
+        {pwOk && <p className="mt-2 text-sm text-emerald-500">{pwOk}</p>}
       </section>
 
       <section>
