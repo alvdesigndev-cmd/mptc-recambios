@@ -429,17 +429,38 @@ function UsuariosAdminPage() {
           <History className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Historial de auditoría</h2>
           <span className="ml-auto text-[11px] text-muted-foreground">
-            {audit.length} evento{audit.length === 1 ? "" : "s"}
+            {filteredAudit.length} de {audit.length} evento{audit.length === 1 ? "" : "s"}
           </span>
         </header>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={auditQuery}
+              onChange={(e) => setAuditQuery(e.target.value)}
+              placeholder="Buscar en el historial…"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+          <select
+            value={auditAction}
+            onChange={(e) => setAuditAction(e.target.value)}
+            className="rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+          >
+            <option value="todos">Todas las acciones</option>
+            {Object.entries(ACTION_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
         <div className="rounded-2xl border border-border bg-surface">
           {auditErr ? (
             <p className="p-5 text-sm text-red-500">{auditErr}</p>
-          ) : audit.length === 0 && !loadingAudit ? (
-            <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
+          ) : filteredAudit.length === 0 && !loadingAudit ? (
+            <p className="p-5 text-sm text-muted-foreground">{audit.length === 0 ? "Sin eventos registrados." : "Sin resultados."}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {audit.map((row) => {
+              {filteredAudit.map((row) => {
                 const details = renderAuditDetails(row);
                 return (
                   <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
