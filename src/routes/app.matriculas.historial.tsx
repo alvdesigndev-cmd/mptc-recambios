@@ -1,7 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { ArrowLeft, History, Trash2, Loader2, Search, Database, AlertCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  History,
+  Trash2,
+  Loader2,
+  Search,
+  Database,
+  AlertCircle,
+  Pin,
+  PinOff,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
+} from "lucide-react";
 import {
   listPlateHistory,
   deletePlateHistoryItem,
@@ -18,6 +30,30 @@ export const Route = createFileRoute("/app/matriculas/historial")({
     ],
   }),
 });
+
+const PINNED_KEY = "mptc:plate-history:pinned";
+const SORT_KEY = "mptc:plate-history:sort";
+
+type SortOrder = "desc" | "asc";
+
+function loadPinned(): string[] {
+  try {
+    const raw = localStorage.getItem(PINNED_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((v) => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePinned(pins: string[]) {
+  try {
+    localStorage.setItem(PINNED_KEY, JSON.stringify(pins));
+  } catch {
+    // ignore
+  }
+}
 
 function formatDateTime(iso: string): string {
   try {
@@ -43,6 +79,18 @@ function HistorialMatriculasPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [pinned, setPinned] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortOrder>("desc");
+
+  useEffect(() => {
+    setPinned(loadPinned());
+    try {
+      const s = localStorage.getItem(SORT_KEY);
+      if (s === "asc" || s === "desc") setSort(s);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const load = async () => {
     setLoading(true);
@@ -84,6 +132,116 @@ function HistorialMatriculasPage() {
     } finally {
       setClearing(false);
     }
+  };
+
+  const togglePin = (plate: string) => {
+    setPinned((prev) => {
+      const next = prev.includes(plate)
+        ? prev.filter((p) => p !== plate)
+        : [plate, ...prev];
+      savePinned(next);
+      return next;
+    });
+  };
+
+  const toggleSort = () => {
+    setSort((prev) => {
+      const next: SortOrder = prev === "desc" ? "asc" : "desc";
+      try {
+        localStorage.setItem(SORT_KEY, next);
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const sortedItems = useMemo(() => {
+    const pinSet = new Set(pinned);
+    const byDate = (a: PlateHistoryItem, b: PlateHistoryItem) => {
+      const av = new Date(a.created_at).getTime();
+      const bv = new Date(b.created_at).getTime();
+      return sort === "desc" ? bv - av : av - bv;
+    };
+    const pins = items.filter((i) => pinSet.has(i.plate)).sort(byDate);
+    const rest = items.filter((i) => !pinSet.has(i.plate)).sort(byDate);
+    return { pins, rest };
+  }, [items, pinned, sort]);
+
+  const renderItem = (it: PlateHistoryItem) => {
+    const vehiculo = it.vehiculo || [it.marca, it.modelo].filter(Boolean).join(" ").trim();
+    const isPinned = pinned.includes(it.plate);
+    return (
+      <li
+        key={it.id}
+        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm"
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Search className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/app/matriculas"
+              search={{ q: it.plate } as any}
+              className="font-mono text-base font-semibold tracking-wider text-foreground hover:text-primary"
+            >
+              {it.plate}
+            </Link>
+            {isPinned && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <Pin className="h-3 w-3" />
+                Fijada
+              </span>
+            )}
+            {it.cached && (
+              <span
+                title="Resultado servido desde caché"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+              >
+                <Database className="h-3 w-3" />
+                Caché
+              </span>
+            )}
+            {!it.ok && (
+              <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                Sin datos
+              </span>
+            )}
+          </div>
+          <p className="truncate text-xs text-muted-foreground">
+            {vehiculo || it.error || "—"}
+          </p>
+          <p className="text-[11px] text-muted-foreground/80">
+            {formatDateTime(it.created_at)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => togglePin(it.plate)}
+          className={`flex h-9 w-9 items-center justify-center rounded-xl hover:bg-primary/10 ${
+            isPinned ? "text-primary" : "text-muted-foreground hover:text-primary"
+          }`}
+          aria-label={isPinned ? "Desfijar" : "Fijar"}
+          title={isPinned ? "Desfijar" : "Fijar arriba"}
+        >
+          {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => removeOne(it.id)}
+          disabled={busyId === it.id}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+          aria-label="Eliminar"
+        >
+          {busyId === it.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </button>
+      </li>
+    );
   };
 
   return (
@@ -135,65 +293,48 @@ function HistorialMatriculasPage() {
           Aún no has consultado ninguna matrícula.
         </div>
       ) : (
-        <ul className="space-y-2">
-          {items.map((it) => {
-            const vehiculo = it.vehiculo || [it.marca, it.modelo].filter(Boolean).join(" ").trim();
-            return (
-              <li
-                key={it.id}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Search className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to="/app/matriculas"
-                      search={{ q: it.plate } as any}
-                      className="font-mono text-base font-semibold tracking-wider text-foreground hover:text-primary"
-                    >
-                      {it.plate}
-                    </Link>
-                    {it.cached && (
-                      <span
-                        title="Resultado servido desde caché"
-                        className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      >
-                        <Database className="h-3 w-3" />
-                        Caché
-                      </span>
-                    )}
-                    {!it.ok && (
-                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                        Sin datos
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {vehiculo || it.error || "—"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground/80">
-                    {formatDateTime(it.created_at)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeOne(it.id)}
-                  disabled={busyId === it.id}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-                  aria-label="Eliminar"
-                >
-                  {busyId === it.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {items.length} {items.length === 1 ? "consulta" : "consultas"}
+              {sortedItems.pins.length > 0 && ` · ${sortedItems.pins.length} fijada${sortedItems.pins.length === 1 ? "" : "s"}`}
+            </p>
+            <button
+              type="button"
+              onClick={toggleSort}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:text-primary"
+              aria-label="Cambiar orden por fecha"
+              title={sort === "desc" ? "Más recientes primero" : "Más antiguas primero"}
+            >
+              {sort === "desc" ? (
+                <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+              ) : (
+                <ArrowUpWideNarrow className="h-3.5 w-3.5" />
+              )}
+              {sort === "desc" ? "Recientes" : "Antiguas"}
+            </button>
+          </div>
+
+          {sortedItems.pins.length > 0 && (
+            <div className="space-y-2">
+              <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <Pin className="h-3 w-3" /> Fijadas
+              </p>
+              <ul className="space-y-2">{sortedItems.pins.map(renderItem)}</ul>
+            </div>
+          )}
+
+          {sortedItems.rest.length > 0 && (
+            <div className="space-y-2">
+              {sortedItems.pins.length > 0 && (
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Historial
+                </p>
+              )}
+              <ul className="space-y-2">{sortedItems.rest.map(renderItem)}</ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
