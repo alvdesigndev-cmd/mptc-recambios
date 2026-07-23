@@ -38,6 +38,12 @@ function UsuariosAdminPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [listErr, setListErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pwOpenId, setPwOpenId] = useState<string | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwShow, setPwShow] = useState(false);
+  const [pwErr, setPwErr] = useState<string | null>(null);
+  const [pwOk, setPwOk] = useState<string | null>(null);
+  const [pwBusy, setPwBusy] = useState(false);
 
   const AUDIT_PAGE_SIZE = 50;
   const [audit, setAudit] = useState<AuditRow[]>([]);
