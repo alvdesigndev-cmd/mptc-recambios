@@ -23,6 +23,7 @@ const ACTION_LABEL: Record<string, string> = {
   "admin.deactivate": "Desactivación",
   "admin.reactivate": "Reactivación",
   "admin.delete": "Eliminación",
+  "admin.password_reset": "Cambio de contraseña",
 };
 
 function UsuariosAdminPage() {
