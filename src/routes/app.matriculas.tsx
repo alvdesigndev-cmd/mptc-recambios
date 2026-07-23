@@ -218,6 +218,19 @@ function MatriculasPage() {
     setRecent(loadRecent());
   }, []);
 
+  // Búsqueda automática con debounce (500 ms) tras una matrícula válida
+  useEffect(() => {
+    const check = plate ? validatePlateInput(plate) : null;
+    if (!check?.ok) return;
+    const t = setTimeout(() => {
+      if (plate !== lastSubmittedRef.current) {
+        submitRef.current(plate);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [plate]);
+
+
   const fetchLocal = async (p: string): Promise<LocalInfo> => {
     const s = loadSettings();
     const tallerId = s?.tallerId ?? null;
