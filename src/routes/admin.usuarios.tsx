@@ -31,6 +31,7 @@ function UsuariosAdminPage() {
   const fetchAdmins = useServerFn(listAdmins);
   const toggleBan = useServerFn(setAdminBanned);
   const removeAdmin = useServerFn(deleteAdmin);
+  const changePassword = useServerFn(setAdminPassword);
   const fetchAudit = useServerFn(listAdminAuditLog);
 
   const [rows, setRows] = useState<AdminRow[]>([]);
