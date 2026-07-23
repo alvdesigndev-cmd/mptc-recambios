@@ -284,6 +284,48 @@ export type Database = {
         }
         Relationships: []
       }
+      plate_lookups_history: {
+        Row: {
+          cached: boolean
+          created_at: string
+          error: string | null
+          id: string
+          marca: string | null
+          modelo: string | null
+          ok: boolean
+          plate: string
+          taller_id: string | null
+          user_id: string
+          vehiculo: string | null
+        }
+        Insert: {
+          cached?: boolean
+          created_at?: string
+          error?: string | null
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          ok?: boolean
+          plate: string
+          taller_id?: string | null
+          user_id: string
+          vehiculo?: string | null
+        }
+        Update: {
+          cached?: boolean
+          created_at?: string
+          error?: string | null
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          ok?: boolean
+          plate?: string
+          taller_id?: string | null
+          user_id?: string
+          vehiculo?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           ciudad: string
