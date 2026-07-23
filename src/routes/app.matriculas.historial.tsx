@@ -297,6 +297,29 @@ function HistorialMatriculasPage() {
         </div>
       )}
 
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+          <Search className="h-4 w-4" />
+        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por matrícula, marca o modelo..."
+          className="w-full rounded-2xl border border-border bg-surface py-3 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute inset-y-0 right-2 flex items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label="Limpiar búsqueda"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center rounded-2xl border border-border bg-surface p-8 text-muted-foreground">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
