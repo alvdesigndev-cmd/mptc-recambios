@@ -167,6 +167,28 @@ function UsuariosAdminPage() {
     }
   };
 
+  const openPw = (row: AdminRow) => {
+    setPwOpenId((cur) => (cur === row.user_id ? null : row.user_id));
+    setPwValue(""); setPwErr(null); setPwOk(null); setPwShow(false);
+  };
+
+  const submitPw = async (row: AdminRow) => {
+    setPwErr(null); setPwOk(null);
+    if (pwValue.length < 8) { setPwErr("Mínimo 8 caracteres"); return; }
+    setPwBusy(true);
+    try {
+      await changePassword({ data: { userId: row.user_id, password: pwValue } });
+      setPwOk(`Contraseña actualizada para ${row.email ?? row.user_id}`);
+      setPwValue("");
+      setPwOpenId(null);
+      resetAudit();
+    } catch (err: any) {
+      setPwErr(err?.message || "No se pudo cambiar la contraseña");
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <section>
