@@ -135,9 +135,10 @@ function TallerDetailPage() {
     if (p.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
     setSavingPwd(user_id);
     try {
-      await fetchSetPwd({ data: { userId: user_id, password: p } });
+      await fetchSetPwd({ data: { userId: user_id, password: p, reason: reasonDraft[user_id] || "" } });
       toast.success("Contraseña actualizada");
       setPwd((x) => ({ ...x, [user_id]: "" }));
+      setReasonDraft((x) => ({ ...x, [user_id]: "" }));
     } catch (e: any) {
       toast.error(e?.message || "No se pudo cambiar la contraseña");
     } finally {
@@ -152,10 +153,11 @@ function TallerDetailPage() {
     if (!confirm(`¿Cambiar el email a ${email}?`)) return;
     setSavingEmail(u.user_id);
     try {
-      await fetchSetEmail({ data: { userId: u.user_id, email } });
+      await fetchSetEmail({ data: { userId: u.user_id, email, reason: reasonDraft[u.user_id] || "" } });
       toast.success("Email actualizado");
       setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, email } : x));
       setEmailDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+      setReasonDraft((x) => ({ ...x, [u.user_id]: "" }));
     } catch (e: any) {
       toast.error(e?.message || "No se pudo cambiar el email");
     } finally {
@@ -168,10 +170,11 @@ function TallerDetailPage() {
     if (mecanico === (u.mecanico || "")) { toast.error("Sin cambios"); return; }
     setSavingMec(u.user_id);
     try {
-      await fetchSetMecanico({ data: { userId: u.user_id, mecanico } });
+      await fetchSetMecanico({ data: { userId: u.user_id, mecanico, reason: reasonDraft[u.user_id] || "" } });
       toast.success("Mecánico actualizado");
       setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, mecanico } : x));
       setMecDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+      setReasonDraft((x) => ({ ...x, [u.user_id]: "" }));
     } catch (e: any) {
       toast.error(e?.message || "No se pudo actualizar");
     } finally {
@@ -205,15 +208,17 @@ function TallerDetailPage() {
     if (!confirm(`¿Eliminar la cuenta ${u.email || u.user_id}? Esta acción no se puede deshacer.`)) return;
     setDeletingUser(u.user_id);
     try {
-      await fetchDeleteUser({ data: { userId: u.user_id } });
+      await fetchDeleteUser({ data: { userId: u.user_id, reason: reasonDraft[u.user_id] || "" } });
       toast.success("Cuenta eliminada");
       setUsers((prev) => prev.filter((x) => x.user_id !== u.user_id));
+      setReasonDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
     } catch (e: any) {
       toast.error(e?.message || "No se pudo eliminar la cuenta");
     } finally {
       setDeletingUser(null);
     }
   };
+
 
   const deleteGestion = async (g: Gestion) => {
     if (!confirm(`¿Eliminar la gestión ${g.matricula || g.id}? Esta acción no se puede deshacer.`)) return;
