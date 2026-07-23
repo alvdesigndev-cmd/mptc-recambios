@@ -171,14 +171,12 @@ export const setTallerUserMecanico = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-// Mapa de tallerId → role slot predefinido. Los talleres dinámicos usan "taller-1" como slot genérico.
-const PREDEFINED_ROLE_BY_ID: Record<string, string> = {
-  "taller-1-mtc-recambios": "taller-1",
-  "taller-2-mtc-recambios": "taller-2",
-  "taller-3-tecniauto-express-marbella": "taller-3",
-  "taller-4-mecanica-autofran": "taller-4",
-  "taller-5-boxes-team-marbella": "taller-5",
-};
+// Deriva el slot de rol ("taller-N") a partir del taller_id (que puede ser
+// "taller-2" o "taller-2-<sufijo>"). Si no coincide con el patrón, cae en "taller-1".
+function deriveRoleFromTallerId(tallerId: string): string {
+  const m = /^(taller-[1-5])(?:-|$)/.exec(tallerId);
+  return m ? m[1] : "taller-1";
+}
 
 export const createTallerUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -209,7 +207,7 @@ export const createTallerUser = createServerFn({ method: "POST" })
     if (!t) throw new Error("Taller no encontrado");
     if (!t.activo) throw new Error("El taller está desactivado");
 
-    const role = PREDEFINED_ROLE_BY_ID[data.tallerId] || "taller-1";
+    const role = deriveRoleFromTallerId(t.taller_id);
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
