@@ -166,7 +166,85 @@ function TalleresAdminPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      {/* Vista móvil: tarjetas */}
+      <div className="space-y-3 md:hidden">
+        {loading && (
+          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+          </div>
+        )}
+        {!loading && rows.length === 0 && (
+          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">No hay talleres.</div>
+        )}
+        {rows.map((t) => {
+          const isEd = editing === t.taller_id;
+          return (
+            <div key={t.taller_id} className={"rounded-2xl border border-border bg-surface p-4 " + (t.activo ? "" : "opacity-60")}>
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  {isEd ? (
+                    <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                      className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-sm font-semibold" />
+                  ) : <div className="truncate text-sm font-semibold">{t.nombre}</div>}
+                  {isEd ? (
+                    <input value={form.taller_id}
+                      onChange={(e) => setForm({ ...form, taller_id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                      className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1 font-mono text-[11px]" />
+                  ) : (
+                    <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">{t.taller_id}</div>
+                  )}
+                </div>
+                <span className={"shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase " +
+                  (t.activo ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
+                  {t.activo ? "Activo" : "Off"}
+                </span>
+              </div>
+              <div className="mb-3 text-xs">
+                <span className="text-muted-foreground">Ciudad: </span>
+                {isEd ? (
+                  <input value={form.ciudad} onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-2 py-1" />
+                ) : (t.ciudad || <span className="text-muted-foreground">—</span>)}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {isEd ? (
+                  <>
+                    <button onClick={() => saveEdit(t)} disabled={saving}
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60">
+                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar
+                    </button>
+                    <button onClick={cancelEdit} className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-2">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/admin/taller/$tallerId" params={{ tallerId: t.taller_id }}
+                      className="inline-flex flex-1 items-center justify-center gap-1 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                    </Link>
+                    <button onClick={() => startEdit(t)}
+                      className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground">
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </button>
+                    <button onClick={() => toggleActivo(t)}
+                      className={"inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold " +
+                        (t.activo
+                          ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                          : "bg-success/10 text-success hover:bg-success/20")}>
+                      <Power className="h-3.5 w-3.5" /> {t.activo ? "Off" : "On"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Vista escritorio: tabla */}
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface md:block">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-2 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -259,7 +337,9 @@ function TalleresAdminPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
+
 
       <p className="text-[11px] text-muted-foreground">
         Al renombrar el identificador se actualizan también los perfiles, clientes, gestiones y pedidos asociados.
