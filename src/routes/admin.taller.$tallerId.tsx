@@ -453,6 +453,17 @@ function TallerDetailPage() {
                     </button>
                   </div>
                   <div className="mt-3 space-y-2">
+                    <label className="block text-xs">
+                      <span className="text-muted-foreground">Motivo (opcional, se guarda en auditoría)</span>
+                      <input
+                        type="text"
+                        value={reasonDraft[u.user_id] ?? ""}
+                        onChange={(e) => setReasonDraft({ ...reasonDraft, [u.user_id]: e.target.value })}
+                        placeholder="Ej. Solicitud del taller, olvido de contraseña…"
+                        maxLength={500}
+                        className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+                      />
+                    </label>
                     <div className="flex flex-wrap items-end gap-2">
                       <label className="flex-1 min-w-[220px] text-xs">
                         <span className="text-muted-foreground">Email</span>
