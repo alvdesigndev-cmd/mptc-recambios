@@ -27,6 +27,22 @@ function TalleresAdminPage() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newForm, setNewForm] = useState({ taller_id: "", nombre: "", ciudad: "" });
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"todos" | "activos" | "inactivos">("todos");
+
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((t) => {
+      if (statusFilter === "activos" && !t.activo) return false;
+      if (statusFilter === "inactivos" && t.activo) return false;
+      if (!q) return true;
+      return (
+        t.taller_id.toLowerCase().includes(q) ||
+        t.nombre.toLowerCase().includes(q) ||
+        (t.ciudad ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, query, statusFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
