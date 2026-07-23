@@ -86,6 +86,38 @@ function UsuariosAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const [adminQuery, setAdminQuery] = useState("");
+  const [adminStatus, setAdminStatus] = useState<"todos" | "activos" | "desactivados">("todos");
+  const filteredRows = useMemo(() => {
+    const q = adminQuery.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (adminStatus === "activos" && r.banned) return false;
+      if (adminStatus === "desactivados" && !r.banned) return false;
+      if (!q) return true;
+      return (
+        (r.email ?? "").toLowerCase().includes(q) ||
+        (r.taller_name ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, adminQuery, adminStatus]);
+
+  const [auditQuery, setAuditQuery] = useState("");
+  const [auditAction, setAuditAction] = useState<string>("todos");
+  const filteredAudit = useMemo(() => {
+    const q = auditQuery.trim().toLowerCase();
+    return audit.filter((row) => {
+      if (auditAction !== "todos" && row.action !== auditAction) return false;
+      if (!q) return true;
+      const label = (ACTION_LABEL[row.action] ?? row.action).toLowerCase();
+      return (
+        label.includes(q) ||
+        (row.target_email ?? "").toLowerCase().includes(q) ||
+        (row.actor_email ?? "").toLowerCase().includes(q) ||
+        (renderAuditDetails(row) ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [audit, auditQuery, auditAction]);
+
   const load = useCallback(async () => {
     setLoadingList(true); setListErr(null);
     try {
