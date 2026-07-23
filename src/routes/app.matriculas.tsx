@@ -126,6 +126,18 @@ function buildVehiculo(data: Record<string, unknown>): string {
   return mapApiData(data).vehiculo;
 }
 
+function validatePlateInput(p: string): { ok: boolean; error?: string } {
+  const s = normalizeMatricula(p).replace(/[^A-Z0-9]/g, "");
+  if (s.length === 0) return { ok: false };
+  if (s.length < 4) return { ok: false, error: "Mínimo 4 caracteres" };
+  if (s.length > 10) return { ok: false, error: "Máximo 10 caracteres" };
+  if (!/[A-Z]/.test(s) || !/[0-9]/.test(s)) {
+    return { ok: false, error: "Debe incluir letras y números" };
+  }
+  return { ok: true };
+}
+
+
 /**
  * Builds an auto-generated "Datos técnicos del vehículo" block using the
  * additional fields the API returns (cilindrada, potencia, tipo de motor,
@@ -198,10 +210,26 @@ function MatriculasPage() {
   const [local, setLocal] = useState<LocalInfo | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const lastSubmittedRef = useRef("");
+  const submitRef = useRef<(raw: string) => Promise<void>>(async () => {});
+
 
   useEffect(() => {
     setRecent(loadRecent());
   }, []);
+
+  // Búsqueda automática con debounce (500 ms) tras una matrícula válida
+  useEffect(() => {
+    const check = plate ? validatePlateInput(plate) : null;
+    if (!check?.ok) return;
+    const t = setTimeout(() => {
+      if (plate !== lastSubmittedRef.current) {
+        submitRef.current(plate);
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [plate]);
+
 
   const fetchLocal = async (p: string): Promise<LocalInfo> => {
     const s = loadSettings();
@@ -229,7 +257,10 @@ function MatriculasPage() {
 
   const submit = async (raw: string) => {
     const p = normalizeMatricula(raw).replace(/[^A-Z0-9]/g, "");
-    if (p.length < 4) return;
+    const check = validatePlateInput(p);
+    if (!check.ok) return;
+    if (p === lastSubmittedRef.current) return;
+    lastSubmittedRef.current = p;
     setPlate(p);
     setLoading(true);
     setResult(null);
@@ -262,6 +293,10 @@ function MatriculasPage() {
       setLoading(false);
     }
   };
+  submitRef.current = submit;
+
+  const validation = plate ? validatePlateInput(plate) : null;
+
 
   const startGestion = (p: string, data: Record<string, unknown>) => {
     const m = mapApiData(data);
@@ -327,34 +362,52 @@ function MatriculasPage() {
             Matrícula
           </label>
           <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-            <input
-              id="plate"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              placeholder="1234ABC"
-              maxLength={10}
-              autoComplete="off"
-              className="min-w-0 flex-1 basis-full rounded-xl border border-border bg-background px-4 py-3 text-lg font-mono font-semibold tracking-widest uppercase outline-none focus:border-primary sm:basis-auto"
-            />
+            <div className="relative min-w-0 flex-1 basis-full sm:basis-auto">
+              <input
+                id="plate"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                placeholder="1234ABC"
+                maxLength={10}
+                autoComplete="off"
+                disabled={loading}
+                aria-invalid={validation ? !validation.ok : false}
+                aria-describedby="plate-hint"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 pr-10 text-lg font-mono font-semibold tracking-widest uppercase outline-none focus:border-primary disabled:opacity-60"
+              />
+              {loading && (
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => setScannerOpen(true)}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary"
+              disabled={loading}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground hover:text-primary hover:border-primary disabled:opacity-50"
               aria-label="Escanear matrícula"
             >
               <ScanLine className="h-5 w-5" />
             </button>
             <button
               type="submit"
-              disabled={loading || plate.length < 4}
+              disabled={loading || !validation?.ok}
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50 sm:flex-none"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Buscar
             </button>
           </div>
+          {validation && !validation.ok && (
+            <div id="plate-hint" className="flex items-center gap-1.5 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {validation.error}
+            </div>
+          )}
         </form>
       </section>
+
 
       {local && (local.cliente || local.gestiones.length > 0) && (
         <LocalInfoView info={local} plate={plate} />
