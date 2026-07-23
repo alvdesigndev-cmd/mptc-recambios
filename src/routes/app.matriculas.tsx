@@ -688,9 +688,18 @@ function PlateScanner({
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState("");
   const [showTips, setShowTips] = useState(false);
+  const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
   const runOcr = useServerFn(ocrMatricula);
 
-  const startCamera = async () => {
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const startCamera = async (mode: "environment" | "user" = facing) => {
     setError(null);
     setCamStatus("requesting");
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -698,15 +707,25 @@ function PlateScanner({
       setError("Tu navegador no soporta el acceso a la cámara. Usa el modo manual.");
       return null;
     }
+    stopStream();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: { facingMode: { ideal: mode } },
       });
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
       setCamStatus("ready");
+      // Detectar si hay más de una cámara para mostrar el botón de cambio
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter((d) => d.kind === "videoinput");
+        setHasMultipleCameras(cams.length > 1);
+      } catch {
+        setHasMultipleCameras(false);
+      }
       return stream;
     } catch (e) {
       const err = e as { name?: string; message?: string };
@@ -731,30 +750,30 @@ function PlateScanner({
   };
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     let cancelled = false;
     (async () => {
-      const s = await startCamera();
+      const s = await startCamera("environment");
       if (cancelled) {
         s?.getTracks().forEach((t) => t.stop());
-        return;
+        streamRef.current = null;
       }
-      stream = s;
     })();
     return () => {
       cancelled = true;
-      stream?.getTracks().forEach((t) => t.stop());
-      const cur = videoRef.current?.srcObject as MediaStream | null;
-      cur?.getTracks().forEach((t) => t.stop());
+      stopStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const retry = async () => {
-    const cur = videoRef.current?.srcObject as MediaStream | null;
-    cur?.getTracks().forEach((t) => t.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
-    await startCamera();
+    stopStream();
+    await startCamera(facing);
+  };
+
+  const toggleFacing = async () => {
+    const next = facing === "environment" ? "user" : "environment";
+    setFacing(next);
+    await startCamera(next);
   };
 
   const switchToManual = () => {
