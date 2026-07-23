@@ -17,23 +17,28 @@ export const lookupPlate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => PlateSchema.parse(data))
   .handler(async ({ data }): Promise<PlateLookupResult> => {
-    const apiKey = process.env.RAPIDAPI_PLATE_KEY;
+    const apiKey = process.env.APIVEHICULO_KEY;
     if (!apiKey) {
       return { ok: false, plate: data.plate, error: "Servicio no configurado" };
     }
     try {
-      const url = `https://matriculas-espana1.p.rapidapi.com/es?plate=${encodeURIComponent(data.plate)}`;
+      const url = `https://api.apivehiculo.com/v1/lookup?plate=${encodeURIComponent(data.plate)}&country=ES`;
       const res = await fetch(url, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          "x-rapidapi-key": apiKey,
-          "x-rapidapi-host": "matriculas-espana1.p.rapidapi.com",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
         },
       });
-      if (!res.ok) return { ok: false, plate: data.plate, error: res.status === 404 ? "Matrícula no encontrada" : `Error ${res.status}` };
+      if (!res.ok) {
+        return {
+          ok: false,
+          plate: data.plate,
+          error: res.status === 404 ? "Matrícula no encontrada" : `Error ${res.status}`,
+        };
+      }
       const json = await res.json();
-      const item = Array.isArray(json) ? json[0] : json;
+      const item = json?.data ?? json;
       return { ok: true, plate: data.plate, data: item };
     } catch (e) {
       return { ok: false, plate: data.plate, error: "No se pudo consultar la matrícula" };
