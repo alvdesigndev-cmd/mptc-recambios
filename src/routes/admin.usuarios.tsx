@@ -258,6 +258,35 @@ function UsuariosAdminPage() {
           </button>
         </header>
 
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={adminQuery}
+              onChange={(e) => setAdminQuery(e.target.value)}
+              placeholder="Buscar por email o nombre…"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex rounded-xl border border-border bg-surface p-0.5 text-xs">
+            {(["todos", "activos", "desactivados"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setAdminStatus(v)}
+                className={
+                  "flex-1 rounded-lg px-3 py-1.5 font-semibold capitalize transition " +
+                  (adminStatus === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mb-2 text-[11px] text-muted-foreground">
+          {filteredRows.length} de {rows.length} administradores
+        </div>
+
         <div className="rounded-2xl border border-border bg-surface">
           {loadingList ? (
             <div className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
@@ -265,11 +294,11 @@ function UsuariosAdminPage() {
             </div>
           ) : listErr ? (
             <p className="p-5 text-sm text-red-500">{listErr}</p>
-          ) : rows.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No hay administradores.</p>
+          ) : filteredRows.length === 0 ? (
+            <p className="p-5 text-sm text-muted-foreground">{rows.length === 0 ? "No hay administradores." : "Sin resultados."}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {rows.map((row) => (
+              {filteredRows.map((row) => (
                 <li key={row.user_id} className="p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1">
