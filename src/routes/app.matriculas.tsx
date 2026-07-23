@@ -302,10 +302,17 @@ function MatriculasPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
           <Car className="h-5 w-5" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-semibold">Matrículas</h1>
           <p className="text-xs text-muted-foreground">Consulta los datos de un vehículo</p>
         </div>
+        <Link
+          to="/app/matriculas/historial"
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary"
+        >
+          <History className="h-3.5 w-3.5" />
+          Historial
+        </Link>
       </header>
 
       <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
