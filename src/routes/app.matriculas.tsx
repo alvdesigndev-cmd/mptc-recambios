@@ -510,6 +510,21 @@ function MatriculasPage() {
           onClose={() => setScannerOpen(false)}
           onDetected={(p) => {
             setScannerOpen(false);
+            const clean = normalizeMatricula(p).replace(/[^A-Z0-9]/g, "");
+            if (clean.length >= 4) {
+              // Guarda la matrícula escaneada de inmediato para que quede en el
+              // panel aunque la consulta a la API tarde o falle. Si ya existe,
+              // se refresca su timestamp para que suba al principio.
+              setRecent((prev) => {
+                const existing = prev.find((r) => r.plate === clean);
+                const item: RecentItem = existing
+                  ? { ...existing, ts: Date.now() }
+                  : { plate: clean, vehiculo: "", ts: Date.now(), data: {} };
+                const next = [item, ...prev.filter((r) => r.plate !== clean)].slice(0, 12);
+                saveRecent(next);
+                return next;
+              });
+            }
             submit(p);
           }}
         />
