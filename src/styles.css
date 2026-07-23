@@ -147,13 +147,58 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body { overflow-x: hidden; }
+
+  html {
+    /* Evita ajustes automáticos de tamaño de texto en iOS al rotar. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Bloquea el pinch-zoom nativo cuando el navegador lo respeta. */
+    touch-action: manipulation;
+  }
+
+  html, body {
+    overflow-x: hidden;
+    /* Impide el "rubber-band" horizontal en iOS y el zoom por doble-tap. */
+    overscroll-behavior-x: none;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Alto real del viewport en móviles (incluye barra dinámica). */
+    min-height: 100dvh;
+    /* Deshabilita el highlight azul al tocar en iOS/Android. */
+    -webkit-tap-highlight-color: transparent;
+    /* Evita que iOS haga zoom por doble-tap dentro del body. */
+    touch-action: manipulation;
   }
+
+  /* iOS hace zoom automáticamente si un input tiene font-size < 16px al enfocarlo.
+     Forzamos 16px como mínimo en todos los controles interactivos. */
+  input, select, textarea, button {
+    font-size: 16px;
+  }
+  @media (min-width: 640px) {
+    input, select, textarea, button {
+      font-size: inherit;
+    }
+  }
+
+  /* Permite selección de texto normal en contenido, pero evita selecciones
+     accidentales en controles/iconos que se sienten "no-app". */
+  button, [role="button"], nav, header {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Safe-area helpers para componentes que la necesiten
+     (no la aplicamos al body para no romper headers/tabbars fijos). */
+
+  /* Imágenes fluidas por defecto para que ningún layout se desborde. */
+  img, video, canvas, svg { max-width: 100%; height: auto; }
+
   .font-mono { font-family: var(--font-mono); }
 }
 

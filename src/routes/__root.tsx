@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" },
       { title: "MPTC RECAMBIOS" },
       { name: "description", content: "MPTC - Taller Conectado es una PWA para talleres mecánicos que gestiona presupuestos y comunicación con clientes." },
       { name: "author", content: "Lovable" },
