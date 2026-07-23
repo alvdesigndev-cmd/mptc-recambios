@@ -45,6 +45,10 @@ function TallerDetailPage() {
   // Password state per user
   const [pwd, setPwd] = useState<Record<string, string>>({});
   const [savingPwd, setSavingPwd] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  const [savingEmail, setSavingEmail] = useState<string | null>(null);
+  const [mecDraft, setMecDraft] = useState<Record<string, string>>({});
+  const [savingMec, setSavingMec] = useState<string | null>(null);
 
   // New user form
   const [creatingUser, setCreatingUser] = useState(false);
