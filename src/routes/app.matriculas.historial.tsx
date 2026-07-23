@@ -329,11 +329,15 @@ function HistorialMatriculasPage() {
         <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
           Aún no has consultado ninguna matrícula.
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
+          Ninguna entrada coincide con “{query}”.
+        </div>
       ) : (
         <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              {items.length} {items.length === 1 ? "consulta" : "consultas"}
+              {filteredItems.length} de {items.length} {filteredItems.length === 1 ? "consulta" : "consultas"}
               {sortedItems.pins.length > 0 && ` · ${sortedItems.pins.length} fijada${sortedItems.pins.length === 1 ? "" : "s"}`}
             </p>
             <button
