@@ -22,7 +22,7 @@ export const lookupPlate = createServerFn({ method: "POST" })
       return { ok: false, plate: data.plate, error: "Servicio no configurado" };
     }
     try {
-      const url = `https://api.apivehiculo.com/v1/lookup?plate=${encodeURIComponent(data.plate)}&country=ES`;
+      const url = `https://api.apivehiculo.com/v1/vehicles/lookup?plate=${encodeURIComponent(data.plate)}&country=ES`;
       const res = await fetch(url, {
         method: "GET",
         headers: {
@@ -38,8 +38,15 @@ export const lookupPlate = createServerFn({ method: "POST" })
         };
       }
       const json = await res.json();
-      const item = json?.data ?? json;
-      return { ok: true, plate: data.plate, data: item };
+      const payload = json?.data;
+      if (payload && typeof payload === "object" && payload.error) {
+        return {
+          ok: false,
+          plate: data.plate,
+          error: typeof payload.error === "string" ? payload.error : "Matrícula no encontrada",
+        };
+      }
+      return { ok: true, plate: data.plate, data: payload ?? json };
     } catch (e) {
       return { ok: false, plate: data.plate, error: "No se pudo consultar la matrícula" };
     }
