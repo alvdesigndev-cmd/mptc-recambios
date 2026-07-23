@@ -219,10 +219,10 @@ function TalleresAdminPage() {
             <Loader2 className="mx-auto h-5 w-5 animate-spin" />
           </div>
         )}
-        {!loading && rows.length === 0 && (
-          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">No hay talleres.</div>
+        {!loading && filteredRows.length === 0 && (
+          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">{rows.length === 0 ? "No hay talleres." : "Sin resultados."}</div>
         )}
-        {rows.map((t) => {
+        {filteredRows.map((t) => {
           const isEd = editing === t.taller_id;
           return (
             <div key={t.taller_id} className={"rounded-2xl border border-border bg-surface p-4 " + (t.activo ? "" : "opacity-60")}>
