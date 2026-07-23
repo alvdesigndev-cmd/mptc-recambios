@@ -100,9 +100,15 @@ export type MappedPlate = {
 export function mapApiData(data: Record<string, unknown>): MappedPlate {
   const marca = pickStr(data, "MARCA", "marca", "brand");
   const modelo = pickStr(data, "MODELO", "modelo", "model", "modelEn");
-  const motorRaw = pickStr(data, "MOTOR", "motor", "version");
+  const motorRaw = pickStr(data, "MOTOR", "motor", "version", "engineCode");
   const vinRaw = pickStr(data, "VIN", "vin", "vinNumber");
-  const fechaRaw = pickStr(data, "FECHA_MATRICULACION", "fecha_matriculacion", "firstRegistrationDate");
+  const fechaRaw = pickStr(
+    data,
+    "FECHA_MATRICULACION",
+    "fecha_matriculacion",
+    "firstRegistrationDateEs",
+    "firstRegistrationDate",
+  );
   const vin = isValidVin(vinRaw) ? vinRaw.toUpperCase() : "";
   const fechaMatriculacion = normalizeFecha(fechaRaw);
   const motor = motorRaw;
