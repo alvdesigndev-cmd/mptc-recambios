@@ -823,6 +823,18 @@ function PlateScanner({
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="font-semibold">Escanear matrícula</h2>
           <div className="flex items-center gap-1">
+            {!manualMode && hasMultipleCameras && (
+              <button
+                type="button"
+                onClick={toggleFacing}
+                disabled={camStatus === "requesting"}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2 hover:text-primary disabled:opacity-50"
+                aria-label={facing === "environment" ? "Cambiar a cámara delantera" : "Cambiar a cámara trasera"}
+                title={facing === "environment" ? "Cámara trasera (tocar para delantera)" : "Cámara delantera (tocar para trasera)"}
+              >
+                <SwitchCamera className="h-4 w-4" />
+              </button>
+            )}
             {!manualMode && (
               <button
                 type="button"
