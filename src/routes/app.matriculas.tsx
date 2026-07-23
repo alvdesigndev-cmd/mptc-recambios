@@ -210,6 +210,9 @@ function MatriculasPage() {
   const [local, setLocal] = useState<LocalInfo | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const lastSubmittedRef = useRef("");
+  const submitRef = useRef<(raw: string) => Promise<void>>(async () => {});
+
 
   useEffect(() => {
     setRecent(loadRecent());
