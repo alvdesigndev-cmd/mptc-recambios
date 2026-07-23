@@ -19,12 +19,34 @@ export const Route = createFileRoute("/admin/usuarios")({
 });
 
 const ACTION_LABEL: Record<string, string> = {
-  "admin.create": "Creación",
-  "admin.deactivate": "Desactivación",
-  "admin.reactivate": "Reactivación",
-  "admin.delete": "Eliminación",
-  "admin.password_reset": "Cambio de contraseña",
+  "admin.create": "Creación admin",
+  "admin.deactivate": "Desactivación admin",
+  "admin.reactivate": "Reactivación admin",
+  "admin.delete": "Eliminación admin",
+  "admin.password_reset": "Cambio de contraseña (admin)",
+  "taller_user.create": "Creación usuario taller",
+  "taller_user.delete": "Eliminación usuario taller",
+  "taller_user.email_change": "Cambio de email",
+  "taller_user.mecanico_change": "Cambio de mecánico",
+  "taller_user.password_reset": "Cambio de contraseña",
 };
+
+function renderAuditDetails(row: AuditRow): string | null {
+  const m = row.metadata || {};
+  const parts: string[] = [];
+  if (row.action === "taller_user.email_change" && m.previous_email) {
+    parts.push(`${m.previous_email} → ${m.new_email ?? "?"}`);
+  }
+  if (row.action === "taller_user.mecanico_change") {
+    parts.push(`"${m.previous_mecanico ?? ""}" → "${m.new_mecanico ?? ""}"`);
+  }
+  if ((row.action === "taller_user.create" || row.action === "taller_user.delete") && m.taller_name) {
+    parts.push(`Taller: ${m.taller_name}`);
+  }
+  const reason = typeof m.reason === "string" && m.reason.trim() ? m.reason.trim() : null;
+  if (reason) parts.push(`Motivo: ${reason}`);
+  return parts.length ? parts.join(" · ") : null;
+}
 
 function UsuariosAdminPage() {
   const createAdmin = useServerFn(createAdminUser);
