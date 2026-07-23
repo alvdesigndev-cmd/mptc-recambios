@@ -266,6 +266,24 @@ export type Database = {
         }
         Relationships: []
       }
+      plate_lookups_cache: {
+        Row: {
+          data: Json
+          fetched_at: string
+          plate: string
+        }
+        Insert: {
+          data: Json
+          fetched_at?: string
+          plate: string
+        }
+        Update: {
+          data?: Json
+          fetched_at?: string
+          plate?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           ciudad: string
