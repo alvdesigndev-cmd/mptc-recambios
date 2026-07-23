@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History, Clock, Trash2, Wrench, Camera, CameraOff, Keyboard, Info } from "lucide-react";
+import { Car, Search, ScanLine, Loader2, X, AlertCircle, User, Phone, FileText, History, Clock, Trash2, Wrench, Camera, CameraOff, Keyboard, Info, SwitchCamera } from "lucide-react";
 import { lookupPlate, type PlateLookupResult } from "@/lib/mptc/matriculas.functions";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { supabase } from "@/integrations/supabase/client";
