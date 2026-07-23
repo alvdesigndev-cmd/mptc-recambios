@@ -777,9 +777,7 @@ function PlateScanner({
   };
 
   const switchToManual = () => {
-    const cur = videoRef.current?.srcObject as MediaStream | null;
-    cur?.getTracks().forEach((t) => t.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
+    stopStream();
     setManualMode(true);
   };
 
