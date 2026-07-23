@@ -143,7 +143,39 @@ function TallerDetailPage() {
     }
   };
 
-  const createUser = async () => {
+  const changeEmail = async (u: TallerUser) => {
+    const email = (emailDraft[u.user_id] ?? "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Email no válido"); return; }
+    if (email === (u.email || "").toLowerCase()) { toast.error("El email es el mismo"); return; }
+    if (!confirm(`¿Cambiar el email a ${email}?`)) return;
+    setSavingEmail(u.user_id);
+    try {
+      await fetchSetEmail({ data: { userId: u.user_id, email } });
+      toast.success("Email actualizado");
+      setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, email } : x));
+      setEmailDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo cambiar el email");
+    } finally {
+      setSavingEmail(null);
+    }
+  };
+
+  const changeMecanico = async (u: TallerUser) => {
+    const mecanico = (mecDraft[u.user_id] ?? "").trim();
+    if (mecanico === (u.mecanico || "")) { toast.error("Sin cambios"); return; }
+    setSavingMec(u.user_id);
+    try {
+      await fetchSetMecanico({ data: { userId: u.user_id, mecanico } });
+      toast.success("Mecánico actualizado");
+      setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, mecanico } : x));
+      setMecDraft((x) => { const n = { ...x }; delete n[u.user_id]; return n; });
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo actualizar");
+    } finally {
+      setSavingMec(null);
+    }
+  };
     if (!taller) return;
     const email = newUser.email.trim().toLowerCase();
     const password = newUser.password;
