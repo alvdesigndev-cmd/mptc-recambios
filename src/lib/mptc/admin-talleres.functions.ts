@@ -64,6 +64,42 @@ export const setTallerUserPassword = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const setTallerUserEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string; email: string }) => {
+    if (!data?.userId) throw new Error("userId requerido");
+    const email = (data.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Email no válido");
+    return { userId: data.userId, email };
+  })
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      email: data.email,
+      email_confirm: true,
+    } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
+export const setTallerUserMecanico = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string; mecanico: string }) => {
+    if (!data?.userId) throw new Error("userId requerido");
+    return { userId: data.userId, mecanico: (data.mecanico || "").trim().slice(0, 120) };
+  })
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ mecanico: data.mecanico })
+      .eq("user_id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
+
 // Mapa de tallerId → role slot predefinido. Los talleres dinámicos usan "taller-1" como slot genérico.
 const PREDEFINED_ROLE_BY_ID: Record<string, string> = {
   "taller-1-mtc-recambios": "taller-1",
