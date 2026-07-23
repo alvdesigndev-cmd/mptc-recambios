@@ -49,6 +49,8 @@ function TallerDetailPage() {
   const [savingEmail, setSavingEmail] = useState<string | null>(null);
   const [mecDraft, setMecDraft] = useState<Record<string, string>>({});
   const [savingMec, setSavingMec] = useState<string | null>(null);
+  // Motivo opcional para auditoría, por usuario
+  const [reasonDraft, setReasonDraft] = useState<Record<string, string>>({});
 
   // New user form
   const [creatingUser, setCreatingUser] = useState(false);
