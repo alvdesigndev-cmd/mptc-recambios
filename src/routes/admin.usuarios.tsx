@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History, KeyRound, Eye, EyeOff } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ShieldPlus, Loader2, Power, Trash2, RefreshCw, ShieldCheck, History, KeyRound, Eye, EyeOff, Search } from "lucide-react";
 import {
   createAdminUser,
   listAdmins,
@@ -85,6 +85,38 @@ function UsuariosAdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  const [adminQuery, setAdminQuery] = useState("");
+  const [adminStatus, setAdminStatus] = useState<"todos" | "activos" | "desactivados">("todos");
+  const filteredRows = useMemo(() => {
+    const q = adminQuery.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (adminStatus === "activos" && r.banned) return false;
+      if (adminStatus === "desactivados" && !r.banned) return false;
+      if (!q) return true;
+      return (
+        (r.email ?? "").toLowerCase().includes(q) ||
+        (r.taller_name ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, adminQuery, adminStatus]);
+
+  const [auditQuery, setAuditQuery] = useState("");
+  const [auditAction, setAuditAction] = useState<string>("todos");
+  const filteredAudit = useMemo(() => {
+    const q = auditQuery.trim().toLowerCase();
+    return audit.filter((row) => {
+      if (auditAction !== "todos" && row.action !== auditAction) return false;
+      if (!q) return true;
+      const label = (ACTION_LABEL[row.action] ?? row.action).toLowerCase();
+      return (
+        label.includes(q) ||
+        (row.target_email ?? "").toLowerCase().includes(q) ||
+        (row.actor_email ?? "").toLowerCase().includes(q) ||
+        (renderAuditDetails(row) ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [audit, auditQuery, auditAction]);
 
   const load = useCallback(async () => {
     setLoadingList(true); setListErr(null);
@@ -226,6 +258,35 @@ function UsuariosAdminPage() {
           </button>
         </header>
 
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={adminQuery}
+              onChange={(e) => setAdminQuery(e.target.value)}
+              placeholder="Buscar por email o nombre…"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+          <div className="flex rounded-xl border border-border bg-surface p-0.5 text-xs">
+            {(["todos", "activos", "desactivados"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setAdminStatus(v)}
+                className={
+                  "flex-1 rounded-lg px-3 py-1.5 font-semibold capitalize transition " +
+                  (adminStatus === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mb-2 text-[11px] text-muted-foreground">
+          {filteredRows.length} de {rows.length} administradores
+        </div>
+
         <div className="rounded-2xl border border-border bg-surface">
           {loadingList ? (
             <div className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
@@ -233,11 +294,11 @@ function UsuariosAdminPage() {
             </div>
           ) : listErr ? (
             <p className="p-5 text-sm text-red-500">{listErr}</p>
-          ) : rows.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No hay administradores.</p>
+          ) : filteredRows.length === 0 ? (
+            <p className="p-5 text-sm text-muted-foreground">{rows.length === 0 ? "No hay administradores." : "Sin resultados."}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {rows.map((row) => (
+              {filteredRows.map((row) => (
                 <li key={row.user_id} className="p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1">
@@ -368,17 +429,38 @@ function UsuariosAdminPage() {
           <History className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Historial de auditoría</h2>
           <span className="ml-auto text-[11px] text-muted-foreground">
-            {audit.length} evento{audit.length === 1 ? "" : "s"}
+            {filteredAudit.length} de {audit.length} evento{audit.length === 1 ? "" : "s"}
           </span>
         </header>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={auditQuery}
+              onChange={(e) => setAuditQuery(e.target.value)}
+              placeholder="Buscar en el historial…"
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+          <select
+            value={auditAction}
+            onChange={(e) => setAuditAction(e.target.value)}
+            className="rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+          >
+            <option value="todos">Todas las acciones</option>
+            {Object.entries(ACTION_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        </div>
         <div className="rounded-2xl border border-border bg-surface">
           {auditErr ? (
             <p className="p-5 text-sm text-red-500">{auditErr}</p>
-          ) : audit.length === 0 && !loadingAudit ? (
-            <p className="p-5 text-sm text-muted-foreground">Sin eventos registrados.</p>
+          ) : filteredAudit.length === 0 && !loadingAudit ? (
+            <p className="p-5 text-sm text-muted-foreground">{audit.length === 0 ? "Sin eventos registrados." : "Sin resultados."}</p>
           ) : (
             <ul className="divide-y divide-border">
-              {audit.map((row) => {
+              {filteredAudit.map((row) => {
                 const details = renderAuditDetails(row);
                 return (
                   <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">

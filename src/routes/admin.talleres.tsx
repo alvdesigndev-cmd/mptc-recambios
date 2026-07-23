@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { Pencil, Save, X, Power, Plus, Store, Loader2, ExternalLink } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil, Save, X, Power, Plus, Store, Loader2, ExternalLink, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +27,22 @@ function TalleresAdminPage() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newForm, setNewForm] = useState({ taller_id: "", nombre: "", ciudad: "" });
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"todos" | "activos" | "inactivos">("todos");
+
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((t) => {
+      if (statusFilter === "activos" && !t.activo) return false;
+      if (statusFilter === "inactivos" && t.activo) return false;
+      if (!q) return true;
+      return (
+        t.taller_id.toLowerCase().includes(q) ||
+        t.nombre.toLowerCase().includes(q) ||
+        (t.ciudad ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, query, statusFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,6 +148,36 @@ function TalleresAdminPage() {
 
       {err && <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">{err}</div>}
 
+      {/* Buscador + filtros */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por identificador, nombre o ciudad…"
+            className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-sm"
+          />
+        </div>
+        <div className="flex rounded-xl border border-border bg-surface p-0.5 text-xs">
+          {(["todos", "activos", "inactivos"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setStatusFilter(v)}
+              className={
+                "flex-1 rounded-lg px-3 py-1.5 font-semibold capitalize transition " +
+                (statusFilter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="text-[11px] text-muted-foreground">
+        {filteredRows.length} de {rows.length} talleres
+      </div>
+
       {creating && (
         <div className="rounded-2xl border border-border bg-surface p-4">
           <div className="mb-3 text-sm font-semibold">Nuevo taller</div>
@@ -173,10 +219,10 @@ function TalleresAdminPage() {
             <Loader2 className="mx-auto h-5 w-5 animate-spin" />
           </div>
         )}
-        {!loading && rows.length === 0 && (
-          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">No hay talleres.</div>
+        {!loading && filteredRows.length === 0 && (
+          <div className="rounded-2xl border border-border bg-surface px-4 py-8 text-center text-muted-foreground">{rows.length === 0 ? "No hay talleres." : "Sin resultados."}</div>
         )}
-        {rows.map((t) => {
+        {filteredRows.map((t) => {
           const isEd = editing === t.taller_id;
           return (
             <div key={t.taller_id} className={"rounded-2xl border border-border bg-surface p-4 " + (t.activo ? "" : "opacity-60")}>
@@ -261,10 +307,10 @@ function TalleresAdminPage() {
                 <Loader2 className="mx-auto h-5 w-5 animate-spin" />
               </td></tr>
             )}
-            {!loading && rows.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No hay talleres.</td></tr>
+            {!loading && filteredRows.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{rows.length === 0 ? "No hay talleres." : "Sin resultados."}</td></tr>
             )}
-            {rows.map((t) => {
+            {filteredRows.map((t) => {
               const isEd = editing === t.taller_id;
               return (
                 <tr key={t.taller_id} className={"border-t border-border " + (t.activo ? "" : "opacity-60")}>
