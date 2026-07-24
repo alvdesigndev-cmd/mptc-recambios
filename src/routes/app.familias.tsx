@@ -118,17 +118,17 @@ function FamiliasAdmin() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-2">
-        <Link to="/app/ajustes" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Ajustes
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-2">
+        <Link to="/app/ajustes" className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> <span className="truncate">Ajustes</span>
         </Link>
-        <button type="button" onClick={() => setNewFamOpen(true)} className={primaryBtn}>
-          <Plus className="h-4 w-4" /> Nueva familia
+        <button type="button" onClick={() => setNewFamOpen(true)} className={primaryBtn + " shrink-0"}>
+          <Plus className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Nueva familia</span><span className="sm:hidden">Nueva</span>
         </button>
       </div>
 
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Familias y mensajes</h1>
+      <header className="min-w-0">
+        <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">Familias y mensajes</h1>
         <p className="text-sm text-muted-foreground">
           Crea, edita o elimina familias y subfamilias. Usa <code className="rounded bg-surface-2 px-1">___</code> en el mensaje donde quieras que aparezca el importe.
         </p>
