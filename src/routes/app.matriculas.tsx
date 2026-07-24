@@ -257,6 +257,32 @@ function MatriculasPage() {
     setResult(null);
     setLocal(null);
     try {
+      // Cache local: si ya se consultó antes esta matrícula, mostrar sin llamar a la API
+      const cachedRecent = recent.find((r) => r.plate === p);
+      if (cachedRecent?.data) {
+        const cachedRes: PlateLookupResult = {
+          ok: true,
+          plate: p,
+          data: cachedRecent.data,
+          cached: true,
+          fetchedAt: new Date(cachedRecent.ts).toISOString(),
+        };
+        setResult(cachedRes);
+        const localRes = await fetchLocal(p).catch(
+          () => ({ cliente: null, gestiones: [] } as LocalInfo),
+        );
+        setLocal(localRes);
+        setRecent((prev) => {
+          const next = [
+            { ...cachedRecent, ts: Date.now() },
+            ...prev.filter((r) => r.plate !== p),
+          ].slice(0, 12);
+          saveRecent(next);
+          return next;
+        });
+        return;
+      }
+
       const [apiRes, localRes] = await Promise.all([
         lookup({ data: { plate: p } }).catch((): PlateLookupResult => ({
           ok: false,
