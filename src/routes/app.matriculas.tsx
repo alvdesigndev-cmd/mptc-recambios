@@ -950,6 +950,8 @@ function PlateScanner({
                 className={`h-full w-full object-cover ${ready ? "" : "opacity-0"}`}
                 playsInline
                 muted
+                autoPlay
+                disablePictureInPicture
               />
 
               {camStatus === "requesting" && (
