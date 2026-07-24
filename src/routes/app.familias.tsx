@@ -208,23 +208,23 @@ function FamiliasAdmin() {
                     const open = expanded.has(s.id);
                     return (
                       <div key={s.id} className="rounded-2xl border border-border bg-surface">
-                        <div className="flex items-center justify-between gap-2 p-3">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2.5 sm:flex sm:flex-wrap sm:justify-between sm:p-3">
                           <button
                             type="button"
                             onClick={() => toggleExpanded(s.id)}
-                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            className="flex min-w-0 items-center gap-2 text-left"
                           >
                             <ChevronDown className={"h-4 w-4 shrink-0 text-muted-foreground transition-transform " + (open ? "rotate-180" : "")} />
                             <span className="truncate text-sm font-medium">{s.name}</span>
                           </button>
                           <div className="flex shrink-0 gap-1.5">
-                            <button type="button" onClick={() => setEditSub({ familiaId: selected.id, sub: s })} className={ghostBtn}>
+                            <button type="button" onClick={() => setEditSub({ familiaId: selected.id, sub: s })} className={ghostBtn + " px-2.5 py-1.5 sm:px-3 sm:py-2"}>
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmDel({ kind: "sub", id: s.id, name: s.name })}
-                              className={dangerBtn}
+                              className={dangerBtn + " px-2.5 py-1.5 sm:px-3 sm:py-2"}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
