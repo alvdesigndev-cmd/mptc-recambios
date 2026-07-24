@@ -711,12 +711,44 @@ function PlateScanner({
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
+    if (videoRef.current) {
+      try { videoRef.current.pause(); } catch {}
+      videoRef.current.srcObject = null;
+    }
   };
+
+  // Espera a que el <video> tenga dimensiones reales (necesario en iOS Safari,
+  // donde play() puede resolver antes de loadedmetadata).
+  const waitForVideoReady = (video: HTMLVideoElement, timeoutMs = 4000) =>
+    new Promise<void>((resolve) => {
+      if (video.readyState >= 2 && video.videoWidth > 0) return resolve();
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        video.removeEventListener("loadedmetadata", finish);
+        video.removeEventListener("canplay", finish);
+        resolve();
+      };
+      video.addEventListener("loadedmetadata", finish, { once: true });
+      video.addEventListener("canplay", finish, { once: true });
+      setTimeout(finish, timeoutMs);
+    });
 
   const startCamera = async (mode: "environment" | "user" = facing) => {
     setError(null);
     setCamStatus("requesting");
+    // getUserMedia requiere contexto seguro (https o localhost).
+    const isSecure =
+      typeof window !== "undefined" &&
+      (window.isSecureContext ||
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1");
+    if (!isSecure) {
+      setCamStatus("unavailable");
+      setError("El acceso a la cámara requiere una conexión segura (HTTPS). Usa el modo manual.");
+      return null;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setCamStatus("unavailable");
       setError("Tu navegador no soporta el acceso a la cámara. Usa el modo manual.");
@@ -724,16 +756,42 @@ function PlateScanner({
     }
     stopStream();
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: mode } },
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: mode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+      } catch (inner) {
+        // Fallback sin constraints ideales (algunos Android antiguos fallan).
+        const nm = (inner as { name?: string })?.name || "";
+        if (nm === "OverconstrainedError" || nm === "ConstraintNotSatisfiedError") {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: mode },
+            audio: false,
+          });
+        } else {
+          throw inner;
+        }
+      }
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        video.muted = true;
+        video.setAttribute("playsinline", "true");
+        // play() puede rechazar por autoplay policy; no bloqueamos el estado.
+        try {
+          await video.play();
+        } catch {}
+        await waitForVideoReady(video);
       }
       setCamStatus("ready");
-      // Detectar si hay más de una cámara para mostrar el botón de cambio
+      // Detectar si hay más de una cámara (labels sólo aparecen tras permiso).
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cams = devices.filter((d) => d.kind === "videoinput");
@@ -752,13 +810,20 @@ function PlateScanner({
         );
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         setCamStatus("unavailable");
-        setError("No se detectó ninguna cámara en este dispositivo.");
-      } else if (name === "NotReadableError") {
+        setError("No se detectó ninguna cámara compatible en este dispositivo.");
+      } else if (name === "NotReadableError" || name === "TrackStartError") {
         setCamStatus("error");
         setError("La cámara está siendo usada por otra aplicación. Ciérrala e inténtalo de nuevo.");
+      } else if (name === "AbortError") {
+        setCamStatus("error");
+        setError("La cámara se cerró inesperadamente. Reintenta el acceso.");
       } else {
         setCamStatus("error");
-        setError("No se pudo abrir la cámara. Revisa los permisos o usa el modo manual.");
+        setError(
+          err?.message
+            ? `No se pudo abrir la cámara: ${err.message}`
+            : "No se pudo abrir la cámara. Revisa los permisos o usa el modo manual.",
+        );
       }
       return null;
     }
@@ -773,8 +838,14 @@ function PlateScanner({
         streamRef.current = null;
       }
     })();
+    // Si la pestaña se oculta (cambio de app en móvil), liberamos la cámara.
+    const onVis = () => {
+      if (document.visibilityState === "hidden") stopStream();
+    };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVis);
       stopStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -802,28 +873,34 @@ function PlateScanner({
     setBusy(true);
     setError(null);
     try {
+      // Asegura dimensiones (iOS puede tardar).
+      if (!video.videoWidth || !video.videoHeight) {
+        await waitForVideoReady(video, 2000);
+      }
       const w = video.videoWidth;
       const h = video.videoHeight;
-      if (!w || !h) throw new Error("Cámara no lista");
+      if (!w || !h) throw new Error("La cámara aún no está lista. Espera un momento e inténtalo de nuevo.");
       const canvas = canvasRef.current ?? document.createElement("canvas");
       canvasRef.current = canvas;
-      const maxSide = 1280;
+      // Máx 1024 px lado mayor + calidad 0.72 para no saturar el gateway OCR.
+      const maxSide = 1024;
       const scale = Math.min(1, maxSide / Math.max(w, h));
       canvas.width = Math.round(w * scale);
       canvas.height = Math.round(h * scale);
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas no disponible");
+      if (!ctx) throw new Error("Canvas no disponible en este navegador.");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
       const res = await runOcr({ data: { imageDataUrl: dataUrl } });
       const m = (res?.matricula || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       if (m.length >= 4) {
         onDetected(m);
       } else {
-        setError("No se detectó ninguna matrícula. Acerca más la cámara y evita reflejos.");
+        setError("No se detectó ninguna matrícula. Acerca más la cámara, evita reflejos y mantén el móvil quieto.");
       }
-    } catch {
-      setError("No se pudo leer la matrícula. Inténtalo de nuevo.");
+    } catch (e) {
+      const msg = (e as { message?: string })?.message || "";
+      setError(msg ? `No se pudo leer la matrícula: ${msg}` : "No se pudo leer la matrícula. Inténtalo de nuevo.");
     } finally {
       setBusy(false);
     }
