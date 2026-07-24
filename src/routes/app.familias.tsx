@@ -199,7 +199,7 @@ function FamiliasAdmin() {
                     onClick={() => setEditSub({ familiaId: selected.id, sub: null })}
                     className={primaryBtn + " shrink-0"}
                   >
-                    <Plus className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Nueva</span><span className="sm:hidden">Nueva</span>
+                    <Plus className="h-4 w-4 shrink-0" /> Nueva
                   </button>
                 </div>
 
