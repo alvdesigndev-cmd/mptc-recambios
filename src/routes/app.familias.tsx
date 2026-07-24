@@ -170,36 +170,36 @@ function FamiliasAdmin() {
           <section className="space-y-3">
             {selected ? (
               <>
-                <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-surface p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex sm:flex-wrap sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="text-2xl">{selected.icon}</span>
+                    <span className="shrink-0 text-2xl">{selected.icon}</span>
                     <div className="min-w-0">
                       <div className="truncate text-base font-semibold">{selected.name}</div>
                       <div className="text-[11px] text-muted-foreground">{selected.subs.length} subfamilias</div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setEditFam(selected)} className={ghostBtn}>
-                      <Pencil className="h-4 w-4" /> Editar
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" onClick={() => setEditFam(selected)} className={ghostBtn + " px-2.5 sm:px-3"}>
+                      <Pencil className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Editar</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDel({ kind: "fam", id: selected.id, name: selected.name, subsCount: selected.subs.length })}
-                      className={dangerBtn}
+                      className={dangerBtn + " px-2.5 sm:px-3"}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold">Subfamilias</h2>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+                  <h2 className="min-w-0 truncate text-sm font-semibold">Subfamilias</h2>
                   <button
                     type="button"
                     onClick={() => setEditSub({ familiaId: selected.id, sub: null })}
-                    className={primaryBtn}
+                    className={primaryBtn + " shrink-0"}
                   >
-                    <Plus className="h-4 w-4" /> Nueva
+                    <Plus className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Nueva</span><span className="sm:hidden">Nueva</span>
                   </button>
                 </div>
 
