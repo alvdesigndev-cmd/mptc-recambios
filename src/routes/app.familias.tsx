@@ -118,17 +118,17 @@ function FamiliasAdmin() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-2">
-        <Link to="/app/ajustes" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Ajustes
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-2">
+        <Link to="/app/ajustes" className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> <span className="truncate">Ajustes</span>
         </Link>
-        <button type="button" onClick={() => setNewFamOpen(true)} className={primaryBtn}>
-          <Plus className="h-4 w-4" /> Nueva familia
+        <button type="button" onClick={() => setNewFamOpen(true)} className={primaryBtn + " shrink-0"}>
+          <Plus className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Nueva familia</span><span className="sm:hidden">Nueva</span>
         </button>
       </div>
 
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Familias y mensajes</h1>
+      <header className="min-w-0">
+        <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">Familias y mensajes</h1>
         <p className="text-sm text-muted-foreground">
           Crea, edita o elimina familias y subfamilias. Usa <code className="rounded bg-surface-2 px-1">___</code> en el mensaje donde quieras que aparezca el importe.
         </p>
@@ -170,36 +170,36 @@ function FamiliasAdmin() {
           <section className="space-y-3">
             {selected ? (
               <>
-                <div className="flex items-center justify-between gap-2 rounded-2xl border border-border bg-surface p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-surface p-4 sm:flex sm:flex-wrap sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="text-2xl">{selected.icon}</span>
+                    <span className="shrink-0 text-2xl">{selected.icon}</span>
                     <div className="min-w-0">
                       <div className="truncate text-base font-semibold">{selected.name}</div>
                       <div className="text-[11px] text-muted-foreground">{selected.subs.length} subfamilias</div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setEditFam(selected)} className={ghostBtn}>
-                      <Pencil className="h-4 w-4" /> Editar
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" onClick={() => setEditFam(selected)} className={ghostBtn + " px-2.5 sm:px-3"}>
+                      <Pencil className="h-4 w-4 shrink-0" /> <span className="hidden sm:inline">Editar</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDel({ kind: "fam", id: selected.id, name: selected.name, subsCount: selected.subs.length })}
-                      className={dangerBtn}
+                      className={dangerBtn + " px-2.5 sm:px-3"}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold">Subfamilias</h2>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+                  <h2 className="min-w-0 truncate text-sm font-semibold">Subfamilias</h2>
                   <button
                     type="button"
                     onClick={() => setEditSub({ familiaId: selected.id, sub: null })}
-                    className={primaryBtn}
+                    className={primaryBtn + " shrink-0"}
                   >
-                    <Plus className="h-4 w-4" /> Nueva
+                    <Plus className="h-4 w-4 shrink-0" /> Nueva
                   </button>
                 </div>
 
@@ -208,23 +208,23 @@ function FamiliasAdmin() {
                     const open = expanded.has(s.id);
                     return (
                       <div key={s.id} className="rounded-2xl border border-border bg-surface">
-                        <div className="flex items-center justify-between gap-2 p-3">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2.5 sm:flex sm:flex-wrap sm:justify-between sm:p-3">
                           <button
                             type="button"
                             onClick={() => toggleExpanded(s.id)}
-                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            className="flex min-w-0 items-center gap-2 text-left"
                           >
                             <ChevronDown className={"h-4 w-4 shrink-0 text-muted-foreground transition-transform " + (open ? "rotate-180" : "")} />
                             <span className="truncate text-sm font-medium">{s.name}</span>
                           </button>
                           <div className="flex shrink-0 gap-1.5">
-                            <button type="button" onClick={() => setEditSub({ familiaId: selected.id, sub: s })} className={ghostBtn}>
+                            <button type="button" onClick={() => setEditSub({ familiaId: selected.id, sub: s })} className={ghostBtn + " px-2.5 py-1.5 sm:px-3 sm:py-2"}>
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => setConfirmDel({ kind: "sub", id: s.id, name: s.name })}
-                              className={dangerBtn}
+                              className={dangerBtn + " px-2.5 py-1.5 sm:px-3 sm:py-2"}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
