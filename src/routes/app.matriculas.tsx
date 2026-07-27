@@ -383,7 +383,11 @@ function MatriculasPage() {
               <input
                 id="plate"
                 value={plate}
-                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setPlate(
+                    normalizeMatricula(e.target.value).replace(/[^A-Z0-9]/g, ""),
+                  )
+                }
                 placeholder="1234ABC"
                 maxLength={10}
                 autoComplete="off"
