@@ -14,6 +14,8 @@ jobs:
           node-version: '22'
       - run: npm install
       - run: npm run build
+      - name: List dist
+        run: find dist -type f | sort
       - name: Fix wrangler.json
         run: |
           node -e "
@@ -22,8 +24,12 @@ jobs:
           if(fs.existsSync(p)){
             const c=JSON.parse(fs.readFileSync(p));
             delete c.no_bundle;
-            c.main='index.js';
+            c.main='server.js';
             fs.writeFileSync(p,JSON.stringify(c,null,2));
+            console.log('Fixed:', JSON.stringify(c,null,2));
+          } else {
+            console.log('wrangler.json not found, listing dist/server:');
+            try { console.log(fs.readdirSync('dist/server').join('\n')); } catch(e){ console.log('dist/server not found'); }
           }"
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
