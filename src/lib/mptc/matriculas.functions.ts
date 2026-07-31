@@ -9,7 +9,8 @@ const PlateSchema = z.object({
 export type PlateLookupResult = {
   ok: boolean;
   plate: string;
-  data?: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data?: Record<string, any>;
   error?: string;
   cached?: boolean;
   fetchedAt?: string;
@@ -40,7 +41,8 @@ export const lookupPlate = createServerFn({ method: "POST" })
       });
       if (!res.ok) return { ok: false, plate, error: res.status === 404 ? "Matrícula no encontrada" : `Error ${res.status}` };
       const json = await res.json();
-      const finalData = (json?.data ?? json) as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const finalData = (json?.data ?? json) as Record<string, any>;
       return { ok: true, plate, data: finalData, cached: false };
     } catch {
       return { ok: false, plate, error: "No se pudo consultar la matrícula" };
@@ -48,6 +50,7 @@ export const lookupPlate = createServerFn({ method: "POST" })
   });
 
 export const listPlateHistory = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => (data as { limit?: number } | undefined) ?? {})
   .handler(async (): Promise<{ items: PlateHistoryItem[] }> => {
     return { items: [] };
   });

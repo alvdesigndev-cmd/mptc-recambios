@@ -26,6 +26,8 @@ import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { MicButton } from "@/components/mptc/MicButton";
+import { toast } from "sonner";
+import { GPCatSearchModal, formatPiezaLinea, type PiezaSeleccionada } from "@/components/mptc/GPCatSearchModal";
 
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -720,6 +722,15 @@ function NuevaPage() {
 
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
+  const [gpcatOpen, setGpcatOpen] = useState(false);
+  const addPiezasGPCat = (ps: PiezaSeleccionada[]) => {
+    if (!ps.length) return;
+    const lineas = ps.map(formatPiezaLinea);
+    setPiezas((prev) => [prev.trim(), ...lineas].filter(Boolean).join("\n"));
+    const total = ps.reduce((a, p) => a + p.precio * p.cantidad, 0);
+    setImporte(total.toFixed(2));
+    toast.success(`${ps.length} pieza(s) añadidas al presupuesto`);
+  };
 
   const visibleFamilies = showMore ? FAMILIES_DATA : FAMILIES_DATA.slice(0, 7);
 
@@ -1386,6 +1397,26 @@ function NuevaPage() {
               </div>
             </div>
           )}
+
+          {subfamilia && (
+            <button
+              type="button"
+              onClick={() => setGpcatOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-3 text-sm font-semibold text-accent-foreground active:scale-95"
+            >
+              <Search className="h-4 w-4" /> Buscar piezas en GPCat
+            </button>
+          )}
+
+          <GPCatSearchModal
+            open={gpcatOpen}
+            onClose={() => setGpcatOpen(false)}
+            marca={marca}
+            modelo={modelo}
+            motor={motor}
+            averia={sub?.name}
+            onAdd={addPiezasGPCat}
+          />
 
           <BottomBar>
             <button type="button" onClick={() => setStep(1)} className={ghostBtn}>

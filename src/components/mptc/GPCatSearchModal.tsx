@@ -1,0 +1,204 @@
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Package, Search, X } from "lucide-react";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { consultaArticulosGPA, type GpaArticulo } from "@/lib/mptc/gpa.functions";
+
+export interface PiezaSeleccionada extends GpaArticulo {
+  cantidad: number;
+}
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  marca?: string;
+  modelo?: string;
+  motor?: string;
+  averia?: string;
+  onAdd: (piezas: PiezaSeleccionada[]) => void;
+}
+
+export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, onAdd }: Props) {
+  const buscar = useServerFn(consultaArticulosGPA);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<GpaArticulo[]>([]);
+  const [sel, setSel] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!open) return;
+    setQuery(averia ?? "");
+    setSel({});
+    setItems([]);
+    let cancelled = false;
+    setLoading(true);
+    buscar({ data: { query: averia ?? "", marca, modelo, motor } })
+      .then((r) => { if (!cancelled) setItems(r.articulos); })
+      .catch(() => { if (!cancelled) toast.error("No se pudo buscar en GPCat"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const run = async () => {
+    setLoading(true);
+    try {
+      const r = await buscar({ data: { query, marca, modelo, motor } });
+      setItems(r.articulos);
+      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
+    } catch {
+      toast.error("No se pudo buscar en GPCat");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const seleccionadas = useMemo(
+    () => items.filter((i) => sel[i.referencia]).map((i) => ({ ...i, cantidad: sel[i.referencia] || 1 })),
+    [items, sel],
+  );
+  const total = useMemo(
+    () => seleccionadas.reduce((a, p) => a + p.precio * p.cantidad, 0),
+    [seleccionadas],
+  );
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-base font-bold">
+              <Package className="h-4 w-4 text-accent" /> Buscar piezas GPCat
+            </h2>
+            <p className="truncate text-[12px] text-muted-foreground">
+              {[marca, modelo, motor].filter(Boolean).join(" · ") || "Vehículo sin datos"}
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Cerrar">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="border-b border-border p-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); run(); } }}
+                placeholder="Descripción o referencia…"
+                className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none focus:bg-surface-3"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={run}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
+          ) : items.length === 0 ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</div>
+          ) : (
+            <div className="space-y-2">
+              {items.map((p) => {
+                const checked = !!sel[p.referencia];
+                return (
+                  <label
+                    key={p.referencia}
+                    className={
+                      "flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition " +
+                      (checked ? "border-primary bg-primary/10" : "border-border bg-surface-2 hover:bg-surface-3")
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) =>
+                        setSel((prev) => {
+                          const next = { ...prev };
+                          if (e.target.checked) next[p.referencia] = 1;
+                          else delete next[p.referencia];
+                          return next;
+                        })
+                      }
+                      className="mt-1 h-4 w-4 shrink-0 accent-current"
+                    />
+                    {p.imagen ? (
+                      <img src={p.imagen} alt={p.descripcion} className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold">{p.descripcion}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">
+                        REF: {p.referencia} · {p.marca}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 font-semibold " +
+                            (p.stock.toLowerCase().includes("disponible")
+                              ? "bg-success/15 text-success"
+                              : "bg-warning/15 text-warning")
+                          }
+                        >
+                          {p.stock}
+                        </span>
+                        <span className="text-muted-foreground">Plazo {p.plazo}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="font-mono text-sm font-bold">{p.precio.toFixed(2)} €</div>
+                      {checked && (
+                        <input
+                          type="number"
+                          min={1}
+                          value={sel[p.referencia]}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            setSel((prev) => ({ ...prev, [p.referencia]: Math.max(1, parseInt(e.target.value || "1", 10)) }))
+                          }
+                          className="mt-1 w-16 rounded-lg bg-surface px-2 py-1 text-right text-[12px] outline-none"
+                        />
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 border-t border-border p-4">
+          <div className="min-w-0 flex-1 text-[12px] text-muted-foreground">
+            {seleccionadas.length} pieza(s) ·{" "}
+            <span className="font-mono font-semibold text-foreground">{total.toFixed(2)} €</span>
+          </div>
+          <button
+            type="button"
+            disabled={seleccionadas.length === 0}
+            onClick={() => { onAdd(seleccionadas); onClose(); }}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95 disabled:opacity-50"
+          >
+            <Package className="h-4 w-4" /> Añadir al presupuesto
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Formatea una pieza para el campo "Piezas a pedir". */
+export function formatPiezaLinea(p: PiezaSeleccionada): string {
+  return `REF: ${p.referencia} - ${p.descripcion} (${p.marca}) x${p.cantidad} - ${(p.precio * p.cantidad).toFixed(2)}€`;
+}
