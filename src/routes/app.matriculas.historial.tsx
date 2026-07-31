@@ -172,6 +172,58 @@ function HistorialMatriculasPage() {
     });
   }, [items, query]);
 
+  const suggestions = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    const seen = new Map<string, { value: string; kind: "plate" | "vehiculo" }>();
+    for (const i of items) {
+      const plate = i.plate?.trim();
+      if (plate) {
+        const key = `p:${plate.toUpperCase()}`;
+        if (!seen.has(key)) seen.set(key, { value: plate.toUpperCase(), kind: "plate" });
+      }
+      const vehiculo = (i.vehiculo || [i.marca, i.modelo].filter(Boolean).join(" ")).trim();
+      if (vehiculo) {
+        const key = `v:${vehiculo.toUpperCase()}`;
+        if (!seen.has(key)) seen.set(key, { value: vehiculo, kind: "vehiculo" });
+      }
+    }
+    let list = Array.from(seen.values());
+    if (q) list = list.filter((s) => s.value.toUpperCase().includes(q));
+    list.sort((a, b) => {
+      const ai = a.value.toUpperCase().startsWith(q) ? 0 : 1;
+      const bi = b.value.toUpperCase().startsWith(q) ? 0 : 1;
+      return ai - bi || a.value.localeCompare(b.value);
+    });
+    return list.slice(0, 8);
+  }, [items, query]);
+
+  const applySuggestion = (value: string) => {
+    setQuery(value);
+    setShowSuggestions(false);
+    setActiveSuggestion(-1);
+  };
+
+  const onSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestion((p) => (p + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestion((p) => (p <= 0 ? suggestions.length - 1 : p - 1));
+    } else if (e.key === "Enter") {
+      if (activeSuggestion >= 0) {
+        e.preventDefault();
+        applySuggestion(suggestions[activeSuggestion].value);
+      } else {
+        setShowSuggestions(false);
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setActiveSuggestion(-1);
+    }
+  };
+
   const sortedItems = useMemo(() => {
     const pinSet = new Set(pinned);
     const byDate = (a: PlateHistoryItem, b: PlateHistoryItem) => {
