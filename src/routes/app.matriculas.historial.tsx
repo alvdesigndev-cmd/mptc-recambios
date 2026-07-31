@@ -83,6 +83,8 @@ function HistorialMatriculasPage() {
   const [pinned, setPinned] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOrder>("desc");
   const [query, setQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
   useEffect(() => {
     setPinned(loadPinned());
