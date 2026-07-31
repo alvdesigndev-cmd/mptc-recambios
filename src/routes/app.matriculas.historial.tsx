@@ -358,7 +358,18 @@ function HistorialMatriculasPage() {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setShowSuggestions(true);
+            setActiveSuggestion(-1);
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => window.setTimeout(() => setShowSuggestions(false), 120)}
+          onKeyDown={onSearchKeyDown}
+          role="combobox"
+          aria-expanded={showSuggestions && suggestions.length > 0}
+          aria-autocomplete="list"
+          autoComplete="off"
           placeholder="Buscar por matrícula, marca o modelo..."
           className="w-full rounded-2xl border border-border bg-surface py-3 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
@@ -371,6 +382,40 @@ function HistorialMatriculasPage() {
           >
             <X className="h-4 w-4" />
           </button>
+        )}
+        {showSuggestions && suggestions.length > 0 && (
+          <ul
+            role="listbox"
+            className="absolute z-20 mt-1 w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+          >
+            {suggestions.map((s, idx) => (
+              <li key={`${s.kind}:${s.value}`}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={idx === activeSuggestion}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => applySuggestion(s.value)}
+                  onMouseEnter={() => setActiveSuggestion(idx)}
+                  className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm ${
+                    idx === activeSuggestion ? "bg-primary/10 text-primary" : "text-foreground"
+                  }`}
+                >
+                  {s.kind === "plate" ? (
+                    <Search className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                  ) : (
+                    <History className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                  )}
+                  <span className={s.kind === "plate" ? "font-mono tracking-wider" : "truncate"}>
+                    {s.value}
+                  </span>
+                  <span className="ml-auto flex-shrink-0 text-[10px] uppercase text-muted-foreground">
+                    {s.kind === "plate" ? "Matrícula" : "Vehículo"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
