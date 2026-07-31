@@ -239,9 +239,9 @@ function NuevaPage() {
         setMensajeTouched(true);
         mensajeBaseRef.current = g.mensaje;
       }
-      if (g.fotos && g.fotos.length) {
+      if (g.fotos && Array.isArray(g.fotos) && g.fotos.length) {
         setFotosUrls(g.fotos);
-        setFotosError(g.fotos.map(() => false));
+        setFotosError((g.fotos as string[]).map(() => false));
       }
       const s = (g.borrador_step ?? 1) as Step;
       setStep(s === 2 || s === 3 ? s : 1);
