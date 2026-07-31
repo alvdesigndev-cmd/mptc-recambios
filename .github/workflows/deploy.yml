@@ -1,1 +1,32 @@
+name: Deploy to Cloudflare Workers
 
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm run build
+      - name: Fix wrangler.json
+        run: |
+          node -e "
+          const fs=require('fs');
+          const p='dist/server/wrangler.json';
+          if(fs.existsSync(p)){
+            const c=JSON.parse(fs.readFileSync(p));
+            delete c.no_bundle;
+            c.main='index.js';
+            fs.writeFileSync(p,JSON.stringify(c,null,2));
+          }"
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          command: deploy --config dist/server/wrangler.json
