@@ -119,7 +119,7 @@ export const lookupPlate = createServerFn({ method: "POST" })
       }
     }
 
-    const apiKey = process.env.APIVEHICULO_KEY;
+    const apiKey = process.env.APIVEHICULO_KEY ?? "av_01f9d9d0a71ec10d9ff0d5e82370532bcafd90ff60594c17d5e15849e3f6827b";
     if (!apiKey) {
       const result: PlateLookupResult = { ok: false, plate, error: "Servicio no configurado" };
       await logHistory(result);
