@@ -7,6 +7,7 @@ import {
   mockConsultaPedidos,
   mockGenerarPedido,
   mockIniciarSesion,
+  fetchGpaToken,
 } from "./gpa.server";
 import type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
 
@@ -38,7 +39,7 @@ export const consultaArticulosGPA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; error?: string }> => {
     const query = (data.query ?? "").toString();
     if (gpaMockMode()) return { ok: true, mock: true, articulos: mockConsultaArticulos(query) };
-    const token = (await iniciarSesionGPA()).token;
+    const token = await fetchGpaToken();
     try {
       const res = await fetch(gpaEndpoint("ConsultaArticulos"), {
         method: "POST",
@@ -71,7 +72,7 @@ export const generarPedidoGPA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; numeroPedido: string; total?: number; estado?: string; error?: string }> => {
     const lineas = data.lineas ?? [];
     if (gpaMockMode()) return mockGenerarPedido(lineas);
-    const token = (await iniciarSesionGPA()).token;
+    const token = await fetchGpaToken();
     try {
       const res = await fetch(gpaEndpoint("GenerarPedido"), {
         method: "POST",
@@ -100,7 +101,7 @@ export const consultaPedidosGPA = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => (data as { desde?: string; hasta?: string } | undefined) ?? {})
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; pedidos: Array<{ numeroPedido: string; fecha: string; estado: string; total: number }>; error?: string }> => {
     if (gpaMockMode()) return mockConsultaPedidos();
-    const token = (await iniciarSesionGPA()).token;
+    const token = await fetchGpaToken();
     try {
       const res = await fetch(gpaEndpoint("ConsultaPedidos"), {
         method: "POST",

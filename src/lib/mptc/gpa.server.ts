@@ -88,3 +88,16 @@ export function mockConsultaPedidos() {
     ],
   };
 }
+
+/** Obtiene el token real de GPA (server-only). No usar en modo mock. */
+export async function fetchGpaToken(): Promise<string> {
+  const { usuario, password } = gpaConfig();
+  const res = await fetch(gpaEndpoint("IniciarSesion"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ Usuario: usuario, Password: password }),
+  });
+  if (!res.ok) throw new Error(`IniciarSesion ${res.status}`);
+  const json = (await res.json()) as { token?: string; Token?: string };
+  return json.token ?? json.Token ?? "";
+}
