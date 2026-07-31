@@ -8,6 +8,8 @@ import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
+import { useServerFn } from "@tanstack/react-start";
+import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
 
 interface Props {
   gestion: Gestion | null;
@@ -56,6 +58,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [penaNotificado, setPenaNotificado] = useState(false);
   const [fotoSigned, setFotoSigned] = useState<string[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [confirmPedido, setConfirmPedido] = useState(false);
+  const [enviandoPedido, setEnviandoPedido] = useState(false);
+  const enviarPedidoGPA = useServerFn(generarPedidoGPA);
 
 
   useEffect(() => {
@@ -241,6 +246,40 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
       ? g.mensaje
       : `Hola ${g.cliente_nombre || ""} 👋\n\nTe recuerdo el presupuesto de tu ${g.vehiculo || ""} (${g.matricula || ""}):\n\n💰 *${g.importe || "—"} €*\n\n✅ Confirma aquí: ${url}`;
     window.open(buildWAUrl(g.cliente_telefono, msg), "_blank", "noopener,noreferrer");
+  };
+
+  // Líneas de piezas del pedido (una por línea del campo "Piezas").
+  const lineasPedido = (g?.piezas || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const confirmarPedidoGPA = async () => {
+    setEnviandoPedido(true);
+    try {
+      await enviarPedidoGPA({
+        data: {
+          gestionId: g.id,
+          matricula: g.matricula ?? undefined,
+          direccion: "Taller",
+          lineas: lineasPedido.map((l) => ({
+            referencia: (l.match(/REF:\s*([A-Za-z0-9-]+)/) || [])[1] || "",
+            descripcion: l,
+            cantidad: 1,
+            precio: 0,
+          })),
+        },
+      });
+      await supabase.from("gestiones").update({ estado: "pedido", pedido_pena: true }).eq("id", g.id);
+      toast.success("Pedido enviado a Grupo Peña ✓");
+      setConfirmPedido(false);
+      onChanged();
+      onClose();
+    } catch {
+      toast.error("No se pudo enviar el pedido a Grupo Peña");
+    } finally {
+      setEnviandoPedido(false);
+    }
   };
 
   const pedirPena = async () => {
@@ -637,8 +676,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 </button>
               )}
               {g.estado !== "borrador" && !g.pedido_pena && (
-                <button onClick={pedirPena} className={btnAccent}>
-                  <Truck className="h-4 w-4" /> Pedir a Peña
+                <button
+                  onClick={() => (g.estado === "aceptado" ? setConfirmPedido(true) : pedirPena())}
+                  className={btnAccent}
+                >
+                  <Truck className="h-4 w-4" />
+                  {g.estado === "aceptado" ? "Pedir a Grupo Peña" : "Pedir a Peña"}
                 </button>
               )}
               {g.estado === "enviado" && (
@@ -663,6 +706,53 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           )}
         </div>
       </div>
+
+      {confirmPedido && (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
+              <button
+                onClick={() => setConfirmPedido(false)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Piezas del pedido
+                </div>
+                {lineasPedido.length === 0 ? (
+                  <p className="text-muted-foreground">No hay piezas indicadas en la gestión.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {lineasPedido.map((l, i) => (
+                      <li key={i} className="rounded-xl bg-surface-2 px-3 py-2 text-[13px]">
+                        {l}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <Row label="Importe total" value={`${g.importe || "—"} €`} />
+              <Row label="Dirección de entrega" value="Taller" />
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button onClick={confirmarPedidoGPA} disabled={enviandoPedido} className={btnAccent + " disabled:opacity-60"}>
+                <Truck className="h-4 w-4" /> {enviandoPedido ? "Enviando…" : "Confirmar pedido"}
+              </button>
+              <button onClick={() => setConfirmPedido(false)} className={btnGhost}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
