@@ -52,9 +52,8 @@ function pickStr(data: Record<string, unknown> | null | undefined, ...keys: stri
 }
 
 export const lookupPlate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => PlateSchema.parse(data))
-  .handler(async ({ data, context }): Promise<PlateLookupResult> => {
+  .handler(async ({ data }): Promise<PlateLookupResult> => {
     const plate = data.plate;
     const ttlMs = getCacheTtlMs();
     const supabase = context.supabase;
