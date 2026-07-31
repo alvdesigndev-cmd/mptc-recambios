@@ -34,6 +34,7 @@ const GPCatSearchModal = lazy(() =>
 import { formatPiezaLinea, type PiezaSeleccionada } from "@/components/mptc/GPCatSearchModal";
 
 export const Route = createFileRoute("/app/nueva")({
+  ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     clienteId: typeof s.clienteId === "string" ? s.clienteId : undefined,
     resume: typeof s.resume === "string" ? s.resume : undefined,
