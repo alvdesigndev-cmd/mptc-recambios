@@ -27,7 +27,11 @@ import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { MicButton } from "@/components/mptc/MicButton";
 import { toast } from "sonner";
-import { GPCatSearchModal, formatPiezaLinea, type PiezaSeleccionada } from "@/components/mptc/GPCatSearchModal";
+import { lazy, Suspense } from "react";
+const GPCatSearchModal = lazy(() =>
+  import("@/components/mptc/GPCatSearchModal").then((m) => ({ default: m.GPCatSearchModal }))
+);
+import { formatPiezaLinea, type PiezaSeleccionada } from "@/components/mptc/GPCatSearchModal";
 
 export const Route = createFileRoute("/app/nueva")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -1408,15 +1412,17 @@ function NuevaPage() {
             </button>
           )}
 
-          <GPCatSearchModal
-            open={gpcatOpen}
-            onClose={() => setGpcatOpen(false)}
-            marca={marca}
-            modelo={modelo}
-            motor={motor}
-            averia={sub?.name}
-            onAdd={addPiezasGPCat}
-          />
+          <Suspense fallback={null}>
+            <GPCatSearchModal
+              open={gpcatOpen}
+              onClose={() => setGpcatOpen(false)}
+              marca={marca}
+              modelo={modelo}
+              motor={motor}
+              averia={sub?.name}
+              onAdd={addPiezasGPCat}
+            />
+          </Suspense>
 
           <BottomBar>
             <button type="button" onClick={() => setStep(1)} className={ghostBtn}>
