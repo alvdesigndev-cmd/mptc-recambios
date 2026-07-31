@@ -1,23 +1,7 @@
-name: Deploy to Cloudflare Workers
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm install
-      - run: npm run build || true
-      - name: List output
-        run: find .output -type f | sort 2>/dev/null || find dist -type f | sort 2>/dev/null || echo "no output found"
-      - name: Deploy
+- name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           command: deploy --config .output/server/wrangler.json
+        env:
+          APIVEHICULO_KEY: ${{ secrets.APIVEHICULO_KEY }}
