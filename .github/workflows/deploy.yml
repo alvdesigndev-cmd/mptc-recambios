@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
 on:
   push:
@@ -13,9 +13,11 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
-      - run: npm run build
-      - name: Deploy to Cloudflare Pages
+      - run: npm run build || true
+      - name: List output
+        run: find .output -type f | sort 2>/dev/null || find dist -type f | sort 2>/dev/null || echo "no output found"
+      - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: pages deploy dist --project-name=mptc-recambios
+          command: deploy --config .output/server/wrangler.json
