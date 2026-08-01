@@ -3,6 +3,7 @@ import { Filter, Loader2, Package, Search, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { consultaArticulosGPA, type GpaArticulo, type GpaCriterio } from "@/lib/mptc/gpa.functions";
+import { CATEGORIA_OPCIONES } from "@/lib/mptc/gpa-categorias";
 
 export interface PiezaSeleccionada extends GpaArticulo {
   cantidad: number;
