@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./require-auth";
 
 interface CreateAdminInput {
   email: string;
@@ -42,7 +42,7 @@ async function logAdminAction(
 }
 
 export const createAdminUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: CreateAdminInput) => {
     if (!data || typeof data.email !== "string" || typeof data.password !== "string") {
       throw new Error("Datos inválidos");
@@ -88,7 +88,7 @@ export interface AdminRow {
 }
 
 export const listAdmins = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }): Promise<AdminRow[]> => {
     await ensureAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -120,7 +120,7 @@ export const listAdmins = createServerFn({ method: "GET" })
   });
 
 export const setAdminBanned = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; banned: boolean }) => {
     if (!data || typeof data.userId !== "string" || typeof data.banned !== "boolean") {
       throw new Error("Datos inválidos");
@@ -146,7 +146,7 @@ export const setAdminBanned = createServerFn({ method: "POST" })
   });
 
 export const setAdminPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; password: string }) => {
     if (!data || typeof data.userId !== "string" || typeof data.password !== "string") {
       throw new Error("Datos inválidos");
@@ -172,7 +172,7 @@ export const setAdminPassword = createServerFn({ method: "POST" })
   });
 
 export const deleteAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string }) => {
     if (!data || typeof data.userId !== "string") throw new Error("Datos inválidos");
     return data;
@@ -216,7 +216,7 @@ export interface AuditPage {
 }
 
 export const listAdminAuditLog = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { cursor?: AuditCursor | null; limit?: number } | undefined) => {
     const raw = data ?? {};
     const limit = Math.min(Math.max(Number(raw.limit ?? 50) || 50, 1), 200);

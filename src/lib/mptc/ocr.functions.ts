@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./require-auth";
 
 /**
  * OCR de matrícula usando Lovable AI Gateway (Gemini 2.5 Flash, multimodal).
@@ -7,7 +7,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * normalizada en mayúsculas y sin espacios extra.
  */
 export const ocrMatricula = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((input: { imageDataUrl: string }) => {
     if (!input?.imageDataUrl?.startsWith("data:image/")) {
       throw new Error("imageDataUrl inválida");

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "./require-auth";
 
 async function ensureAdmin(context: { supabase: any; userId: string }) {
   const { data: isAdmin, error } = await context.supabase.rpc("is_admin", { _uid: context.userId });
@@ -54,7 +54,7 @@ export interface TallerUser {
 }
 
 export const listTallerUsers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { tallerId: string }) => {
     if (!data?.tallerId) throw new Error("tallerId requerido");
     return { tallerId: data.tallerId.trim() };
@@ -82,7 +82,7 @@ export const listTallerUsers = createServerFn({ method: "POST" })
   });
 
 export const setTallerUserPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; password: string; reason?: string }) => {
     if (!data?.userId || typeof data.password !== "string") throw new Error("Datos inválidos");
     if (data.password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres");
@@ -107,7 +107,7 @@ export const setTallerUserPassword = createServerFn({ method: "POST" })
   });
 
 export const setTallerUserEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; email: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
     const email = (data.email || "").trim().toLowerCase();
@@ -134,7 +134,7 @@ export const setTallerUserEmail = createServerFn({ method: "POST" })
   });
 
 export const setTallerUserMecanico = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; mecanico: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
     return {
@@ -179,7 +179,7 @@ function deriveRoleFromTallerId(tallerId: string): string {
 }
 
 export const createTallerUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { tallerId: string; email: string; password: string; mecanico?: string; reason?: string }) => {
     if (!data?.tallerId) throw new Error("tallerId requerido");
     if (!data?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) throw new Error("Email no válido");
@@ -238,7 +238,7 @@ export const createTallerUser = createServerFn({ method: "POST" })
   });
 
 export const deleteTallerUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { userId: string; reason?: string }) => {
     if (!data?.userId) throw new Error("userId requerido");
     return { userId: data.userId, reason: normalizeReason(data.reason) };
