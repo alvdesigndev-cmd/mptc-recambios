@@ -30,20 +30,22 @@ export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
 
 /** POST /ConsultaArticulos — busca artículos por descripción o referencia. */
 export const consultaArticulosGPA = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => (data as { query?: string; marca?: string; modelo?: string; motor?: string } | undefined) ?? {})
+  .inputValidator((data: unknown) => (data as { query?: string; marca?: string; modelo?: string; motor?: string; categoria?: string } | undefined) ?? {})
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; criterio: GpaCriterio; error?: string }> => {
     const query = (data.query ?? "").toString();
+    const categoria = data.categoria ? data.categoria.toString() : undefined;
     if (gpaMockMode()) {
-      const r = mockConsultaArticulos(query);
+      const r = mockConsultaArticulos(query, categoria);
       return { ok: true, mock: true, articulos: r.articulos, criterio: r.criterio };
     }
-    const criterio = detectarCriterio(query);
+    const criterio = detectarCriterio(query, categoria);
     try {
       const res = await gpaAuthPost("ConsultaArticulos", {
         Texto: query,
         Marca: data.marca,
         Modelo: data.modelo,
         Motor: data.motor,
+        Categoria: categoria,
       });
       if (!res.ok) return { ok: false, mock: false, articulos: [], criterio, error: `Error ${res.status}` };
       const json = (await res.json()) as { articulos?: GpaArticulo[] };
