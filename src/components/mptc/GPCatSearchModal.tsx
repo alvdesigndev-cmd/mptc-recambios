@@ -27,6 +27,26 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [sel, setSel] = useState<Record<string, number>>({});
   const [dispo, setDispo] = useState<"todas" | "disponible" | "pedido">("todas");
   const [marcasSel, setMarcasSel] = useState<string[]>([]);
+  const [categoria, setCategoria] = useState("");
+
+  const run = async (opts?: { query?: string; categoria?: string }) => {
+    const q = opts?.query ?? query;
+    const cat = opts?.categoria ?? categoria;
+    setLoading(true);
+    try {
+      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
+      setItems(r.articulos);
+      setCriterio(r.criterio ?? null);
+      setSel({});
+      setDispo("todas");
+      setMarcasSel([]);
+      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
+    } catch {
+      toast.error("No se pudo buscar en GPCat");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -36,30 +56,15 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setCriterio(null);
     setDispo("todas");
     setMarcasSel([]);
-    let cancelled = false;
-    setLoading(true);
-    buscar({ data: { query: averia ?? "", marca, modelo, motor } })
-      .then((r) => { if (!cancelled) { setItems(r.articulos); setCriterio(r.criterio ?? null); } })
-      .catch(() => { if (!cancelled) toast.error("No se pudo buscar en GPCat"); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    setCategoria("");
+    void run({ query: averia ?? "", categoria: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const run = async () => {
-    setLoading(true);
-    try {
-      const r = await buscar({ data: { query, marca, modelo, motor } });
-      setItems(r.articulos);
-      setCriterio(r.criterio ?? null);
-      setDispo("todas");
-      setMarcasSel([]);
-      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
-    } catch {
-      toast.error("No se pudo buscar en GPCat");
-    } finally {
-      setLoading(false);
-    }
+  /** Cambio manual de categoría: relanza la búsqueda con esa selección. */
+  const cambiarCategoria = (key: string) => {
+    setCategoria(key);
+    void run({ categoria: key });
   };
 
   const esDisponible = (stock: string) => stock.toLowerCase().includes("disponible");
