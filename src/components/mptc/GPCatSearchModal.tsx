@@ -31,10 +31,11 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setQuery(averia ?? "");
     setSel({});
     setItems([]);
+    setCriterio(null);
     let cancelled = false;
     setLoading(true);
     buscar({ data: { query: averia ?? "", marca, modelo, motor } })
-      .then((r) => { if (!cancelled) setItems(r.articulos); })
+      .then((r) => { if (!cancelled) { setItems(r.articulos); setCriterio(r.criterio ?? null); } })
       .catch(() => { if (!cancelled) toast.error("No se pudo buscar en GPCat"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -46,6 +47,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     try {
       const r = await buscar({ data: { query, marca, modelo, motor } });
       setItems(r.articulos);
+      setCriterio(r.criterio ?? null);
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
