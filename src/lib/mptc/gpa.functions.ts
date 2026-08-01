@@ -7,10 +7,12 @@ import {
   mockIniciarSesion,
   fetchGpaToken,
   gpaAuthPost,
+  detectarCriterio,
 } from "./gpa.server";
-import type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
+import type { GpaArticulo, GpaLineaPedido, GpaCriterio } from "./gpa.server";
 
-export type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
+export type { GpaArticulo, GpaLineaPedido, GpaCriterio, GpaCriterioCategoria } from "./gpa.server";
+
 
 /** POST /IniciarSesion — devuelve el token de sesión de GPA (cacheado mientras sea válido). */
 export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
@@ -29,9 +31,13 @@ export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
 /** POST /ConsultaArticulos — busca artículos por descripción o referencia. */
 export const consultaArticulosGPA = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => (data as { query?: string; marca?: string; modelo?: string; motor?: string } | undefined) ?? {})
-  .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; error?: string }> => {
+  .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; criterio: GpaCriterio; error?: string }> => {
     const query = (data.query ?? "").toString();
-    if (gpaMockMode()) return { ok: true, mock: true, articulos: mockConsultaArticulos(query) };
+    if (gpaMockMode()) {
+      const r = mockConsultaArticulos(query);
+      return { ok: true, mock: true, articulos: r.articulos, criterio: r.criterio };
+    }
+    const criterio = detectarCriterio(query);
     try {
       const res = await gpaAuthPost("ConsultaArticulos", {
         Texto: query,
@@ -39,11 +45,11 @@ export const consultaArticulosGPA = createServerFn({ method: "POST" })
         Modelo: data.modelo,
         Motor: data.motor,
       });
-      if (!res.ok) return { ok: false, mock: false, articulos: [], error: `Error ${res.status}` };
+      if (!res.ok) return { ok: false, mock: false, articulos: [], criterio, error: `Error ${res.status}` };
       const json = (await res.json()) as { articulos?: GpaArticulo[] };
-      return { ok: true, mock: false, articulos: json.articulos ?? [] };
+      return { ok: true, mock: false, articulos: json.articulos ?? [], criterio };
     } catch {
-      return { ok: false, mock: false, articulos: [], error: "No se pudo consultar el catálogo" };
+      return { ok: false, mock: false, articulos: [], criterio, error: "No se pudo consultar el catálogo" };
     }
   });
 

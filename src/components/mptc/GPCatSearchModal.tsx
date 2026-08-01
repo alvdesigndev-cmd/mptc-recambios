@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Package, Search, X } from "lucide-react";
+import { Filter, Loader2, Package, Search, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { consultaArticulosGPA, type GpaArticulo } from "@/lib/mptc/gpa.functions";
+import { consultaArticulosGPA, type GpaArticulo, type GpaCriterio } from "@/lib/mptc/gpa.functions";
 
 export interface PiezaSeleccionada extends GpaArticulo {
   cantidad: number;
@@ -23,6 +23,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<GpaArticulo[]>([]);
+  const [criterio, setCriterio] = useState<GpaCriterio | null>(null);
   const [sel, setSel] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -30,10 +31,11 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setQuery(averia ?? "");
     setSel({});
     setItems([]);
+    setCriterio(null);
     let cancelled = false;
     setLoading(true);
     buscar({ data: { query: averia ?? "", marca, modelo, motor } })
-      .then((r) => { if (!cancelled) setItems(r.articulos); })
+      .then((r) => { if (!cancelled) { setItems(r.articulos); setCriterio(r.criterio ?? null); } })
       .catch(() => { if (!cancelled) toast.error("No se pudo buscar en GPCat"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -45,6 +47,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     try {
       const r = await buscar({ data: { query, marca, modelo, motor } });
       setItems(r.articulos);
+      setCriterio(r.criterio ?? null);
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
@@ -106,6 +109,49 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {!loading && criterio ? (
+            <div className="mb-3 rounded-2xl border border-border bg-surface-2 p-3">
+              <div className="flex items-center gap-2 text-[12px] font-semibold">
+                <Filter className="h-3.5 w-3.5 text-accent" />
+                {criterio.tipo === "referencia" && "Búsqueda por referencia"}
+                {criterio.tipo === "categoria" && "Búsqueda por categoría"}
+                {criterio.tipo === "texto" && "Búsqueda por texto libre"}
+                {criterio.tipo === "destacados" && "Piezas destacadas"}
+                <span className="ml-auto text-[11px] font-normal text-muted-foreground">
+                  {items.length} {items.length === 1 ? "resultado" : "resultados"}
+                </span>
+              </div>
+
+              {criterio.categorias.length > 0 ? (
+                <div className="mt-2 space-y-1.5">
+                  {criterio.categorias.map((c) => (
+                    <div key={c.key} className="flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        <Tag className="h-3 w-3" /> {c.label}
+                      </span>
+                      {c.sinonimos.slice(0, 6).map((s) => (
+                        <span key={s} className="rounded-full bg-surface-3 px-2 py-0.5 text-[10px] text-muted-foreground">
+                          {s}
+                        </span>
+                      ))}
+                      {c.sinonimos.length > 6 ? (
+                        <span className="text-[10px] text-muted-foreground">+{c.sinonimos.length - 6}</span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  {criterio.tipo === "destacados"
+                    ? "Sin coincidencias claras: mostrando selección habitual de taller."
+                    : criterio.termino
+                      ? <>Criterio aplicado sobre “{criterio.termino}”.</>
+                      : "Sin término de búsqueda."}
+                </p>
+              )}
+            </div>
+          ) : null}
+
           {loading ? (
             <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
           ) : items.length === 0 ? (
