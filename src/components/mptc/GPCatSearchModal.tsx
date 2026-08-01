@@ -132,14 +132,14 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); run(); } }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCategoria(""); void run({ categoria: "" }); } }}
                 placeholder="Descripción o referencia…"
                 className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none focus:bg-surface-3"
               />
             </div>
             <button
               type="button"
-              onClick={run}
+              onClick={() => { setCategoria(""); void run({ categoria: "" }); }}
               disabled={loading}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-60"
             >
