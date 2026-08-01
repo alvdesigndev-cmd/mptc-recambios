@@ -166,6 +166,7 @@ function NuevaPage() {
   const [ocrBusy, setOcrBusy] = useState(false);
   // Id en BD del borrador / gestión en curso (para no duplicar al guardar).
   const [gestionId, setGestionId] = useState<string | null>(draft0.gestionId ?? null);
+  const [gpcatOpen, setGpcatOpen] = useState(false);
   const runOcr = useServerFn(ocrMatricula);
 
   // Persistir borrador en sessionStorage para no perder datos al volver atrás.
