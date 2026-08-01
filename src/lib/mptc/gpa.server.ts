@@ -302,6 +302,8 @@ export interface GpaCriterio {
   tipo: "referencia" | "categoria" | "texto" | "destacados";
   termino: string;
   categorias: GpaCriterioCategoria[];
+  /** true cuando la categoría la eligió el usuario en lugar de detectarse. */
+  manual?: boolean;
 }
 
 export interface GpaBusquedaMock {
@@ -309,8 +311,24 @@ export interface GpaBusquedaMock {
   criterio: GpaCriterio;
 }
 
-export function mockConsultaArticulos(query: string): GpaBusquedaMock {
+/** Criterio para una categoría forzada manualmente por el usuario. */
+function criterioManual(key: string, termino: string): GpaCriterio {
+  return {
+    tipo: "categoria",
+    termino,
+    manual: true,
+    categorias: [{ key, label: CATEGORIA_LABELS[key] ?? key, sinonimos: [] }],
+  };
+}
+
+export function mockConsultaArticulos(query: string, categoria?: string): GpaBusquedaMock {
   const raw = (query || "").trim();
+
+  // 0) Categoría elegida manualmente: manda sobre la detección automática.
+  if (categoria && MOCK_CATALOGO[categoria]) {
+    return { articulos: MOCK_CATALOGO[categoria], criterio: criterioManual(categoria, raw) };
+  }
+
   if (!raw) {
     return { articulos: MOCK_PIEZAS, criterio: { tipo: "destacados", termino: "", categorias: [] } };
   }
