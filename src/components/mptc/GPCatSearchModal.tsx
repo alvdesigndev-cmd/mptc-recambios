@@ -63,7 +63,9 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setCriterio(null);
     setDispo("todas");
     setMarcasSel([]);
+    setOrden("relevancia");
     setCategoria("");
+
     void run({ query: averia ?? "", categoria: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
