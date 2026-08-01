@@ -29,6 +29,10 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [dispo, setDispo] = useState<"todas" | "disponible" | "pedido">("todas");
   const [marcasSel, setMarcasSel] = useState<string[]>([]);
   const [categoria, setCategoria] = useState("");
+  const [orden, setOrden] = useState<"relevancia" | "precio-asc" | "precio-desc" | "disponibilidad">(
+    "relevancia",
+  );
+
 
   const run = async (opts?: { query?: string; categoria?: string }) => {
     const q = opts?.query ?? query;
@@ -41,6 +45,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setSel({});
       setDispo("todas");
       setMarcasSel([]);
+      setOrden("relevancia");
+
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
@@ -57,7 +63,9 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setCriterio(null);
     setDispo("todas");
     setMarcasSel([]);
+    setOrden("relevancia");
     setCategoria("");
+
     void run({ query: averia ?? "", categoria: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -85,18 +93,28 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     return { todas: items.length, disponible, pedido: items.length - disponible };
   }, [items]);
 
-  const visibles = useMemo(
-    () =>
-      items.filter((i) => {
-        if (dispo === "disponible" && !esDisponible(i.stock)) return false;
-        if (dispo === "pedido" && esDisponible(i.stock)) return false;
-        if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
-        return true;
-      }),
-    [items, dispo, marcasSel],
-  );
+  const visibles = useMemo(() => {
+    const base = items.filter((i) => {
+      if (dispo === "disponible" && !esDisponible(i.stock)) return false;
+      if (dispo === "pedido" && esDisponible(i.stock)) return false;
+      if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
+      return true;
+    });
+    if (orden === "relevancia") return base;
+    const arr = [...base];
+    if (orden === "precio-asc") arr.sort((a, b) => a.precio - b.precio);
+    else if (orden === "precio-desc") arr.sort((a, b) => b.precio - a.precio);
+    else if (orden === "disponibilidad")
+      arr.sort(
+        (a, b) =>
+          Number(esDisponible(b.stock)) - Number(esDisponible(a.stock)) ||
+          a.precio - b.precio,
+      );
+    return arr;
+  }, [items, dispo, marcasSel, orden]);
 
-  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0;
+  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0 || orden !== "relevancia";
+
 
   const seleccionadas = useMemo(
     () => items.filter((i) => sel[i.referencia]).map((i) => ({ ...i, cantidad: sel[i.referencia] || 1 })),
@@ -251,12 +269,13 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                 {filtrosActivos ? (
                   <button
                     type="button"
-                    onClick={() => { setDispo("todas"); setMarcasSel([]); }}
+                    onClick={() => { setDispo("todas"); setMarcasSel([]); setOrden("relevancia"); }}
                     className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2"
                   >
                     <X className="h-3 w-3" /> Limpiar
                   </button>
                 ) : null}
+
               </div>
 
               {marcasDisponibles.length > 1 ? (
@@ -283,7 +302,32 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                   })}
                 </div>
               ) : null}
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">Ordenar:</span>
+                {([
+                  ["relevancia", "Relevancia"],
+                  ["precio-asc", "Precio ↑"],
+                  ["precio-desc", "Precio ↓"],
+                  ["disponibilidad", "Disponibilidad"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setOrden(key)}
+                    className={
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                      (orden === key
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+
           ) : null}
 
           {loading ? (
