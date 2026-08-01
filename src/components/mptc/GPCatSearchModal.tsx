@@ -23,6 +23,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<GpaArticulo[]>([]);
+  const [criterio, setCriterio] = useState<GpaCriterio | null>(null);
   const [sel, setSel] = useState<Record<string, number>>({});
 
   useEffect(() => {
