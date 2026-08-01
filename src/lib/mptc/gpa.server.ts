@@ -489,8 +489,9 @@ export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Resp
 }
 
 /** Detecta categorías y sinónimos aplicados a un texto de búsqueda (sin filtrar catálogo). */
-export function detectarCriterio(query: string): GpaCriterio {
+export function detectarCriterio(query: string, categoria?: string): GpaCriterio {
   const raw = (query || "").trim();
+  if (categoria && CATEGORIA_LABELS[categoria]) return criterioManual(categoria, raw);
   if (!raw) return { tipo: "destacados", termino: "", categorias: [] };
   const q = stripAccents(raw.toLowerCase());
   const qTokens = tokens(q);
