@@ -289,23 +289,8 @@ function stripAccents(s: string): string {
 const TODOS: GpaArticulo[] = Object.values(MOCK_CATALOGO).flat();
 
 /** Etiquetas legibles de cada categoría del catálogo. */
-export const CATEGORIA_LABELS: Record<string, string> = {
-  pastillas: "Pastillas de freno",
-  discos: "Discos y tambores",
-  kitfreno: "Frenos (kits y zapatas)",
-  filtros: "Filtros",
-  aceite: "Aceites y lubricantes",
-  bateria: "Baterías",
-  embrague: "Embrague",
-  amortiguadores: "Amortiguadores y muelles",
-  distribucion: "Distribución",
-  bujias: "Bujías y encendido",
-  radiador: "Refrigeración",
-  escape: "Escape y anticontaminación",
-  suspension: "Suspensión",
-  direccion: "Dirección",
-  neumaticos: "Neumáticos y ruedas",
-};
+export { CATEGORIA_LABELS, CATEGORIA_OPCIONES } from "./gpa-categorias";
+import { CATEGORIA_LABELS } from "./gpa-categorias";
 
 export interface GpaCriterioCategoria {
   key: string;
