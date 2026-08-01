@@ -154,15 +154,46 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
             <div className="mb-3 rounded-2xl border border-border bg-surface-2 p-3">
               <div className="flex items-center gap-2 text-[12px] font-semibold">
                 <Filter className="h-3.5 w-3.5 text-accent" />
-                {criterio.tipo === "referencia" && "Búsqueda por referencia"}
-                {criterio.tipo === "categoria" && "Búsqueda por categoría"}
-                {criterio.tipo === "texto" && "Búsqueda por texto libre"}
-                {criterio.tipo === "destacados" && "Piezas destacadas"}
+                {criterio.manual
+                  ? "Categoría elegida manualmente"
+                  : <>
+                      {criterio.tipo === "referencia" && "Búsqueda por referencia"}
+                      {criterio.tipo === "categoria" && "Búsqueda por categoría"}
+                      {criterio.tipo === "texto" && "Búsqueda por texto libre"}
+                      {criterio.tipo === "destacados" && "Piezas destacadas"}
+                    </>}
                 <span className="ml-auto text-[11px] font-normal text-muted-foreground">
                   {filtrosActivos ? `${visibles.length} de ${items.length}` : items.length}{" "}
                   {items.length === 1 ? "resultado" : "resultados"}
                 </span>
               </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="text-[11px] text-muted-foreground" htmlFor="gpcat-categoria">
+                  Categoría
+                </label>
+                <select
+                  id="gpcat-categoria"
+                  value={categoria}
+                  onChange={(e) => cambiarCategoria(e.target.value)}
+                  className="min-w-0 flex-1 rounded-xl bg-surface-3 px-2 py-1.5 text-[12px] outline-none"
+                >
+                  <option value="">Detección automática</option>
+                  {CATEGORIA_OPCIONES.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </select>
+                {categoria ? (
+                  <button
+                    type="button"
+                    onClick={() => cambiarCategoria("")}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-3"
+                  >
+                    <X className="h-3 w-3" /> Auto
+                  </button>
+                ) : null}
+              </div>
+
 
               {criterio.categorias.length > 0 ? (
                 <div className="mt-2 space-y-1.5">
