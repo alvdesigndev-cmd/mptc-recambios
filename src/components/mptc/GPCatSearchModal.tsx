@@ -269,12 +269,13 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                 {filtrosActivos ? (
                   <button
                     type="button"
-                    onClick={() => { setDispo("todas"); setMarcasSel([]); }}
+                    onClick={() => { setDispo("todas"); setMarcasSel([]); setOrden("relevancia"); }}
                     className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2"
                   >
                     <X className="h-3 w-3" /> Limpiar
                   </button>
                 ) : null}
+
               </div>
 
               {marcasDisponibles.length > 1 ? (
