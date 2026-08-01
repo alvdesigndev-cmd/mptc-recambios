@@ -120,6 +120,9 @@ function AuthPage() {
   const [options, setOptions] = useState<TallerOption[] | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  // Perfil de acceso elegido en el login: sirve para validar el rol real de la
+  // cuenta y redirigir al panel correspondiente.
+  const [loginProfile, setLoginProfile] = useState<"auto" | "taller" | "admin" | "pena">("auto");
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
