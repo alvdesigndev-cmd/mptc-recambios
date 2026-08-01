@@ -163,16 +163,51 @@ export function mockIniciarSesion() {
   };
 }
 
-export function mockConsultaArticulos(query: string): GpaArticulo[] {
-  const q = (query || "").trim().toLowerCase();
-  if (!q) return MOCK_PIEZAS;
-  return MOCK_PIEZAS.filter(
-    (p) =>
-      p.referencia.toLowerCase().includes(q) ||
-      p.descripcion.toLowerCase().includes(q) ||
-      p.marca.toLowerCase().includes(q),
-  );
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
+
+const TODOS: GpaArticulo[] = Object.values(MOCK_CATALOGO).flat();
+
+export function mockConsultaArticulos(query: string): GpaArticulo[] {
+  const raw = (query || "").trim();
+  if (!raw) return MOCK_PIEZAS;
+  const q = stripAccents(raw.toLowerCase());
+
+  // 1) Búsqueda por referencia exacta/parcial (mín. 3 caracteres alfanuméricos).
+  const refQ = q.replace(/[^a-z0-9]/g, "");
+  if (refQ.length >= 3) {
+    const porRef = TODOS.filter((p) => p.referencia.toLowerCase().replace(/[^a-z0-9]/g, "").includes(refQ));
+    if (porRef.length > 0) return porRef;
+  }
+
+  // 2) Búsqueda por categoría según palabras clave de la avería.
+  const categorias = CATEGORIA_KEYWORDS.filter((c) =>
+    c.words.some((w) => q.includes(stripAccents(w))),
+  ).map((c) => c.key as string);
+
+  if (categorias.length > 0) {
+    const seen = new Set<string>();
+    const out: GpaArticulo[] = [];
+    for (const key of categorias) {
+      for (const p of MOCK_CATALOGO[key] ?? []) {
+        if (seen.has(p.referencia)) continue;
+        seen.add(p.referencia);
+        out.push(p);
+      }
+    }
+    return out;
+  }
+
+  // 3) Fallback: texto libre sobre descripción o marca.
+  const libre = TODOS.filter(
+    (p) =>
+      stripAccents(p.descripcion.toLowerCase()).includes(q) ||
+      stripAccents(p.marca.toLowerCase()).includes(q),
+  );
+  return libre.length > 0 ? libre : MOCK_PIEZAS;
+}
+
 
 export function mockGenerarPedido(lineas: GpaLineaPedido[]) {
   const total = lineas.reduce((a, l) => a + l.precio * (l.cantidad || 1), 0);
