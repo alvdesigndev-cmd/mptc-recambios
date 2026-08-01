@@ -1,37 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
-  gpaEndpoint,
-  gpaConfig,
   gpaMockMode,
   mockConsultaArticulos,
   mockConsultaPedidos,
   mockGenerarPedido,
   mockIniciarSesion,
   fetchGpaToken,
+  gpaAuthPost,
 } from "./gpa.server";
 import type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
 
 export type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
 
-/** POST /IniciarSesion — devuelve el token de sesión de GPA. */
+/** POST /IniciarSesion — devuelve el token de sesión de GPA (cacheado mientras sea válido). */
 export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: boolean; mock: boolean; token: string; expiraEn?: number; error?: string }> => {
     if (gpaMockMode()) return mockIniciarSesion();
-    const { usuario, password } = gpaConfig();
     try {
-      const res = await fetch(gpaEndpoint("IniciarSesion"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ Usuario: usuario, Password: password }),
-      });
-      if (!res.ok) return { ok: false, mock: false, token: "", error: `Error ${res.status}` };
-      const json = (await res.json()) as { token?: string; Token?: string };
-      return { ok: true, mock: false, token: json.token ?? json.Token ?? "" };
+      const token = await fetchGpaToken();
+      return { ok: true, mock: false, token };
     } catch {
       return { ok: false, mock: false, token: "", error: "No se pudo conectar con Grupo Peña" };
     }
   },
 );
+
 
 /** POST /ConsultaArticulos — busca artículos por descripción o referencia. */
 export const consultaArticulosGPA = createServerFn({ method: "POST" })
