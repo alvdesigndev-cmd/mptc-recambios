@@ -300,9 +300,10 @@ export function mockConsultaArticulos(query: string): GpaArticulo[] {
     if (porRef.length > 0) return porRef;
   }
 
-  // 2) Búsqueda por categoría según palabras clave de la avería.
+  // 2) Búsqueda por categoría con sinónimos y coincidencia parcial.
+  const qTokens = tokens(q);
   const categorias = CATEGORIA_KEYWORDS.filter((c) =>
-    c.words.some((w) => q.includes(stripAccents(w))),
+    c.words.some((w) => matchesKeyword(q, qTokens, w)),
   ).map((c) => c.key as string);
 
   if (categorias.length > 0) {
@@ -318,14 +319,19 @@ export function mockConsultaArticulos(query: string): GpaArticulo[] {
     return out;
   }
 
-  // 3) Fallback: texto libre sobre descripción o marca.
-  const libre = TODOS.filter(
-    (p) =>
-      stripAccents(p.descripcion.toLowerCase()).includes(q) ||
-      stripAccents(p.marca.toLowerCase()).includes(q),
-  );
+  // 3) Fallback: texto libre sobre descripción o marca (frase o palabras parciales).
+  const libre = TODOS.filter((p) => {
+    const desc = stripAccents(p.descripcion.toLowerCase());
+    const marca = stripAccents(p.marca.toLowerCase());
+    if (desc.includes(q) || marca.includes(q)) return true;
+    if (qTokens.length === 0) return false;
+    return qTokens.every((t) =>
+      tokens(desc).some((d) => d.startsWith(t) || t.startsWith(d)) || marca.includes(t),
+    );
+  });
   return libre.length > 0 ? libre : MOCK_PIEZAS;
 }
+
 
 
 export function mockGenerarPedido(lineas: GpaLineaPedido[]) {
