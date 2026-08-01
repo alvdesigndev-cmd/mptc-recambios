@@ -41,11 +41,117 @@ export function gpaMockMode(): boolean {
   return !usuario || !password;
 }
 
+/** Catálogo mock por categorías, con referencias/marcas/precios de mercado. */
+const MOCK_CATALOGO: Record<string, GpaArticulo[]> = {
+  pastillas: [
+    { referencia: "P85020", descripcion: "Juego pastillas freno delanteras", marca: "BREMBO", precio: 45.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "13.0460-2727.2", descripcion: "Juego pastillas freno delanteras", marca: "ATE", precio: 39.75, stock: "Disponible", plazo: "24h" },
+    { referencia: "2398201", descripcion: "Juego pastillas freno traseras", marca: "TEXTAR", precio: 31.4, stock: "Disponible", plazo: "24h" },
+    { referencia: "0 986 494 600", descripcion: "Juego pastillas freno traseras", marca: "BOSCH", precio: 33.2, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "GDB1550", descripcion: "Juego pastillas freno delanteras", marca: "TRW", precio: 36.8, stock: "Disponible", plazo: "24h" },
+  ],
+  discos: [
+    { referencia: "09.9772.11", descripcion: "Disco de freno delantero ventilado 288mm", marca: "BREMBO", precio: 52.3, stock: "Disponible", plazo: "24h" },
+    { referencia: "24.0125-0147.1", descripcion: "Disco de freno delantero 280mm", marca: "ATE", precio: 41.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "92120803", descripcion: "Disco de freno trasero macizo 256mm", marca: "TEXTAR", precio: 34.6, stock: "Disponible", plazo: "24h" },
+    { referencia: "DF4184", descripcion: "Disco de freno trasero 253mm", marca: "TRW", precio: 29.95, stock: "Bajo pedido", plazo: "48h" },
+  ],
+  kitfreno: [
+    { referencia: "KT-BR-01", descripcion: "Kit frenos delanteros (2 discos + pastillas)", marca: "BREMBO", precio: 129.9, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "13.0460-7195.2", descripcion: "Kit frenos traseros (2 discos + pastillas)", marca: "ATE", precio: 98.5, stock: "Disponible", plazo: "24h" },
+    { referencia: "8671014153", descripcion: "Zapatas freno de mano (kit)", marca: "VALEO", precio: 27.4, stock: "Disponible", plazo: "24h" },
+  ],
+  filtros: [
+    { referencia: "OC 593/3", descripcion: "Filtro de aceite", marca: "KNECHT / MAHLE", precio: 8.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "C 30 130", descripcion: "Filtro de aire motor", marca: "MANN-FILTER", precio: 16.4, stock: "Disponible", plazo: "24h" },
+    { referencia: "CUK 2939", descripcion: "Filtro de habitáculo con carbón activo", marca: "MANN-FILTER", precio: 19.8, stock: "Disponible", plazo: "24h" },
+    { referencia: "0 450 906 457", descripcion: "Filtro de combustible diésel", marca: "BOSCH", precio: 22.6, stock: "Bajo pedido", plazo: "48h" },
+  ],
+  aceite: [
+    { referencia: "8100 X-CESS 5W40 5L", descripcion: "Aceite motor 5W-40 sintético 5L", marca: "MOTUL", precio: 42.5, stock: "Disponible", plazo: "24h" },
+    { referencia: "EDGE 5W30 LL 5L", descripcion: "Aceite motor 5W-30 Longlife 5L", marca: "CASTROL", precio: 46.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "HELIX HX8 5W40 4L", descripcion: "Aceite motor 5W-40 4L", marca: "SHELL", precio: 33.2, stock: "Disponible", plazo: "24h" },
+  ],
+  bateria: [
+    { referencia: "S4 007", descripcion: "Batería 12V 72Ah 680A", marca: "BOSCH", precio: 109.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "EA722", descripcion: "Batería EFB Start-Stop 12V 72Ah", marca: "VARTA", precio: 142.5, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "570 500 065", descripcion: "Batería 12V 70Ah 650A", marca: "EXIDE", precio: 96.4, stock: "Disponible", plazo: "24h" },
+  ],
+  embrague: [
+    { referencia: "624 3213 09", descripcion: "Kit de embrague completo", marca: "LUK", precio: 268.4, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "3000 951 001", descripcion: "Kit de embrague 3 piezas", marca: "SACHS", precio: 242.9, stock: "Bajo pedido", plazo: "72h" },
+    { referencia: "826 812", descripcion: "Volante motor bimasa", marca: "VALEO", precio: 389.0, stock: "Bajo pedido", plazo: "72h" },
+  ],
+  amortiguadores: [
+    { referencia: "22-183430", descripcion: "Amortiguador delantero gas", marca: "BILSTEIN", precio: 74.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "334834", descripcion: "Amortiguador trasero gas", marca: "KYB", precio: 52.3, stock: "Disponible", plazo: "24h" },
+    { referencia: "SM5560", descripcion: "Kit soporte amortiguador delantero", marca: "MONROE", precio: 38.7, stock: "Bajo pedido", plazo: "48h" },
+  ],
+  distribucion: [
+    { referencia: "530 0201 10", descripcion: "Kit correa de distribución con bomba de agua", marca: "INA", precio: 158.9, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "KD457.51", descripcion: "Kit distribución (correa + tensores)", marca: "DAYCO", precio: 112.4, stock: "Disponible", plazo: "24h" },
+    { referencia: "CT1028WP2", descripcion: "Kit correa distribución + bomba agua", marca: "CONTITECH", precio: 134.6, stock: "Disponible", plazo: "24h" },
+  ],
+  bujias: [
+    { referencia: "FR7DPP332", descripcion: "Bujía de encendido (unidad)", marca: "BOSCH", precio: 9.4, stock: "Disponible", plazo: "24h" },
+    { referencia: "PFR7S8EG", descripcion: "Bujía iridio-platino (unidad)", marca: "NGK", precio: 17.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "0 250 403 009", descripcion: "Calentador / bujía precalentamiento", marca: "BOSCH", precio: 14.2, stock: "Disponible", plazo: "24h" },
+  ],
+  radiador: [
+    { referencia: "8MK 376 700-584", descripcion: "Radiador de agua motor", marca: "HELLA", precio: 132.5, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "CR 1088 000S", descripcion: "Radiador refrigeración motor", marca: "MAHLE", precio: 148.9, stock: "Bajo pedido", plazo: "72h" },
+    { referencia: "735.60", descripcion: "Bomba de agua", marca: "SKF", precio: 46.3, stock: "Disponible", plazo: "24h" },
+  ],
+  escape: [
+    { referencia: "0 258 006 026", descripcion: "Sonda lambda", marca: "BOSCH", precio: 68.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "096-152", descripcion: "Catalizador con junta", marca: "BM CATALYSTS", precio: 214.0, stock: "Bajo pedido", plazo: "72h" },
+    { referencia: "5511-11-0080940P", descripcion: "Filtro de partículas DPF", marca: "BOSAL", precio: 386.5, stock: "Bajo pedido", plazo: "72h" },
+  ],
+  suspension: [
+    { referencia: "V10-7010", descripcion: "Rótula de suspensión inferior", marca: "VAICO", precio: 21.4, stock: "Disponible", plazo: "24h" },
+    { referencia: "JTS7573", descripcion: "Bieleta barra estabilizadora", marca: "TRW", precio: 14.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "31 30 6 786 156", descripcion: "Silentblock brazo suspensión", marca: "LEMFÖRDER", precio: 27.8, stock: "Bajo pedido", plazo: "48h" },
+  ],
+  direccion: [
+    { referencia: "JAR203", descripcion: "Rótula axial de dirección", marca: "TRW", precio: 18.6, stock: "Disponible", plazo: "24h" },
+    { referencia: "V10-0640", descripcion: "Bomba hidráulica dirección asistida", marca: "VAICO", precio: 178.9, stock: "Bajo pedido", plazo: "72h" },
+  ],
+  alternador: [
+    { referencia: "0 986 049 231", descripcion: "Alternador 140A", marca: "BOSCH", precio: 289.5, stock: "Bajo pedido", plazo: "48h" },
+    { referencia: "438171", descripcion: "Motor de arranque", marca: "VALEO", precio: 246.9, stock: "Bajo pedido", plazo: "72h" },
+    { referencia: "6PK1200", descripcion: "Correa auxiliar poli-V", marca: "GATES", precio: 16.8, stock: "Disponible", plazo: "24h" },
+  ],
+  neumaticos: [
+    { referencia: "205/55R16 91V", descripcion: "Neumático turismo verano", marca: "MICHELIN", precio: 89.9, stock: "Disponible", plazo: "24h" },
+    { referencia: "195/65R15 91H", descripcion: "Neumático turismo verano", marca: "CONTINENTAL", precio: 72.5, stock: "Disponible", plazo: "24h" },
+  ],
+};
+
+const CATEGORIA_KEYWORDS: Array<{ key: keyof typeof MOCK_CATALOGO | string; words: string[] }> = [
+  { key: "pastillas", words: ["pastilla", "pastillas", "ferodo", "brake pad"] },
+  { key: "discos", words: ["disco", "discos"] },
+  { key: "kitfreno", words: ["freno", "frenos", "kit freno", "zapata", "zapatas", "mano"] },
+  { key: "filtros", words: ["filtro", "filtros", "habitaculo", "habitáculo", "polen"] },
+  { key: "aceite", words: ["aceite", "lubricante", "5w30", "5w40", "cambio de aceite"] },
+  { key: "bateria", words: ["bateria", "batería", "arranca", "no arranca", "12v"] },
+  { key: "embrague", words: ["embrague", "clutch", "bimasa", "volante motor"] },
+  { key: "amortiguadores", words: ["amortiguador", "amortiguadores", "suspension trasera", "muelle"] },
+  { key: "distribucion", words: ["distribucion", "distribución", "correa de distribucion", "cadena"] },
+  { key: "bujias", words: ["bujia", "bujías", "bujias", "calentador", "precalentamiento", "encendido"] },
+  { key: "radiador", words: ["radiador", "refrigeracion", "refrigeración", "bomba de agua", "temperatura", "anticongelante"] },
+  { key: "escape", words: ["escape", "catalizador", "dpf", "particulas", "partículas", "lambda", "humo"] },
+  { key: "suspension", words: ["suspension", "suspensión", "rotula", "rótula", "bieleta", "silentblock", "ruido"] },
+  { key: "direccion", words: ["direccion", "dirección", "volante", "asistida"] },
+  { key: "alternador", words: ["alternador", "arranque", "motor de arranque", "correa auxiliar", "bateria no carga"] },
+  { key: "neumaticos", words: ["neumatico", "neumático", "rueda", "ruedas", "llanta"] },
+];
+
 const MOCK_PIEZAS: GpaArticulo[] = [
-  { referencia: "1234567", descripcion: "Pastillas de freno delanteras", marca: "BREMBO", precio: 45.9, stock: "Disponible", plazo: "24h" },
-  { referencia: "2345678", descripcion: "Disco de freno delantero", marca: "ATE", precio: 38.5, stock: "Disponible", plazo: "24h" },
-  { referencia: "3456789", descripcion: "Kit frenos delanteros", marca: "TEXTAR", precio: 79.9, stock: "Bajo pedido", plazo: "48h" },
-  { referencia: "4567890", descripcion: "Pastillas freno traseras", marca: "BOSCH", precio: 32.0, stock: "Disponible", plazo: "24h" },
+  ...MOCK_CATALOGO["pastillas"]!.slice(0, 2),
+  ...MOCK_CATALOGO["discos"]!.slice(0, 1),
+  ...MOCK_CATALOGO["filtros"]!.slice(0, 2),
+  ...MOCK_CATALOGO["aceite"]!.slice(0, 1),
+  ...MOCK_CATALOGO["bateria"]!.slice(0, 1),
 ];
 
 export function mockIniciarSesion() {
