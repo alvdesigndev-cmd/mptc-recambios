@@ -120,6 +120,9 @@ function AuthPage() {
   const [options, setOptions] = useState<TallerOption[] | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  // Perfil de acceso elegido en el login: sirve para validar el rol real de la
+  // cuenta y redirigir al panel correspondiente.
+  const [loginProfile, setLoginProfile] = useState<"auto" | "taller" | "admin" | "pena">("auto");
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
@@ -187,7 +190,19 @@ function AuthPage() {
         if (error) throw error;
         if (remember) saveRemembered(email, password); else clearRemembered();
         const p = await syncProfileToSettings();
-        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+        const role = p?.role;
+        const isTaller = !!role && role !== "admin" && role !== "pena";
+        const matches =
+          loginProfile === "auto" ||
+          (loginProfile === "admin" && role === "admin") ||
+          (loginProfile === "pena" && role === "pena") ||
+          (loginProfile === "taller" && isTaller);
+        if (!matches) {
+          await supabase.auth.signOut();
+          const nombre = role === "admin" ? "Administrador" : role === "pena" ? "Grupo Peña" : "Taller";
+          throw new Error(`Esta cuenta no es de tipo ${loginProfile === "admin" ? "Administrador" : loginProfile === "pena" ? "Grupo Peña" : "Taller"}. Es una cuenta de ${nombre}.`);
+        }
+        navigate({ to: pickPostLoginPath(roleFallback(role)) as any, replace: true });
       } else {
         if (accountType === "pena") {
           const { error } = await signUp({
@@ -240,6 +255,36 @@ function AuthPage() {
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">MPTC · Taller Conectado</p>
         </header>
+
+        {mode === "login" && (
+          <div>
+            <span className="text-sm text-muted-foreground">Acceder como</span>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {([
+                { v: "auto", label: "Automático" },
+                { v: "taller", label: "Taller" },
+                { v: "admin", label: "Administrador" },
+                { v: "pena", label: "Grupo Peña" },
+              ] as const).map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  aria-pressed={loginProfile === o.v}
+                  onClick={() => { setError(null); setLoginProfile(o.v); }}
+                  className={`rounded-lg border px-3 py-2 text-[13px] font-medium transition ${
+                    loginProfile === o.v
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border bg-surface-2 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+
 
         <label className="block text-sm">
           <span className="text-muted-foreground">Email</span>
