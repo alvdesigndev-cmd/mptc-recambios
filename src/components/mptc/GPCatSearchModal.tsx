@@ -154,7 +154,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                 {criterio.tipo === "texto" && "Búsqueda por texto libre"}
                 {criterio.tipo === "destacados" && "Piezas destacadas"}
                 <span className="ml-auto text-[11px] font-normal text-muted-foreground">
-                  {items.length} {items.length === 1 ? "resultado" : "resultados"}
+                  {filtrosActivos ? `${visibles.length} de ${items.length}` : items.length}{" "}
+                  {items.length === 1 ? "resultado" : "resultados"}
                 </span>
               </div>
 
