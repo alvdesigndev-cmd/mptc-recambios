@@ -189,13 +189,75 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
             </div>
           ) : null}
 
+          {!loading && items.length > 0 ? (
+            <div className="mb-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {([
+                  ["todas", "Todas", conteoDispo.todas],
+                  ["disponible", "Disponible", conteoDispo.disponible],
+                  ["pedido", "Bajo pedido", conteoDispo.pedido],
+                ] as const).map(([key, label, n]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => { setDispo(key); setMarcasSel([]); }}
+                    className={
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                      (dispo === key
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                    }
+                  >
+                    {label} ({n})
+                  </button>
+                ))}
+                {filtrosActivos ? (
+                  <button
+                    type="button"
+                    onClick={() => { setDispo("todas"); setMarcasSel([]); }}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2"
+                  >
+                    <X className="h-3 w-3" /> Limpiar
+                  </button>
+                ) : null}
+              </div>
+
+              {marcasDisponibles.length > 1 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {marcasDisponibles.map(([m, n]) => {
+                    const on = marcasSel.includes(m);
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() =>
+                          setMarcasSel((prev) => (on ? prev.filter((x) => x !== m) : [...prev, m]))
+                        }
+                        className={
+                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition " +
+                          (on
+                            ? "border-accent bg-accent/15 text-accent"
+                            : "border-border bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                        }
+                      >
+                        {m} ({n})
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {loading ? (
             <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
-          ) : items.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</div>
+          ) : visibles.length === 0 ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              {items.length > 0 ? "Ningún resultado con estos filtros." : "Sin resultados."}
+            </div>
           ) : (
             <div className="space-y-2">
-              {items.map((p) => {
+              {visibles.map((p) => {
                 const checked = !!sel[p.referencia];
                 return (
                   <label
