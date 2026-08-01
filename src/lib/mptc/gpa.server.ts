@@ -411,3 +411,27 @@ export function invalidateGpaToken(): void {
   tokenCache = null;
 }
 
+
+/**
+ * POST autenticado a GPA reutilizando el token en caché.
+ * Si la API responde 401, invalida el token y reintenta una vez.
+ */
+export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Response> {
+  const call = async (token: string) =>
+    fetch(gpaEndpoint(endpoint), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+  let res = await call(await fetchGpaToken());
+  if (res.status === 401 || res.status === 403) {
+    invalidateGpaToken();
+    res = await call(await fetchGpaToken());
+  }
+  return res;
+}
