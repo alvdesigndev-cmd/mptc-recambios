@@ -52,6 +52,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       const r = await buscar({ data: { query, marca, modelo, motor } });
       setItems(r.articulos);
       setCriterio(r.criterio ?? null);
+      setDispo("todas");
+      setMarcasSel([]);
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
@@ -59,6 +61,36 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setLoading(false);
     }
   };
+
+  const esDisponible = (stock: string) => stock.toLowerCase().includes("disponible");
+
+  const marcasDisponibles = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const i of items) {
+      if (dispo === "disponible" && !esDisponible(i.stock)) continue;
+      if (dispo === "pedido" && esDisponible(i.stock)) continue;
+      map.set(i.marca, (map.get(i.marca) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [items, dispo]);
+
+  const conteoDispo = useMemo(() => {
+    const disponible = items.filter((i) => esDisponible(i.stock)).length;
+    return { todas: items.length, disponible, pedido: items.length - disponible };
+  }, [items]);
+
+  const visibles = useMemo(
+    () =>
+      items.filter((i) => {
+        if (dispo === "disponible" && !esDisponible(i.stock)) return false;
+        if (dispo === "pedido" && esDisponible(i.stock)) return false;
+        if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
+        return true;
+      }),
+    [items, dispo, marcasSel],
+  );
+
+  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0;
 
   const seleccionadas = useMemo(
     () => items.filter((i) => sel[i.referencia]).map((i) => ({ ...i, cantidad: sel[i.referencia] || 1 })),
