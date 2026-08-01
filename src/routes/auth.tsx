@@ -256,6 +256,36 @@ function AuthPage() {
           <p className="mt-1 text-[13px] text-muted-foreground">MPTC · Taller Conectado</p>
         </header>
 
+        {mode === "login" && (
+          <div>
+            <span className="text-sm text-muted-foreground">Acceder como</span>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {([
+                { v: "auto", label: "Automático" },
+                { v: "taller", label: "Taller" },
+                { v: "admin", label: "Administrador" },
+                { v: "pena", label: "Grupo Peña" },
+              ] as const).map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  aria-pressed={loginProfile === o.v}
+                  onClick={() => { setError(null); setLoginProfile(o.v); }}
+                  className={`rounded-lg border px-3 py-2 text-[13px] font-medium transition ${
+                    loginProfile === o.v
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border bg-surface-2 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+
+
         <label className="block text-sm">
           <span className="text-muted-foreground">Email</span>
           <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
