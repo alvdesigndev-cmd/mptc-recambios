@@ -190,7 +190,19 @@ function AuthPage() {
         if (error) throw error;
         if (remember) saveRemembered(email, password); else clearRemembered();
         const p = await syncProfileToSettings();
-        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+        const role = p?.role;
+        const isTaller = !!role && role !== "admin" && role !== "pena";
+        const matches =
+          loginProfile === "auto" ||
+          (loginProfile === "admin" && role === "admin") ||
+          (loginProfile === "pena" && role === "pena") ||
+          (loginProfile === "taller" && isTaller);
+        if (!matches) {
+          await supabase.auth.signOut();
+          const nombre = role === "admin" ? "Administrador" : role === "pena" ? "Grupo Peña" : "Taller";
+          throw new Error(`Esta cuenta no es de tipo ${loginProfile === "admin" ? "Administrador" : loginProfile === "pena" ? "Grupo Peña" : "Taller"}. Es una cuenta de ${nombre}.`);
+        }
+        navigate({ to: pickPostLoginPath(roleFallback(role)) as any, replace: true });
       } else {
         if (accountType === "pena") {
           const { error } = await signUp({
