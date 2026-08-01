@@ -45,6 +45,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setSel({});
       setDispo("todas");
       setMarcasSel([]);
+      setOrden("relevancia");
+
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
