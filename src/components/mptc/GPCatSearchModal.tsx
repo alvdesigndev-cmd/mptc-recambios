@@ -302,7 +302,32 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                   })}
                 </div>
               ) : null}
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">Ordenar:</span>
+                {([
+                  ["relevancia", "Relevancia"],
+                  ["precio-asc", "Precio ↑"],
+                  ["precio-desc", "Precio ↓"],
+                  ["disponibilidad", "Disponibilidad"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setOrden(key)}
+                    className={
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                      (orden === key
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+
           ) : null}
 
           {loading ? (
