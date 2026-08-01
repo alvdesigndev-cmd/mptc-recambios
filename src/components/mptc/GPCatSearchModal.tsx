@@ -34,6 +34,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setSel({});
     setItems([]);
     setCriterio(null);
+    setDispo("todas");
+    setMarcasSel([]);
     let cancelled = false;
     setLoading(true);
     buscar({ data: { query: averia ?? "", marca, modelo, motor } })
