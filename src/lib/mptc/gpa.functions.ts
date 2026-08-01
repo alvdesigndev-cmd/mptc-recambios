@@ -39,16 +39,12 @@ export const consultaArticulosGPA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; error?: string }> => {
     const query = (data.query ?? "").toString();
     if (gpaMockMode()) return { ok: true, mock: true, articulos: mockConsultaArticulos(query) };
-    const token = await fetchGpaToken();
     try {
-      const res = await fetch(gpaEndpoint("ConsultaArticulos"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ Texto: query, Marca: data.marca, Modelo: data.modelo, Motor: data.motor }),
+      const res = await gpaAuthPost("ConsultaArticulos", {
+        Texto: query,
+        Marca: data.marca,
+        Modelo: data.modelo,
+        Motor: data.motor,
       });
       if (!res.ok) return { ok: false, mock: false, articulos: [], error: `Error ${res.status}` };
       const json = (await res.json()) as { articulos?: GpaArticulo[] };
