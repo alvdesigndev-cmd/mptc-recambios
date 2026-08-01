@@ -3,6 +3,7 @@ import { Filter, Loader2, Package, Search, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { consultaArticulosGPA, type GpaArticulo, type GpaCriterio } from "@/lib/mptc/gpa.functions";
+import { CATEGORIA_OPCIONES } from "@/lib/mptc/gpa-categorias";
 
 export interface PiezaSeleccionada extends GpaArticulo {
   cantidad: number;
@@ -27,6 +28,26 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [sel, setSel] = useState<Record<string, number>>({});
   const [dispo, setDispo] = useState<"todas" | "disponible" | "pedido">("todas");
   const [marcasSel, setMarcasSel] = useState<string[]>([]);
+  const [categoria, setCategoria] = useState("");
+
+  const run = async (opts?: { query?: string; categoria?: string }) => {
+    const q = opts?.query ?? query;
+    const cat = opts?.categoria ?? categoria;
+    setLoading(true);
+    try {
+      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
+      setItems(r.articulos);
+      setCriterio(r.criterio ?? null);
+      setSel({});
+      setDispo("todas");
+      setMarcasSel([]);
+      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
+    } catch {
+      toast.error("No se pudo buscar en GPCat");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -36,30 +57,15 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setCriterio(null);
     setDispo("todas");
     setMarcasSel([]);
-    let cancelled = false;
-    setLoading(true);
-    buscar({ data: { query: averia ?? "", marca, modelo, motor } })
-      .then((r) => { if (!cancelled) { setItems(r.articulos); setCriterio(r.criterio ?? null); } })
-      .catch(() => { if (!cancelled) toast.error("No se pudo buscar en GPCat"); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    setCategoria("");
+    void run({ query: averia ?? "", categoria: "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const run = async () => {
-    setLoading(true);
-    try {
-      const r = await buscar({ data: { query, marca, modelo, motor } });
-      setItems(r.articulos);
-      setCriterio(r.criterio ?? null);
-      setDispo("todas");
-      setMarcasSel([]);
-      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
-    } catch {
-      toast.error("No se pudo buscar en GPCat");
-    } finally {
-      setLoading(false);
-    }
+  /** Cambio manual de categoría: relanza la búsqueda con esa selección. */
+  const cambiarCategoria = (key: string) => {
+    setCategoria(key);
+    void run({ categoria: key });
   };
 
   const esDisponible = (stock: string) => stock.toLowerCase().includes("disponible");
@@ -127,14 +133,14 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); run(); } }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCategoria(""); void run({ categoria: "" }); } }}
                 placeholder="Descripción o referencia…"
                 className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none focus:bg-surface-3"
               />
             </div>
             <button
               type="button"
-              onClick={run}
+              onClick={() => { setCategoria(""); void run({ categoria: "" }); }}
               disabled={loading}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-60"
             >
@@ -149,15 +155,46 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
             <div className="mb-3 rounded-2xl border border-border bg-surface-2 p-3">
               <div className="flex items-center gap-2 text-[12px] font-semibold">
                 <Filter className="h-3.5 w-3.5 text-accent" />
-                {criterio.tipo === "referencia" && "Búsqueda por referencia"}
-                {criterio.tipo === "categoria" && "Búsqueda por categoría"}
-                {criterio.tipo === "texto" && "Búsqueda por texto libre"}
-                {criterio.tipo === "destacados" && "Piezas destacadas"}
+                {criterio.manual
+                  ? "Categoría elegida manualmente"
+                  : <>
+                      {criterio.tipo === "referencia" && "Búsqueda por referencia"}
+                      {criterio.tipo === "categoria" && "Búsqueda por categoría"}
+                      {criterio.tipo === "texto" && "Búsqueda por texto libre"}
+                      {criterio.tipo === "destacados" && "Piezas destacadas"}
+                    </>}
                 <span className="ml-auto text-[11px] font-normal text-muted-foreground">
                   {filtrosActivos ? `${visibles.length} de ${items.length}` : items.length}{" "}
                   {items.length === 1 ? "resultado" : "resultados"}
                 </span>
               </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="text-[11px] text-muted-foreground" htmlFor="gpcat-categoria">
+                  Categoría
+                </label>
+                <select
+                  id="gpcat-categoria"
+                  value={categoria}
+                  onChange={(e) => cambiarCategoria(e.target.value)}
+                  className="min-w-0 flex-1 rounded-xl bg-surface-3 px-2 py-1.5 text-[12px] outline-none"
+                >
+                  <option value="">Detección automática</option>
+                  {CATEGORIA_OPCIONES.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </select>
+                {categoria ? (
+                  <button
+                    type="button"
+                    onClick={() => cambiarCategoria("")}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-3"
+                  >
+                    <X className="h-3 w-3" /> Auto
+                  </button>
+                ) : null}
+              </div>
+
 
               {criterio.categorias.length > 0 ? (
                 <div className="mt-2 space-y-1.5">

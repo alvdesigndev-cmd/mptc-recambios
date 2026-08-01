@@ -289,23 +289,8 @@ function stripAccents(s: string): string {
 const TODOS: GpaArticulo[] = Object.values(MOCK_CATALOGO).flat();
 
 /** Etiquetas legibles de cada categoría del catálogo. */
-export const CATEGORIA_LABELS: Record<string, string> = {
-  pastillas: "Pastillas de freno",
-  discos: "Discos y tambores",
-  kitfreno: "Frenos (kits y zapatas)",
-  filtros: "Filtros",
-  aceite: "Aceites y lubricantes",
-  bateria: "Baterías",
-  embrague: "Embrague",
-  amortiguadores: "Amortiguadores y muelles",
-  distribucion: "Distribución",
-  bujias: "Bujías y encendido",
-  radiador: "Refrigeración",
-  escape: "Escape y anticontaminación",
-  suspension: "Suspensión",
-  direccion: "Dirección",
-  neumaticos: "Neumáticos y ruedas",
-};
+export { CATEGORIA_LABELS, CATEGORIA_OPCIONES } from "./gpa-categorias";
+import { CATEGORIA_LABELS } from "./gpa-categorias";
 
 export interface GpaCriterioCategoria {
   key: string;
@@ -317,6 +302,8 @@ export interface GpaCriterio {
   tipo: "referencia" | "categoria" | "texto" | "destacados";
   termino: string;
   categorias: GpaCriterioCategoria[];
+  /** true cuando la categoría la eligió el usuario en lugar de detectarse. */
+  manual?: boolean;
 }
 
 export interface GpaBusquedaMock {
@@ -324,8 +311,24 @@ export interface GpaBusquedaMock {
   criterio: GpaCriterio;
 }
 
-export function mockConsultaArticulos(query: string): GpaBusquedaMock {
+/** Criterio para una categoría forzada manualmente por el usuario. */
+function criterioManual(key: string, termino: string): GpaCriterio {
+  return {
+    tipo: "categoria",
+    termino,
+    manual: true,
+    categorias: [{ key, label: CATEGORIA_LABELS[key] ?? key, sinonimos: [] }],
+  };
+}
+
+export function mockConsultaArticulos(query: string, categoria?: string): GpaBusquedaMock {
   const raw = (query || "").trim();
+
+  // 0) Categoría elegida manualmente: manda sobre la detección automática.
+  if (categoria && MOCK_CATALOGO[categoria]) {
+    return { articulos: MOCK_CATALOGO[categoria], criterio: criterioManual(categoria, raw) };
+  }
+
   if (!raw) {
     return { articulos: MOCK_PIEZAS, criterio: { tipo: "destacados", termino: "", categorias: [] } };
   }
@@ -486,8 +489,9 @@ export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Resp
 }
 
 /** Detecta categorías y sinónimos aplicados a un texto de búsqueda (sin filtrar catálogo). */
-export function detectarCriterio(query: string): GpaCriterio {
+export function detectarCriterio(query: string, categoria?: string): GpaCriterio {
   const raw = (query || "").trim();
+  if (categoria && CATEGORIA_LABELS[categoria]) return criterioManual(categoria, raw);
   if (!raw) return { tipo: "destacados", termino: "", categorias: [] };
   const q = stripAccents(raw.toLowerCase());
   const qTokens = tokens(q);
