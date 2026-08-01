@@ -7,10 +7,12 @@ import {
   mockIniciarSesion,
   fetchGpaToken,
   gpaAuthPost,
+  detectarCriterio,
 } from "./gpa.server";
-import type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
+import type { GpaArticulo, GpaLineaPedido, GpaCriterio } from "./gpa.server";
 
-export type { GpaArticulo, GpaLineaPedido } from "./gpa.server";
+export type { GpaArticulo, GpaLineaPedido, GpaCriterio, GpaCriterioCategoria } from "./gpa.server";
+
 
 /** POST /IniciarSesion — devuelve el token de sesión de GPA (cacheado mientras sea válido). */
 export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
