@@ -288,35 +288,80 @@ function stripAccents(s: string): string {
 
 const TODOS: GpaArticulo[] = Object.values(MOCK_CATALOGO).flat();
 
-export function mockConsultaArticulos(query: string): GpaArticulo[] {
+/** Etiquetas legibles de cada categoría del catálogo. */
+export const CATEGORIA_LABELS: Record<string, string> = {
+  pastillas: "Pastillas de freno",
+  discos: "Discos y tambores",
+  kitfreno: "Frenos (kits y zapatas)",
+  filtros: "Filtros",
+  aceite: "Aceites y lubricantes",
+  bateria: "Baterías",
+  embrague: "Embrague",
+  amortiguadores: "Amortiguadores y muelles",
+  distribucion: "Distribución",
+  bujias: "Bujías y encendido",
+  radiador: "Refrigeración",
+  escape: "Escape y anticontaminación",
+  suspension: "Suspensión",
+  direccion: "Dirección",
+  neumaticos: "Neumáticos y ruedas",
+};
+
+export interface GpaCriterioCategoria {
+  key: string;
+  label: string;
+  sinonimos: string[];
+}
+
+export interface GpaCriterio {
+  tipo: "referencia" | "categoria" | "texto" | "destacados";
+  termino: string;
+  categorias: GpaCriterioCategoria[];
+}
+
+export interface GpaBusquedaMock {
+  articulos: GpaArticulo[];
+  criterio: GpaCriterio;
+}
+
+export function mockConsultaArticulos(query: string): GpaBusquedaMock {
   const raw = (query || "").trim();
-  if (!raw) return MOCK_PIEZAS;
+  if (!raw) {
+    return { articulos: MOCK_PIEZAS, criterio: { tipo: "destacados", termino: "", categorias: [] } };
+  }
   const q = stripAccents(raw.toLowerCase());
 
   // 1) Búsqueda por referencia exacta/parcial (mín. 3 caracteres alfanuméricos).
   const refQ = q.replace(/[^a-z0-9]/g, "");
   if (refQ.length >= 3) {
     const porRef = TODOS.filter((p) => p.referencia.toLowerCase().replace(/[^a-z0-9]/g, "").includes(refQ));
-    if (porRef.length > 0) return porRef;
+    if (porRef.length > 0) {
+      return { articulos: porRef, criterio: { tipo: "referencia", termino: raw, categorias: [] } };
+    }
   }
 
   // 2) Búsqueda por categoría con sinónimos y coincidencia parcial.
   const qTokens = tokens(q);
-  const categorias = CATEGORIA_KEYWORDS.filter((c) =>
-    c.words.some((w) => matchesKeyword(q, qTokens, w)),
-  ).map((c) => c.key as string);
+  const categorias: GpaCriterioCategoria[] = [];
+  for (const c of CATEGORIA_KEYWORDS) {
+    const sinonimos = c.words.filter((w) => matchesKeyword(q, qTokens, w));
+    if (sinonimos.length > 0) {
+      const key = c.key as string;
+      categorias.push({ key, label: CATEGORIA_LABELS[key] ?? key, sinonimos });
+    }
+  }
 
   if (categorias.length > 0) {
     const seen = new Set<string>();
     const out: GpaArticulo[] = [];
-    for (const key of categorias) {
-      for (const p of MOCK_CATALOGO[key] ?? []) {
+    for (const cat of categorias) {
+      for (const p of MOCK_CATALOGO[cat.key] ?? []) {
         if (seen.has(p.referencia)) continue;
         seen.add(p.referencia);
         out.push(p);
       }
     }
-    return out;
+    return { articulos: out, criterio: { tipo: "categoria", termino: raw, categorias } };
   }
 
   // 3) Fallback: texto libre sobre descripción o marca (frase o palabras parciales).
@@ -329,8 +374,12 @@ export function mockConsultaArticulos(query: string): GpaArticulo[] {
       tokens(desc).some((d) => d.startsWith(t) || t.startsWith(d)) || marca.includes(t),
     );
   });
-  return libre.length > 0 ? libre : MOCK_PIEZAS;
+  if (libre.length > 0) {
+    return { articulos: libre, criterio: { tipo: "texto", termino: raw, categorias: [] } };
+  }
+  return { articulos: MOCK_PIEZAS, criterio: { tipo: "destacados", termino: raw, categorias: [] } };
 }
+
 
 
 
