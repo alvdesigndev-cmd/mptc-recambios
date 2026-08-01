@@ -29,6 +29,10 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [dispo, setDispo] = useState<"todas" | "disponible" | "pedido">("todas");
   const [marcasSel, setMarcasSel] = useState<string[]>([]);
   const [categoria, setCategoria] = useState("");
+  const [orden, setOrden] = useState<"relevancia" | "precio-asc" | "precio-desc" | "disponibilidad">(
+    "relevancia",
+  );
+
 
   const run = async (opts?: { query?: string; categoria?: string }) => {
     const q = opts?.query ?? query;
