@@ -484,3 +484,24 @@ export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Resp
   }
   return res;
 }
+
+/** Detecta categorías y sinónimos aplicados a un texto de búsqueda (sin filtrar catálogo). */
+export function detectarCriterio(query: string): GpaCriterio {
+  const raw = (query || "").trim();
+  if (!raw) return { tipo: "destacados", termino: "", categorias: [] };
+  const q = stripAccents(raw.toLowerCase());
+  const qTokens = tokens(q);
+  const categorias: GpaCriterioCategoria[] = [];
+  for (const c of CATEGORIA_KEYWORDS) {
+    const sinonimos = c.words.filter((w) => matchesKeyword(q, qTokens, w));
+    if (sinonimos.length > 0) {
+      const key = c.key as string;
+      categorias.push({ key, label: CATEGORIA_LABELS[key] ?? key, sinonimos });
+    }
+  }
+  if (categorias.length > 0) return { tipo: "categoria", termino: raw, categorias };
+  if (/^[a-z0-9.\- ]{3,}$/i.test(raw) && /\d/.test(raw)) {
+    return { tipo: "referencia", termino: raw, categorias: [] };
+  }
+  return { tipo: "texto", termino: raw, categorias: [] };
+}
