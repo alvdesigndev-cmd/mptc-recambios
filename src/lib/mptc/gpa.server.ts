@@ -355,8 +355,14 @@ export function mockConsultaPedidos() {
   };
 }
 
-/** Obtiene el token real de GPA (server-only). No usar en modo mock. */
-export async function fetchGpaToken(): Promise<string> {
+/** Caché en memoria del token GPA (por instancia de worker). */
+let tokenCache: { token: string; expiresAt: number } | null = null;
+let tokenInFlight: Promise<string> | null = null;
+
+const TOKEN_MARGEN_MS = 60_000; // renovar 1 min antes de expirar
+const TOKEN_TTL_FALLBACK_MS = 55 * 60_000; // si la API no informa expiración
+
+async function requestGpaToken(): Promise<string> {
   const { usuario, password } = gpaConfig();
   const res = await fetch(gpaEndpoint("IniciarSesion"), {
     method: "POST",
@@ -364,6 +370,68 @@ export async function fetchGpaToken(): Promise<string> {
     body: JSON.stringify({ Usuario: usuario, Password: password }),
   });
   if (!res.ok) throw new Error(`IniciarSesion ${res.status}`);
-  const json = (await res.json()) as { token?: string; Token?: string };
-  return json.token ?? json.Token ?? "";
+  const json = (await res.json()) as {
+    token?: string;
+    Token?: string;
+    expiraEn?: number;
+    expiresIn?: number;
+    expiration?: string;
+    Expiracion?: string;
+  };
+  const token = json.token ?? json.Token ?? "";
+  if (!token) throw new Error("IniciarSesion sin token");
+
+  const segundos = json.expiraEn ?? json.expiresIn;
+  let ttlMs = typeof segundos === "number" && segundos > 0 ? segundos * 1000 : TOKEN_TTL_FALLBACK_MS;
+  const iso = json.expiration ?? json.Expiracion;
+  if (iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (Number.isFinite(ms) && ms > 0) ttlMs = ms;
+  }
+
+  tokenCache = { token, expiresAt: Date.now() + Math.max(ttlMs - TOKEN_MARGEN_MS, 5_000) };
+  return token;
+}
+
+/**
+ * Obtiene el token real de GPA (server-only), reutilizándolo mientras siga válido.
+ * Evita un IniciarSesion por cada búsqueda de piezas.
+ */
+export async function fetchGpaToken(): Promise<string> {
+  if (tokenCache && tokenCache.expiresAt > Date.now()) return tokenCache.token;
+  if (tokenInFlight) return tokenInFlight;
+  tokenInFlight = requestGpaToken().finally(() => {
+    tokenInFlight = null;
+  });
+  return tokenInFlight;
+}
+
+/** Invalida el token en caché (usar tras un 401 de la API). */
+export function invalidateGpaToken(): void {
+  tokenCache = null;
+}
+
+
+/**
+ * POST autenticado a GPA reutilizando el token en caché.
+ * Si la API responde 401, invalida el token y reintenta una vez.
+ */
+export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Response> {
+  const call = async (token: string) =>
+    fetch(gpaEndpoint(endpoint), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+  let res = await call(await fetchGpaToken());
+  if (res.status === 401 || res.status === 403) {
+    invalidateGpaToken();
+    res = await call(await fetchGpaToken());
+  }
+  return res;
 }
