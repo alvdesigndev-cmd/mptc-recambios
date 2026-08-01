@@ -61,21 +61,12 @@ export const generarPedidoGPA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; numeroPedido: string; total?: number; estado?: string; error?: string }> => {
     const lineas = data.lineas ?? [];
     if (gpaMockMode()) return mockGenerarPedido(lineas);
-    const token = await fetchGpaToken();
     try {
-      const res = await fetch(gpaEndpoint("GenerarPedido"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          Referencia: data.gestionId,
-          Matricula: data.matricula,
-          Direccion: data.direccion ?? "Taller",
-          Lineas: lineas,
-        }),
+      const res = await gpaAuthPost("GenerarPedido", {
+        Referencia: data.gestionId,
+        Matricula: data.matricula,
+        Direccion: data.direccion ?? "Taller",
+        Lineas: lineas,
       });
       if (!res.ok) return { ok: false, mock: false, numeroPedido: "", error: `Error ${res.status}` };
       const json = (await res.json()) as { numeroPedido?: string; total?: number; estado?: string };
