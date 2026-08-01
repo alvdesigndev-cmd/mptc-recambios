@@ -85,18 +85,28 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     return { todas: items.length, disponible, pedido: items.length - disponible };
   }, [items]);
 
-  const visibles = useMemo(
-    () =>
-      items.filter((i) => {
-        if (dispo === "disponible" && !esDisponible(i.stock)) return false;
-        if (dispo === "pedido" && esDisponible(i.stock)) return false;
-        if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
-        return true;
-      }),
-    [items, dispo, marcasSel],
-  );
+  const visibles = useMemo(() => {
+    const base = items.filter((i) => {
+      if (dispo === "disponible" && !esDisponible(i.stock)) return false;
+      if (dispo === "pedido" && esDisponible(i.stock)) return false;
+      if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
+      return true;
+    });
+    if (orden === "relevancia") return base;
+    const arr = [...base];
+    if (orden === "precio-asc") arr.sort((a, b) => a.precio - b.precio);
+    else if (orden === "precio-desc") arr.sort((a, b) => b.precio - a.precio);
+    else if (orden === "disponibilidad")
+      arr.sort(
+        (a, b) =>
+          Number(esDisponible(b.stock)) - Number(esDisponible(a.stock)) ||
+          a.precio - b.precio,
+      );
+    return arr;
+  }, [items, dispo, marcasSel, orden]);
 
-  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0;
+  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0 || orden !== "relevancia";
+
 
   const seleccionadas = useMemo(
     () => items.filter((i) => sel[i.referencia]).map((i) => ({ ...i, cantidad: sel[i.referencia] || 1 })),
