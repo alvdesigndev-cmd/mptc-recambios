@@ -128,23 +128,142 @@ const MOCK_CATALOGO: Record<string, GpaArticulo[]> = {
 };
 
 const CATEGORIA_KEYWORDS: Array<{ key: keyof typeof MOCK_CATALOGO | string; words: string[] }> = [
-  { key: "pastillas", words: ["pastilla", "pastillas", "ferodo", "brake pad"] },
-  { key: "discos", words: ["disco", "discos"] },
-  { key: "kitfreno", words: ["freno", "frenos", "kit freno", "zapata", "zapatas", "mano"] },
-  { key: "filtros", words: ["filtro", "filtros", "habitaculo", "habitáculo", "polen"] },
-  { key: "aceite", words: ["aceite", "lubricante", "5w30", "5w40", "cambio de aceite"] },
-  { key: "bateria", words: ["bateria", "batería", "arranca", "no arranca", "12v"] },
-  { key: "embrague", words: ["embrague", "clutch", "bimasa", "volante motor"] },
-  { key: "amortiguadores", words: ["amortiguador", "amortiguadores", "suspension trasera", "muelle"] },
-  { key: "distribucion", words: ["distribucion", "distribución", "correa de distribucion", "cadena"] },
-  { key: "bujias", words: ["bujia", "bujías", "bujias", "calentador", "precalentamiento", "encendido"] },
-  { key: "radiador", words: ["radiador", "refrigeracion", "refrigeración", "bomba de agua", "temperatura", "anticongelante"] },
-  { key: "escape", words: ["escape", "catalizador", "dpf", "particulas", "partículas", "lambda", "humo"] },
-  { key: "suspension", words: ["suspension", "suspensión", "rotula", "rótula", "bieleta", "silentblock", "ruido"] },
-  { key: "direccion", words: ["direccion", "dirección", "volante", "asistida"] },
-  { key: "alternador", words: ["alternador", "arranque", "motor de arranque", "correa auxiliar", "bateria no carga"] },
-  { key: "neumaticos", words: ["neumatico", "neumático", "rueda", "ruedas", "llanta"] },
+  {
+    key: "pastillas",
+    words: [
+      "pastilla", "pastillas", "balata", "balatas", "ferodo", "ferodos",
+      "forro", "forros", "brake pad", "pads", "galleta", "galletas",
+    ],
+  },
+  {
+    key: "discos",
+    words: ["disco", "discos", "tambor", "tambores", "campana", "campanas", "rotor", "rotores"],
+  },
+  {
+    key: "kitfreno",
+    words: [
+      "freno", "frenos", "frenada", "frenar", "kit freno", "zapata", "zapatas",
+      "freno de mano", "mano", "chirria", "chirrido", "pito al frenar",
+    ],
+  },
+  {
+    key: "filtros",
+    words: [
+      "filtro", "filtros", "filtro de aire", "filtro de aceite", "filtro de combustible",
+      "filtro de gasoil", "filtro de habitaculo", "habitaculo", "polen", "aire acondicionado",
+      "cabina", "purificador",
+    ],
+  },
+  {
+    key: "aceite",
+    words: [
+      "aceite", "aceites", "lubricante", "lubricantes", "engrase", "5w30", "5w40", "10w40",
+      "cambio de aceite", "mantenimiento", "revision",
+    ],
+  },
+  {
+    key: "bateria",
+    words: [
+      "bateria", "baterias", "acumulador", "pila", "arranca", "no arranca",
+      "12v", "se queda sin bateria", "start stop", "start-stop",
+    ],
+  },
+  {
+    key: "embrague",
+    words: [
+      "embrague", "embragues", "clutch", "croche", "bimasa", "volante motor",
+      "volante bimasa", "disco de embrague", "collarin", "patina",
+    ],
+  },
+  {
+    key: "amortiguadores",
+    words: [
+      "amortiguador", "amortiguadores", "amortiguacion", "shock", "muelle", "muelles",
+      "espiral", "suspension trasera", "suspension delantera", "rebota", "botes",
+    ],
+  },
+  {
+    key: "distribucion",
+    words: [
+      "distribucion", "correa", "correa de distribucion", "kit de distribucion",
+      "cadena", "cadena de distribucion", "tensor", "tensores", "polea",
+    ],
+  },
+  {
+    key: "bujias",
+    words: [
+      "bujia", "bujias", "calentador", "calentadores", "precalentamiento",
+      "encendido", "chispa", "bobina", "ratea",
+    ],
+  },
+  {
+    key: "radiador",
+    words: [
+      "radiador", "refrigeracion", "refrigerante", "anticongelante", "bomba de agua",
+      "termostato", "temperatura", "calienta", "sobrecalienta", "pierde agua", "ventilador",
+    ],
+  },
+  {
+    key: "escape",
+    words: [
+      "escape", "tubo de escape", "silencioso", "catalizador", "cataliticio", "dpf",
+      "fap", "particulas", "lambda", "sonda lambda", "humo", "gases", "egr",
+    ],
+  },
+  {
+    key: "suspension",
+    words: [
+      "suspension", "rotula", "rotulas", "bieleta", "bieletas", "silentblock",
+      "brazo de suspension", "trapecio", "buje", "ruido", "holgura", "juego",
+    ],
+  },
+  {
+    key: "direccion",
+    words: [
+      "direccion", "volante", "asistida", "cremallera", "bomba de direccion",
+      "rotula axial", "terminal de direccion", "duro al girar", "se va a un lado",
+    ],
+  },
+  {
+    key: "alternador",
+    words: [
+      "alternador", "dinamo", "arranque", "motor de arranque", "burro",
+      "correa auxiliar", "poli-v", "no carga", "bateria no carga", "testigo de bateria",
+    ],
+  },
+  {
+    key: "neumaticos",
+    words: [
+      "neumatico", "neumaticos", "goma", "gomas", "rueda", "ruedas", "llanta",
+      "cubierta", "pinchazo", "desgaste", "alineado",
+    ],
+  },
 ];
+
+/** Normaliza y trocea el texto en palabras útiles (>=3 letras). */
+function tokens(s: string): string[] {
+  return stripAccents(s.toLowerCase())
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 3);
+}
+
+/**
+ * Coincidencia flexible: frase completa contenida, palabra exacta,
+ * o coincidencia parcial por prefijo (pastill / balat / filtr…).
+ */
+function matchesKeyword(qNorm: string, qTokens: string[], word: string): boolean {
+  const w = stripAccents(word.toLowerCase());
+  if (w.includes(" ")) return qNorm.includes(w);
+  const wTokens = tokens(w);
+  const wt = wTokens[0] ?? w;
+  return qTokens.some((t) => {
+    if (t === wt) return true;
+    const min = Math.min(t.length, wt.length);
+    if (min < 4) return false;
+    return t.startsWith(wt.slice(0, min)) || wt.startsWith(t.slice(0, min));
+  });
+}
+
 
 const MOCK_PIEZAS: GpaArticulo[] = [
   ...MOCK_CATALOGO["pastillas"]!.slice(0, 2),
