@@ -728,7 +728,7 @@ function NuevaPage() {
 
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
-  const [gpcatOpen, setGpcatOpen] = useState(false);
+  
   const addPiezasGPCat = (ps: PiezaSeleccionada[]) => {
     if (!ps.length) return;
     const lineas = ps.map(formatPiezaLinea);
