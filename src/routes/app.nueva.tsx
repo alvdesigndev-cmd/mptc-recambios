@@ -166,6 +166,7 @@ function NuevaPage() {
   const [ocrBusy, setOcrBusy] = useState(false);
   // Id en BD del borrador / gestión en curso (para no duplicar al guardar).
   const [gestionId, setGestionId] = useState<string | null>(draft0.gestionId ?? null);
+  const [gpcatOpen, setGpcatOpen] = useState(false);
   const runOcr = useServerFn(ocrMatricula);
 
   // Persistir borrador en sessionStorage para no perder datos al volver atrás.
@@ -728,7 +729,7 @@ function NuevaPage() {
 
   const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
   const canNext2 = !!subfamilia;
-  const [gpcatOpen, setGpcatOpen] = useState(false);
+  
   const addPiezasGPCat = (ps: PiezaSeleccionada[]) => {
     if (!ps.length) return;
     const lineas = ps.map(formatPiezaLinea);
