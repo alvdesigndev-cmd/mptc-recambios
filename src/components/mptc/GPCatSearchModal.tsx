@@ -25,6 +25,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [items, setItems] = useState<GpaArticulo[]>([]);
   const [criterio, setCriterio] = useState<GpaCriterio | null>(null);
   const [sel, setSel] = useState<Record<string, number>>({});
+  const [dispo, setDispo] = useState<"todas" | "disponible" | "pedido">("todas");
+  const [marcasSel, setMarcasSel] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -32,6 +34,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
     setSel({});
     setItems([]);
     setCriterio(null);
+    setDispo("todas");
+    setMarcasSel([]);
     let cancelled = false;
     setLoading(true);
     buscar({ data: { query: averia ?? "", marca, modelo, motor } })
@@ -48,6 +52,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       const r = await buscar({ data: { query, marca, modelo, motor } });
       setItems(r.articulos);
       setCriterio(r.criterio ?? null);
+      setDispo("todas");
+      setMarcasSel([]);
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
       toast.error("No se pudo buscar en GPCat");
@@ -55,6 +61,36 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setLoading(false);
     }
   };
+
+  const esDisponible = (stock: string) => stock.toLowerCase().includes("disponible");
+
+  const marcasDisponibles = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const i of items) {
+      if (dispo === "disponible" && !esDisponible(i.stock)) continue;
+      if (dispo === "pedido" && esDisponible(i.stock)) continue;
+      map.set(i.marca, (map.get(i.marca) ?? 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [items, dispo]);
+
+  const conteoDispo = useMemo(() => {
+    const disponible = items.filter((i) => esDisponible(i.stock)).length;
+    return { todas: items.length, disponible, pedido: items.length - disponible };
+  }, [items]);
+
+  const visibles = useMemo(
+    () =>
+      items.filter((i) => {
+        if (dispo === "disponible" && !esDisponible(i.stock)) return false;
+        if (dispo === "pedido" && esDisponible(i.stock)) return false;
+        if (marcasSel.length > 0 && !marcasSel.includes(i.marca)) return false;
+        return true;
+      }),
+    [items, dispo, marcasSel],
+  );
+
+  const filtrosActivos = dispo !== "todas" || marcasSel.length > 0;
 
   const seleccionadas = useMemo(
     () => items.filter((i) => sel[i.referencia]).map((i) => ({ ...i, cantidad: sel[i.referencia] || 1 })),
@@ -118,7 +154,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
                 {criterio.tipo === "texto" && "Búsqueda por texto libre"}
                 {criterio.tipo === "destacados" && "Piezas destacadas"}
                 <span className="ml-auto text-[11px] font-normal text-muted-foreground">
-                  {items.length} {items.length === 1 ? "resultado" : "resultados"}
+                  {filtrosActivos ? `${visibles.length} de ${items.length}` : items.length}{" "}
+                  {items.length === 1 ? "resultado" : "resultados"}
                 </span>
               </div>
 
@@ -152,13 +189,75 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
             </div>
           ) : null}
 
+          {!loading && items.length > 0 ? (
+            <div className="mb-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {([
+                  ["todas", "Todas", conteoDispo.todas],
+                  ["disponible", "Disponible", conteoDispo.disponible],
+                  ["pedido", "Bajo pedido", conteoDispo.pedido],
+                ] as const).map(([key, label, n]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => { setDispo(key); setMarcasSel([]); }}
+                    className={
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold transition " +
+                      (dispo === key
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                    }
+                  >
+                    {label} ({n})
+                  </button>
+                ))}
+                {filtrosActivos ? (
+                  <button
+                    type="button"
+                    onClick={() => { setDispo("todas"); setMarcasSel([]); }}
+                    className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-2"
+                  >
+                    <X className="h-3 w-3" /> Limpiar
+                  </button>
+                ) : null}
+              </div>
+
+              {marcasDisponibles.length > 1 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {marcasDisponibles.map(([m, n]) => {
+                    const on = marcasSel.includes(m);
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() =>
+                          setMarcasSel((prev) => (on ? prev.filter((x) => x !== m) : [...prev, m]))
+                        }
+                        className={
+                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition " +
+                          (on
+                            ? "border-accent bg-accent/15 text-accent"
+                            : "border-border bg-surface-2 text-muted-foreground hover:bg-surface-3")
+                        }
+                      >
+                        {m} ({n})
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {loading ? (
             <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
-          ) : items.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Sin resultados.</div>
+          ) : visibles.length === 0 ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              {items.length > 0 ? "Ningún resultado con estos filtros." : "Sin resultados."}
+            </div>
           ) : (
             <div className="space-y-2">
-              {items.map((p) => {
+              {visibles.map((p) => {
                 const checked = !!sel[p.referencia];
                 return (
                   <label
