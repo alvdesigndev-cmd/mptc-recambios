@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw } from "lucide-react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
-import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
+import { puedeReenviar, puedePedirPena, reenviarPlantilla, buildMensajePena, openWhatsAppPena, registrarPedidoPena } from "@/lib/mptc/quick-actions";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
 import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
@@ -21,6 +21,7 @@ interface Props {
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
   const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
+  const [showConfirmPena, setShowConfirmPena] = useState(false);
   const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
 
   // Estado real del último envío del PDF, para poder reintentar en el sitio.
@@ -169,19 +170,7 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
               <QuickBtn
                 busy={busy === "pena"}
                 accent
-                onClick={async () => {
-                  setBusy("pena");
-                  try {
-                    const estado = await pedirAPena(g);
-                    if (estado === "enviado") toast.success("Pedido enviado a Grupo Peña por WhatsApp");
-                    else toast.warning("Pedido guardado. Abriendo WhatsApp de Grupo Peña…");
-                    onChanged?.();
-                  } catch {
-                    toast.error("No se pudo enviar el pedido a Peña");
-                  } finally {
-                    setBusy(null);
-                  }
-                }}
+                onClick={() => setShowConfirmPena(true)}
                 icon={<Truck className="h-3.5 w-3.5" />}
                 label="Pedir a Peña"
               />
@@ -189,6 +178,27 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
           </div>
         )}
 
+        {showConfirmPena && (
+          <ConfirmPenaModal
+            mensaje={buildMensajePena(g)}
+            onCancel={() => setShowConfirmPena(false)}
+            onConfirm={() => {
+              setShowConfirmPena(false);
+              setBusy("pena");
+              const abierto = openWhatsAppPena(g);
+              registrarPedidoPena(g, { abierto })
+                .then(() => {
+                  if (abierto) toast.success("Pedido enviado a Grupo Peña por WhatsApp");
+                  else toast.warning("Pedido guardado. Abriendo WhatsApp de Grupo Peña…");
+                  onChanged?.();
+                })
+                .catch(() => {
+                  toast.error("No se pudo registrar el pedido a Peña");
+                })
+                .finally(() => setBusy(null));
+            }}
+          />
+        )}
       </div>
 
       {isBorrador && onDelete && (
@@ -228,5 +238,64 @@ function QuickBtn({
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
       {label}
     </button>
+  );
+}
+
+function ConfirmPenaModal({
+  mensaje,
+  onCancel,
+  onConfirm,
+}: {
+  mensaje: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-4 py-3">
+          <div className="text-sm font-semibold">Revisar pedido a Grupo Peña</div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Se enviará por WhatsApp a{" "}
+            <span className="font-mono">34634954491</span> (Grupo Peña)
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <div className="rounded-2xl bg-surface-2 p-3">
+            <div className="max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-accent/10 p-3 text-[13px] leading-relaxed text-foreground">
+              {mensaje.trim() || "El mensaje está vacío."}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Así se verá en WhatsApp. Si algo no cuadra, cancela y edítalo desde el detalle.
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="shrink-0 border-t border-border px-4 py-3"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={!mensaje.trim()}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition active:scale-95 disabled:opacity-50"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Abrir WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

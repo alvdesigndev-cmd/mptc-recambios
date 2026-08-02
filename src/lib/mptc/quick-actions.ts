@@ -46,41 +46,63 @@ export async function reenviarPlantilla(g: Gestion): Promise<void> {
 }
 
 /**
- * Confirma (o reintenta) el pedido a Grupo Peña: abre WhatsApp con el detalle
- * del pedido al número de Peña, marca la gestión y deja traza en el historial.
- * Devuelve "enviado" si se pudo abrir WhatsApp o "pendiente" si el navegador
- * bloqueó la ventana (en ese caso se navega a WhatsApp en la misma pestaña).
+ * Construye el mensaje de WhatsApp para el pedido a Grupo Peña.
+ * Reutilizable para la previsualización en el modal de confirmación.
  */
-export async function pedirAPena(g: Gestion): Promise<"enviado" | "pendiente"> {
+export function buildMensajePena(g: Gestion): string {
   const lista = (g.piezas || "")
     .split(/\n|;/)
     .map((l) => l.replace(/^[-•·]\s*/, "").trim())
     .filter(Boolean)
     .map((l) => `• ${l}`)
     .join("\n");
-  const msg =
+  return (
     `🔧 *Pedido ${g.taller_nombre || ""}*\n\n` +
     `Vehículo: ${g.vehiculo || "—"}${g.matricula ? ` (${g.matricula})` : ""}\n` +
     `Avería: ${g.subfamilia || g.descripcion || "—"}\n\n` +
     `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
-    `💰 Importe estimado: *${g.importe || "—"} €*`;
-  const url = buildWAUrl(PENA_PHONE, msg);
-  // Abrimos WhatsApp ANTES de cualquier await para no perder el gesto del
-  // usuario (los navegadores bloquean window.open en callbacks asíncronos).
-  const win = typeof window !== "undefined" ? window.open(url, "_blank", "noopener,noreferrer") : null;
+    `💰 Importe estimado: *${g.importe || "—"} €*`
+  );
+}
 
+/**
+ * Abre WhatsApp al número de Grupo Peña con el mensaje del pedido.
+ * Devuelve true si se pudo abrir la ventana; si el navegador la bloquea,
+ * navega a la misma URL en la pestaña actual.
+ */
+export function openWhatsAppPena(g: Gestion): boolean {
+  const url = buildWAUrl(PENA_PHONE, buildMensajePena(g));
+  const win = typeof window !== "undefined" ? window.open(url, "_blank", "noopener,noreferrer") : null;
+  if (!win && typeof window !== "undefined") window.location.href = url;
+  return !!win;
+}
+
+/**
+ * Marca la gestión como pedida a Peña y deja traza en el historial.
+ */
+export async function registrarPedidoPena(g: Gestion, opts: { abierto?: boolean } = {}): Promise<void> {
   const { error } = await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
   if (error) throw error;
   await logEvento({
     gestionId: g.id,
     tallerId: g.taller_id,
     tipo: "pedido_confirmado",
-    detalle: win
+    detalle: opts.abierto
       ? "Pedido confirmado a Grupo Peña (panel + WhatsApp)"
       : "Pedido confirmado en el panel de Grupo Peña; WhatsApp no se pudo abrir automáticamente",
-    metadata: { importe: g.importe, piezas: g.piezas, estado: win ? "enviado" : "pendiente" },
+    metadata: { importe: g.importe, piezas: g.piezas, estado: opts.abierto ? "enviado" : "pendiente" },
   });
-  if (!win && typeof window !== "undefined") window.location.href = url;
-  return win ? "enviado" : "pendiente";
+}
+
+/**
+ * Confirma (o reintenta) el pedido a Grupo Peña: abre WhatsApp con el detalle
+ * del pedido al número de Peña, marca la gestión y deja traza en el historial.
+ * Devuelve "enviado" si se pudo abrir WhatsApp o "pendiente" si el navegador
+ * bloqueó la ventana (en ese caso se navega a WhatsApp en la misma pestaña).
+ */
+export async function pedirAPena(g: Gestion): Promise<"enviado" | "pendiente"> {
+  const abierto = openWhatsAppPena(g);
+  await registrarPedidoPena(g, { abierto });
+  return abierto ? "enviado" : "pendiente";
 }
 
