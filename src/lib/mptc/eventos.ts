@@ -122,6 +122,26 @@ export async function listEventos(gestionId: string): Promise<GestionEvento[]> {
   return (data ?? []) as unknown as GestionEvento[];
 }
 
+/**
+ * Estado actual del envío del PDF de una gestión, leído del último evento.
+ * Nunca lanza: si falla la consulta devolvemos "sin-enviar".
+ */
+export async function fetchEstadoEnvioPdf(gestionId: string): Promise<EstadoEnvioPdf> {
+  try {
+    const { data, error } = await supabase
+      .from("gestion_eventos")
+      .select("*")
+      .eq("gestion_id", gestionId)
+      .in("tipo", ["presupuesto_enviado", "presupuesto_envio_error"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) throw error;
+    return estadoEnvioPdf((data ?? []) as unknown as GestionEvento[]);
+  } catch {
+    return "sin-enviar";
+  }
+}
+
 export function formatEventoFecha(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("es-ES", {
