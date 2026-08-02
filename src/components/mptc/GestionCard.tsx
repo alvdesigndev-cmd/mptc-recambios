@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
+import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
 interface Props {
   g: Gestion;
