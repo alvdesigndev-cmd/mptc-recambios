@@ -11,7 +11,7 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
 import { buildWAUrl } from "@/lib/mptc/wa";
-import { downloadPresupuestoPdf } from "@/lib/mptc/presupuesto-pdf";
+import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
 
 
@@ -175,14 +175,31 @@ function GestionDetallePage() {
 
   const meta = estadoBadge(g.estado);
   const fase = faseDeGestion(g);
-  const descargarPdf = () => {
+  const descargarPdf = async () => {
     if (!g) return;
     try {
-      downloadPresupuestoPdf(g, { taller: settings?.tallerName, mecanico: settings?.mecanico });
-      toast.success("Presupuesto PDF descargado");
+      const res = await generarYGuardarPresupuesto(g, {
+        taller: settings?.tallerName,
+        mecanico: settings?.mecanico,
+      });
+      toast.success(
+        res.path
+          ? "Presupuesto PDF descargado y guardado en el historial"
+          : "Presupuesto PDF descargado",
+      );
+      await load();
     } catch {
       toast.error("No se pudo generar el PDF");
     }
+  };
+
+  const reabrirPdf = async (path: string) => {
+    const url = await getPresupuestoUrl(path);
+    if (!url) {
+      toast.error("No se pudo recuperar el PDF guardado");
+      return;
+    }
+    window.open(url, "_blank");
   };
 
   const piezasList = (g.piezas || "")
@@ -519,6 +536,15 @@ function GestionDetallePage() {
                       <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
                         {String(e.metadata["importe"])} €
                       </span>
+                    )}
+                    {typeof e.metadata?.["path"] === "string" && e.metadata["path"] && (
+                      <button
+                        type="button"
+                        onClick={() => reabrirPdf(String(e.metadata!["path"]))}
+                        className="rounded-full bg-surface-2 px-2 py-0.5 font-semibold text-foreground underline-offset-2 hover:underline"
+                      >
+                        Descargar PDF
+                      </button>
                     )}
                   </div>
                 </div>

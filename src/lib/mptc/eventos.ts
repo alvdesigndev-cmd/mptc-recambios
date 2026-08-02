@@ -7,7 +7,8 @@ export type EventoTipo =
   | "aceptado"
   | "rechazado"
   | "pedido_confirmado"
-  | "pedido_enviado";
+  | "pedido_enviado"
+  | "presupuesto_generado";
 
 export interface GestionEvento {
   id: string;
@@ -27,6 +28,7 @@ export const EVENTO_LABEL: Record<string, string> = {
   rechazado: "Rechazado por el cliente",
   pedido_confirmado: "Pedido confirmado a Grupo Peña",
   pedido_enviado: "Pedido enviado a Grupo Peña",
+  presupuesto_generado: "Presupuesto PDF generado",
 };
 
 export const EVENTO_ICON: Record<string, string> = {
@@ -36,6 +38,7 @@ export const EVENTO_ICON: Record<string, string> = {
   rechazado: "❌",
   pedido_confirmado: "📦",
   pedido_enviado: "🚚",
+  presupuesto_generado: "📄",
 };
 
 /** Registra un evento. Nunca lanza: el historial no debe romper el flujo. */

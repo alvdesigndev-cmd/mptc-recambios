@@ -11,7 +11,7 @@ import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
-import { downloadPresupuestoPdf } from "@/lib/mptc/presupuesto-pdf";
+import { generarYGuardarPresupuesto } from "@/lib/mptc/presupuesto-storage";
 
 interface Props {
   gestion: Gestion | null;
@@ -679,10 +679,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 <Pencil className="h-4 w-4" /> Editar
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   try {
-                    downloadPresupuestoPdf(g, { taller: g.taller_nombre });
-                    toast.success("Presupuesto PDF descargado");
+                    const res = await generarYGuardarPresupuesto(g, { taller: g.taller_nombre });
+                    toast.success(
+                      res.path
+                        ? "Presupuesto PDF descargado y guardado en el historial"
+                        : "Presupuesto PDF descargado",
+                    );
                   } catch {
                     toast.error("No se pudo generar el PDF");
                   }
