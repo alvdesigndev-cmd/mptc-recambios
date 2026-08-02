@@ -250,11 +250,12 @@ function GestionDetallePage() {
       </Block>
 
       <PhotoLightbox
-        urls={fotos}
-        index={lightbox}
+        images={fotos}
+        startIndex={lightbox ?? 0}
+        open={lightbox !== null}
         onClose={() => setLightbox(null)}
-        onIndexChange={setLightbox}
       />
+
 
       <GestionModal
         gestion={modal ? g : null}
