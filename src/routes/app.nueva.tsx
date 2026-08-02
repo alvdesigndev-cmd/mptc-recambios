@@ -720,16 +720,45 @@ function NuevaPage() {
     }
   };
 
-  const onContinuarPaso1 = async () => {
+  // Paso 1 → consulta de datos del vehículo a partir de la matrícula.
+  const onConsultarMatricula = async () => {
+    const p = normalizeMatricula(matricula).replace(/[^A-Z0-9]/g, "");
+    if (p.length < 4) return;
+    setPlateBusy(true);
+    setPlateMsg(null);
+    try {
+      const res = await lookupPlateFn({ data: { plate: p } });
+      if (!res.ok || !res.data) {
+        setPlateMsg(res.error || "No se encontraron datos para esta matrícula.");
+        return;
+      }
+      const m = mapApiData(res.data);
+      if (m.vehiculo) setVehiculo(m.vehiculo);
+      if (m.marca) setMarca(m.marca);
+      if (m.modelo) setModelo(m.modelo);
+      if (m.motor) setMotor(m.motor);
+      if (m.vin) setVin(m.vin);
+      if (m.fechaMatriculacion) setFechaMatriculacion(m.fechaMatriculacion);
+      if (m.marca || m.modelo || m.vin) setShowTecnicos(true);
+      setPlateMsg(`Datos cargados: ${m.vehiculo || p}`);
+    } catch {
+      setPlateMsg("No se pudo consultar la matrícula.");
+    } finally {
+      setPlateBusy(false);
+    }
+  };
+
+  const onContinuarPaso2 = async () => {
     // Guardar/actualizar cliente al avanzar para que quede disponible
     // en futuras gestiones aunque la gestión actual no se llegue a enviar.
     try { await upsertCliente(); } catch (e) { console.warn("upsertCliente", e); }
-    setStep(2);
+    setStep(3);
   };
 
-  const canNext1 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
-  const canNext2 = !!subfamilia;
-  
+  const canNext1 = matricula.trim().length > 2 || vehiculo.trim().length > 1;
+  const canNext2 = nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2);
+  const canNext3 = !!subfamilia;
+
   const addPiezasGPCat = (ps: PiezaSeleccionada[]) => {
     if (!ps.length) return;
     const lineas = ps.map(formatPiezaLinea);
@@ -744,15 +773,20 @@ function NuevaPage() {
   // Navegación del paso anterior (flecha izquierda / Escape).
   const goBack = () => {
     if (step === 1) navigate({ to: "/app" });
-    else if (step === 2) setStep(1);
-    else if (step === 3) setStep(2);
+    else setStep((step - 1) as Step);
   };
+
+  const canGoNext =
+    step === 1 ? canNext1 : step === 2 ? canNext2 : step === 3 ? canNext3 : step === 4;
 
   // Avanzar al siguiente paso si los datos son válidos (Ctrl/Cmd+Enter).
   const goNext = () => {
-    if (step === 1 && canNext1) onContinuarPaso1();
-    else if (step === 2 && canNext2) setStep(3);
+    if (step === 1 && canNext1) setStep(2);
+    else if (step === 2 && canNext2) onContinuarPaso2();
+    else if (step === 3 && canNext3) setStep(4);
+    else if (step === 4) setStep(5);
   };
+
 
 
   return (
