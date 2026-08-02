@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send, FileDown } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send, FileDown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -11,8 +11,12 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { buildMessage } from "@/lib/mptc/messages";
+import { useFamilias } from "@/lib/mptc/useFamilias";
+import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
+
 
 
 export const Route = createFileRoute("/app/gestion/$id")({
