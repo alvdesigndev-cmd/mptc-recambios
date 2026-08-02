@@ -6,6 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
 import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
+import {
+  clearSavedCredentials,
+  readSavedCredentials,
+  writeSavedCredentials,
+  type LoginProfile,
+} from "@/lib/mptc/credentials-transfer";
 
 // Guardamos email, contraseña y perfil cuando el usuario marca "Guardar mis
 // credenciales". La contraseña se cifra con AES-GCM usando una clave no
