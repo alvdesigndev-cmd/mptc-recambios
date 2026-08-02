@@ -52,7 +52,26 @@ function NuevaRoute() {
   return <NuevaPage key={`${fresh ?? "x"}::${resume ?? "x"}`} />;
 }
 
-type Step = 1 | 2 | 3;
+// Flujo: 1 Matrícula · 2 Cliente · 3 Avería · 4 Precio y stock (Peña) · 5 Plantilla.
+// El paso 6 (confirmar el pedido a Peña) ocurre en la gestión cuando el cliente acepta.
+type Step = 1 | 2 | 3 | 4 | 5;
+
+const STEP_TITLES: Record<Step, string> = {
+  1: "Matrícula del vehículo",
+  2: "Datos del cliente",
+  3: "¿Qué avería?",
+  4: "Precio y stock (Grupo Peña)",
+  5: "Plantilla al cliente",
+};
+
+const STEP_SUBTITLES: Record<Step, string> = {
+  1: "Escanea o escribe la matrícula y consulta los datos del vehículo.",
+  2: "Nombre, teléfono y fotos del problema.",
+  3: "Elige la categoría y la subfamilia exacta.",
+  4: "Consulta precio y disponibilidad de las piezas antes de presupuestar.",
+  5: "Revisa el WhatsApp con el precio correcto antes de enviarlo.",
+};
+
 
 interface ClienteRow {
   id: string;
