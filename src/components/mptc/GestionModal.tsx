@@ -675,6 +675,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </div>
         )}
 
+        </div>
+
         {/* Acciones */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {editing ? (
