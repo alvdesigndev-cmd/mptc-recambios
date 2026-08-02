@@ -125,6 +125,50 @@ export type Database = {
         }
         Relationships: []
       }
+      gestion_eventos: {
+        Row: {
+          actor: string | null
+          actor_user_id: string | null
+          created_at: string
+          detalle: string | null
+          gestion_id: string
+          id: string
+          metadata: Json
+          taller_id: string | null
+          tipo: string
+        }
+        Insert: {
+          actor?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          gestion_id: string
+          id?: string
+          metadata?: Json
+          taller_id?: string | null
+          tipo: string
+        }
+        Update: {
+          actor?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          gestion_id?: string
+          id?: string
+          metadata?: Json
+          taller_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gestion_eventos_gestion_id_fkey"
+            columns: ["gestion_id"]
+            isOneToOne: false
+            referencedRelation: "gestiones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gestiones: {
         Row: {
           borrador_step: number | null
