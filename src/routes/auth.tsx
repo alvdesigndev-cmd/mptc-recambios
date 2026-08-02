@@ -451,8 +451,9 @@ function AuthPage() {
         {error && <p className="text-sm text-red-500">{error}</p>}
         {info && <p className="text-sm text-emerald-500">{info}</p>}
 
-        <button type="submit" disabled={loading}
+        <button type="submit" disabled={loading || autoLogin}
           className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+
           {loading
             ? "Procesando…"
             : mode === "login"
