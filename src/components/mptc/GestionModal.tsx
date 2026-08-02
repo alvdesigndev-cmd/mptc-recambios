@@ -711,7 +711,13 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
             <div className="mb-3 flex items-start justify-between gap-3">
-              <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
+              <div>
+                <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Paso 6 del flujo: el cliente ya ha aceptado el presupuesto.
+                </p>
+              </div>
+
               <button
                 onClick={() => setConfirmPedido(false)}
                 className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2"
