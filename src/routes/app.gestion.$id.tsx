@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
@@ -8,6 +9,8 @@ import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
+import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
+
 
 export const Route = createFileRoute("/app/gestion/$id")({
   head: () => ({
@@ -39,12 +42,59 @@ function GestionDetallePage() {
   const [fotos, setFotos] = useState<string[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [gpcat, setGpcat] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
     setG((data as Gestion) || null);
     setLoading(false);
   }, [id]);
+
+  const startEdit = (section: string, fields: string[]) => {
+    const d: Record<string, string> = {};
+    for (const f of fields) d[f] = ((g as unknown as Record<string, string | null>)?.[f] ?? "") || "";
+    setDraft(d);
+    setEditing(section);
+  };
+
+  const setField = (k: string, v: string) => setDraft((p) => ({ ...p, [k]: v }));
+
+  const saveEdit = async () => {
+    if (!g) return;
+    setSaving(true);
+    const payload: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(draft)) payload[k] = v.trim() === "" ? null : v.trim();
+    const { error } = await supabase
+      .from("gestiones")
+      .update(payload as never)
+      .eq("id", g.id);
+    setSaving(false);
+    if (error) { toast.error("No se pudo guardar: " + error.message); return; }
+    toast.success("Cambios guardados");
+    setEditing(null);
+    setDraft({});
+    load();
+  };
+
+  const addPiezas = (piezas: Parameters<typeof formatPiezaLinea>[0][]) => {
+    const lineas = piezas.map(formatPiezaLinea);
+    const total = piezas.reduce((s, p) => s + p.precio * p.cantidad, 0);
+    setDraft((prev) => {
+      const actuales = (prev["piezas"] ?? g?.piezas ?? "").trim();
+      const importePrev = Number(String(prev["importe"] ?? g?.importe ?? "").replace(",", ".")) || 0;
+      return {
+        ...prev,
+        piezas: actuales ? actuales + "\n" + lineas.join("\n") : lineas.join("\n"),
+        importe: (importePrev + total).toFixed(2),
+      };
+    });
+    setEditing("piezas");
+    setGpcat(false);
+  };
+
 
   useEffect(() => { if (settings) load(); }, [settings, load]);
 
@@ -157,25 +207,71 @@ function GestionDetallePage() {
       </header>
 
       {/* PASO 1 — Matrícula y vehículo */}
-      <Block icon={<Car className="h-4 w-4" />} step="Paso 1" title="Matrícula y vehículo">
-        <Grid>
-          <Row label="Matrícula" value={g.matricula} mono />
-          <Row label="Km" value={g.km} />
-          <Row label="Marca" value={g.marca} />
-          <Row label="Modelo" value={g.modelo} />
-          <Row label="Motor" value={g.motor} />
-          <Row label="Matriculación" value={g.fecha_matriculacion} />
-          <Row label="VIN" value={g.vin} mono />
-          <Row label="Taller" value={g.taller_nombre} />
-        </Grid>
+      <Block
+        icon={<Car className="h-4 w-4" />}
+        step="Paso 1"
+        title="Matrícula y vehículo"
+        action={
+          <EditActions
+            editing={editing === "veh"}
+            saving={saving}
+            onEdit={() => startEdit("veh", ["matricula", "km", "marca", "modelo", "motor", "fecha_matriculacion", "vin", "vehiculo"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "veh" ? (
+          <Grid>
+            <Field label="Matrícula" value={draft["matricula"] ?? ""} onChange={(v) => setField("matricula", v.toUpperCase())} mono />
+            <Field label="Km" value={draft["km"] ?? ""} onChange={(v) => setField("km", v)} />
+            <Field label="Marca" value={draft["marca"] ?? ""} onChange={(v) => setField("marca", v)} />
+            <Field label="Modelo" value={draft["modelo"] ?? ""} onChange={(v) => setField("modelo", v)} />
+            <Field label="Motor" value={draft["motor"] ?? ""} onChange={(v) => setField("motor", v)} />
+            <Field label="Matriculación" value={draft["fecha_matriculacion"] ?? ""} onChange={(v) => setField("fecha_matriculacion", v)} />
+            <Field label="VIN" value={draft["vin"] ?? ""} onChange={(v) => setField("vin", v.toUpperCase())} mono />
+            <Field label="Vehículo (resumen)" value={draft["vehiculo"] ?? ""} onChange={(v) => setField("vehiculo", v)} />
+          </Grid>
+        ) : (
+          <Grid>
+            <Row label="Matrícula" value={g.matricula} mono />
+            <Row label="Km" value={g.km} />
+            <Row label="Marca" value={g.marca} />
+            <Row label="Modelo" value={g.modelo} />
+            <Row label="Motor" value={g.motor} />
+            <Row label="Matriculación" value={g.fecha_matriculacion} />
+            <Row label="VIN" value={g.vin} mono />
+            <Row label="Taller" value={g.taller_nombre} />
+          </Grid>
+        )}
       </Block>
 
       {/* PASO 2 — Cliente y fotos */}
-      <Block icon={<User className="h-4 w-4" />} step="Paso 2" title="Cliente">
-        <Grid>
-          <Row label="Nombre" value={g.cliente_nombre} />
-          <Row label="Teléfono" value={g.cliente_telefono} mono />
-        </Grid>
+      <Block
+        icon={<User className="h-4 w-4" />}
+        step="Paso 2"
+        title="Cliente"
+        action={
+          <EditActions
+            editing={editing === "cliente"}
+            saving={saving}
+            onEdit={() => startEdit("cliente", ["cliente_nombre", "cliente_telefono"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "cliente" ? (
+          <Grid>
+            <Field label="Nombre" value={draft["cliente_nombre"] ?? ""} onChange={(v) => setField("cliente_nombre", v)} />
+            <Field label="Teléfono" value={draft["cliente_telefono"] ?? ""} onChange={(v) => setField("cliente_telefono", v)} mono inputMode="tel" />
+          </Grid>
+        ) : (
+          <Grid>
+            <Row label="Nombre" value={g.cliente_nombre} />
+            <Row label="Teléfono" value={g.cliente_telefono} mono />
+          </Grid>
+        )}
         {fotos.length > 0 && (
           <div className="mt-3 flex gap-2 overflow-x-auto">
             {fotos.map((u, i) => (
@@ -193,41 +289,111 @@ function GestionDetallePage() {
       </Block>
 
       {/* PASO 3 — Avería */}
-      <Block icon={<Wrench className="h-4 w-4" />} step="Paso 3" title="Avería">
-        <Grid>
-          <Row label="Familia" value={g.categoria} />
-          <Row label="Subfamilia" value={g.subfamilia} />
-        </Grid>
-        {g.descripcion && <Long label="Notas internas" value={g.descripcion} />}
-        {g.objecion && <Long label="Objeción del cliente" value={g.objecion} />}
+      <Block
+        icon={<Wrench className="h-4 w-4" />}
+        step="Paso 3"
+        title="Avería"
+        action={
+          <EditActions
+            editing={editing === "averia"}
+            saving={saving}
+            onEdit={() => startEdit("averia", ["categoria", "subfamilia", "descripcion", "objecion"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "averia" ? (
+          <>
+            <Grid>
+              <Field label="Familia" value={draft["categoria"] ?? ""} onChange={(v) => setField("categoria", v)} />
+              <Field label="Subfamilia" value={draft["subfamilia"] ?? ""} onChange={(v) => setField("subfamilia", v)} />
+            </Grid>
+            <Area label="Notas internas" value={draft["descripcion"] ?? ""} onChange={(v) => setField("descripcion", v)} />
+            <Area label="Objeción del cliente" value={draft["objecion"] ?? ""} onChange={(v) => setField("objecion", v)} />
+          </>
+        ) : (
+          <>
+            <Grid>
+              <Row label="Familia" value={g.categoria} />
+              <Row label="Subfamilia" value={g.subfamilia} />
+            </Grid>
+            {g.descripcion && <Long label="Notas internas" value={g.descripcion} />}
+            {g.objecion && <Long label="Objeción del cliente" value={g.objecion} />}
+          </>
+        )}
       </Block>
 
       {/* PASO 4 — Consulta a Peña */}
-      <Block icon={<Package className="h-4 w-4" />} step="Paso 4" title="Presupuesto y piezas (Peña)">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Importe final</span>
-          <span className="font-mono text-lg font-bold text-primary">{g.importe ? `${g.importe} €` : "—"}</span>
-        </div>
-        {piezasList.length > 0 ? (
-          <ul className="mt-2 space-y-1 text-[13px]">
-            {piezasList.map((l, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-primary">•</span>
-                <span className="min-w-0 flex-1 break-words">{l}</span>
-              </li>
-            ))}
-          </ul>
+      <Block
+        icon={<Package className="h-4 w-4" />}
+        step="Paso 4"
+        title="Presupuesto y piezas (Peña)"
+        action={
+          <EditActions
+            editing={editing === "piezas"}
+            saving={saving}
+            onEdit={() => startEdit("piezas", ["importe", "piezas"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "piezas" ? (
+          <>
+            <Field label="Importe € (IVA incl.)" value={draft["importe"] ?? ""} onChange={(v) => setField("importe", v.replace(",", "."))} mono inputMode="decimal" />
+            <Area label="Piezas a pedir (una por línea)" value={draft["piezas"] ?? ""} onChange={(v) => setField("piezas", v)} rows={6} />
+            <button
+              type="button"
+              onClick={() => setGpcat(true)}
+              className="mt-2 inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold"
+            >
+              <Search className="h-4 w-4" /> Buscar piezas en GPCat
+            </button>
+          </>
         ) : (
-          <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
+          <>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Importe final</span>
+              <span className="font-mono text-lg font-bold text-primary">{g.importe ? `${g.importe} €` : "—"}</span>
+            </div>
+            {piezasList.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-[13px]">
+                {piezasList.map((l, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span className="min-w-0 flex-1 break-words">{l}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
+            )}
+          </>
         )}
       </Block>
 
       {/* PASO 5 — Plantilla enviada */}
-      <Block icon={<MessageCircle className="h-4 w-4" />} step="Paso 5" title="Plantilla al cliente">
+      <Block
+        icon={<MessageCircle className="h-4 w-4" />}
+        step="Paso 5"
+        title="Plantilla al cliente"
+        action={
+          <EditActions
+            editing={editing === "mensaje"}
+            saving={saving}
+            onEdit={() => startEdit("mensaje", ["mensaje"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
         <div className="text-[12px] text-muted-foreground">
           {g.wa_abierto || fase.index >= 1 ? "WhatsApp enviado al cliente." : "Todavía no se ha enviado."}
         </div>
-        {g.mensaje ? (
+        {editing === "mensaje" ? (
+          <Area label="Mensaje" value={draft["mensaje"] ?? ""} onChange={(v) => setField("mensaje", v)} rows={8} />
+        ) : g.mensaje ? (
           <div className="mt-2 whitespace-pre-wrap break-words rounded-2xl bg-surface-2 p-3 text-[13px] leading-relaxed">
             {g.mensaje}
           </div>
@@ -235,6 +401,7 @@ function GestionDetallePage() {
           <p className="mt-2 text-[12px] text-muted-foreground">Sin mensaje guardado.</p>
         )}
       </Block>
+
 
       {/* PASO 6 — Pedido a Peña */}
       <Block icon={<Truck className="h-4 w-4" />} step="Paso 6" title="Pedido a Grupo Peña">
@@ -262,6 +429,17 @@ function GestionDetallePage() {
         onClose={() => setModal(false)}
         onChanged={() => { setModal(false); load(); }}
       />
+
+      <GPCatSearchModal
+        open={gpcat}
+        onClose={() => setGpcat(false)}
+        marca={g.marca ?? undefined}
+        modelo={g.modelo ?? undefined}
+        motor={g.motor ?? undefined}
+        averia={[g.categoria, g.subfamilia].filter(Boolean).join(" ") || undefined}
+        onAdd={addPiezas}
+      />
+
     </div>
   );
 }
@@ -278,23 +456,102 @@ function BackLink() {
 }
 
 function Block({
-  icon, step, title, children,
-}: { icon: React.ReactNode; step: string; title: string; children: React.ReactNode }) {
+  icon, step, title, action, children,
+}: { icon: React.ReactNode; step: string; title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-primary">
           {icon}
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{step}</div>
           <h2 className="truncate text-sm font-semibold">{title}</h2>
         </div>
+        {action}
       </div>
       {children}
     </section>
   );
 }
+
+function EditActions({
+  editing, saving, onEdit, onSave, onCancel,
+}: { editing: boolean; saving: boolean; onEdit: () => void; onSave: () => void; onCancel: () => void }) {
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border-strong bg-surface px-2.5 py-1.5 text-[12px] font-semibold active:scale-95"
+      >
+        <Pencil className="h-3.5 w-3.5" /> Editar
+      </button>
+    );
+  }
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="inline-flex items-center gap-1 rounded-xl border border-border-strong bg-surface px-2.5 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+      >
+        <X className="h-3.5 w-3.5" /> Cancelar
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="inline-flex items-center gap-1 rounded-xl bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Guardar
+      </button>
+    </div>
+  );
+}
+
+const inputCls =
+  "mt-1 w-full rounded-xl border border-border-strong bg-surface-2 px-3 py-2 text-[16px] outline-none focus:border-primary";
+
+function Field({
+  label, value, onChange, mono, inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  mono?: boolean;
+  inputMode?: "text" | "tel" | "decimal" | "numeric";
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        inputMode={inputMode}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls + (mono ? " font-mono" : "")}
+      />
+    </label>
+  );
+}
+
+function Area({
+  label, value, onChange, rows = 3,
+}: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <label className="mt-3 block">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <textarea
+        value={value}
+        rows={rows}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls + " resize-y leading-relaxed"}
+      />
+    </label>
+  );
+}
+
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-x-3 gap-y-2">{children}</div>;
