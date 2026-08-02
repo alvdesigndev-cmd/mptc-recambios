@@ -37,6 +37,8 @@ import { Route as AppGestionIdRouteImport } from './routes/app.gestion.$id'
 import { Route as AdminTallerTallerIdRouteImport } from './routes/admin.taller.$tallerId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicPresupuestoSplatRouteImport } from './routes/api/public/presupuesto.$'
+import { Route as ApiPublicFotoSplatRouteImport } from './routes/api/public/foto.$'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -181,6 +183,17 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPresupuestoSplatRoute =
+  ApiPublicPresupuestoSplatRouteImport.update({
+    id: '/api/public/presupuesto/$',
+    path: '/api/public/presupuesto/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicFotoSplatRoute = ApiPublicFotoSplatRouteImport.update({
+  id: '/api/public/foto/$',
+  path: '/api/public/foto/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -211,6 +224,8 @@ export interface FileRoutesByFullPath {
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
   '/app/gestion/$id': typeof AppGestionIdRoute
   '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
+  '/api/public/foto/$': typeof ApiPublicFotoSplatRoute
+  '/api/public/presupuesto/$': typeof ApiPublicPresupuestoSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -239,6 +254,8 @@ export interface FileRoutesByTo {
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
   '/app/gestion/$id': typeof AppGestionIdRoute
   '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
+  '/api/public/foto/$': typeof ApiPublicFotoSplatRoute
+  '/api/public/presupuesto/$': typeof ApiPublicPresupuestoSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -270,6 +287,8 @@ export interface FileRoutesById {
   '/admin/taller/$tallerId': typeof AdminTallerTallerIdRoute
   '/app/gestion/$id': typeof AppGestionIdRoute
   '/app/matriculas/historial': typeof AppMatriculasHistorialRoute
+  '/api/public/foto/$': typeof ApiPublicFotoSplatRoute
+  '/api/public/presupuesto/$': typeof ApiPublicPresupuestoSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -302,6 +321,8 @@ export interface FileRouteTypes {
     | '/admin/taller/$tallerId'
     | '/app/gestion/$id'
     | '/app/matriculas/historial'
+    | '/api/public/foto/$'
+    | '/api/public/presupuesto/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -330,6 +351,8 @@ export interface FileRouteTypes {
     | '/admin/taller/$tallerId'
     | '/app/gestion/$id'
     | '/app/matriculas/historial'
+    | '/api/public/foto/$'
+    | '/api/public/presupuesto/$'
   id:
     | '__root__'
     | '/'
@@ -360,6 +383,8 @@ export interface FileRouteTypes {
     | '/admin/taller/$tallerId'
     | '/app/gestion/$id'
     | '/app/matriculas/historial'
+    | '/api/public/foto/$'
+    | '/api/public/presupuesto/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -377,6 +402,8 @@ export interface RootRouteChildren {
   PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicFotoSplatRoute: typeof ApiPublicFotoSplatRoute
+  ApiPublicPresupuestoSplatRoute: typeof ApiPublicPresupuestoSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -577,6 +604,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/presupuesto/$': {
+      id: '/api/public/presupuesto/$'
+      path: '/api/public/presupuesto/$'
+      fullPath: '/api/public/presupuesto/$'
+      preLoaderRoute: typeof ApiPublicPresupuestoSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/foto/$': {
+      id: '/api/public/foto/$'
+      path: '/api/public/foto/$'
+      fullPath: '/api/public/foto/$'
+      preLoaderRoute: typeof ApiPublicFotoSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -650,6 +691,8 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoPenaTokenRoute: PedidoPenaTokenRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicFotoSplatRoute: ApiPublicFotoSplatRoute,
+  ApiPublicPresupuestoSplatRoute: ApiPublicPresupuestoSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

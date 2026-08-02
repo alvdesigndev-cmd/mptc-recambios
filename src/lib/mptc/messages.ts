@@ -4,6 +4,8 @@
 // y se pasa a `buildMessage` como `template`. Solo se sustituye el marcador
 // "___" por el importe y se anexan acciones (confirmar/rechazar) y fotos.
 
+import { publicFotoUrls } from "./public-links";
+
 export interface MsgContext {
   cliente: string;
   vehiculo: string;
@@ -29,7 +31,8 @@ function actions(c: MsgContext): string {
 
 function fotosBlock(c: MsgContext): string {
   if (!c.fotos?.length) return "";
-  return `\n\n📸 Fotos:\n${c.fotos.map(noPreview).join("\n")}`;
+  // Enlace público limpio y SIN <> para que WhatsApp muestre la vista previa.
+  return `\n\n📸 Fotos:\n${publicFotoUrls(c.fotos).join("\n")}`;
 }
 
 /** Resumen de piezas del paso 4, listo para el cliente. */
@@ -81,6 +84,6 @@ export function buildPenaMessage(opts: {
   notas: string;
   fotos?: string[];
 }): string {
-  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${opts.fotos.map((u) => `<${u}>`).join("\n")}\n` : "";
+  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${publicFotoUrls(opts.fotos).join("\n")}\n` : "";
   return `🔧 *Pedido ${opts.taller}*\n\n🚗 ${opts.vehiculo} — ${opts.matricula}\n\n📦 Piezas:\n${opts.piezas}\n${fotos}\n${opts.notas ? `📝 ${opts.notas}\n\n` : ""}Gracias 🙌`;
 }

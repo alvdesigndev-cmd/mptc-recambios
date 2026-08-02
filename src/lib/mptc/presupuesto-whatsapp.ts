@@ -3,7 +3,8 @@
 // exactamente el mismo PDF, enlace firmado y registro de eventos.
 import { buildWAUrl } from "./wa";
 import { logEvento } from "./eventos";
-import { generarYGuardarPresupuesto, getPresupuestoUrl } from "./presupuesto-storage";
+import { generarYGuardarPresupuesto } from "./presupuesto-storage";
+import { publicPresupuestoUrl } from "./public-links";
 import type { Gestion } from "./types";
 
 export type EnvioPdfResult = { estado: "enviado" | "pendiente"; filename: string; url: string };
@@ -13,7 +14,7 @@ export const puedeEnviarPdf = (g: Gestion) =>
   !!(g.cliente_telefono || "").trim() && g.estado !== "borrador";
 
 /**
- * Genera y archiva el PDF de esta gestión, crea un enlace firmado (7 días) y
+ * Genera y archiva el PDF de esta gestión, crea un enlace público limpio y
  * abre WhatsApp con el mensaje. Registra `presupuesto_enviado` o
  * `presupuesto_envio_error` en el historial. Lanza si falla.
  */
@@ -32,8 +33,8 @@ export async function enviarPresupuestoPdfWhatsApp(
       false,
     );
     if (!res.path) throw new Error("No se pudo guardar el PDF para enviarlo");
-    const link = await getPresupuestoUrl(res.path, 60 * 60 * 24 * 7);
-    if (!link) throw new Error("No se pudo generar el enlace del PDF");
+    // Enlace público limpio y permanente: el cliente lo abre como un PDF normal.
+    const link = publicPresupuestoUrl(res.path);
 
     const msg =
       `Hola${g.cliente_nombre ? ` ${g.cliente_nombre}` : ""}, te envío el presupuesto en PDF ` +
