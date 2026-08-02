@@ -37,24 +37,33 @@ function decodePass(v: string): string {
   try { return decodeURIComponent(escape(atob(v))); } catch { return ""; }
 }
 
-function loadRemembered(): { email: string | null; password: string | null } {
-  if (typeof window === "undefined") return { email: null, password: null };
+type LoginProfile = "taller" | "admin" | "pena";
+
+function isLoginProfile(v: unknown): v is LoginProfile {
+  return v === "taller" || v === "admin" || v === "pena";
+}
+
+function loadRemembered(): { email: string | null; password: string | null; profile: LoginProfile | null } {
+  if (typeof window === "undefined") return { email: null, password: null, profile: null };
   try {
     window.localStorage.removeItem(LEGACY_REMEMBER_KEY);
     const email = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
     const passEnc = window.localStorage.getItem(REMEMBER_PASS_KEY);
+    const profile = window.localStorage.getItem(REMEMBER_PROFILE_KEY);
     return {
       email: email && typeof email === "string" ? email : null,
       password: passEnc ? decodePass(passEnc) || null : null,
+      profile: isLoginProfile(profile) ? profile : null,
     };
-  } catch { return { email: null, password: null }; }
+  } catch { return { email: null, password: null, profile: null }; }
 }
 
-function saveRemembered(email: string, password: string) {
+function saveRemembered(email: string, password: string, profile: LoginProfile) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
     window.localStorage.setItem(REMEMBER_PASS_KEY, encodePass(password));
+    window.localStorage.setItem(REMEMBER_PROFILE_KEY, profile);
   } catch { /* noop */ }
 }
 
@@ -63,8 +72,10 @@ function clearRemembered() {
   try {
     window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
     window.localStorage.removeItem(REMEMBER_PASS_KEY);
+    window.localStorage.removeItem(REMEMBER_PROFILE_KEY);
   } catch { /* noop */ }
 }
+
 
 
 export const Route = createFileRoute("/auth")({
