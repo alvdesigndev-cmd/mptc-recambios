@@ -64,10 +64,21 @@ export function GestionCard({ g, onClick, onDelete }: Props) {
               return <span key={f.key} className={"h-1 flex-1 rounded-full " + cls} />;
             })}
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            {fase.rechazado ? "Rechazado por el cliente" : fase.label}
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className="text-[11px] text-muted-foreground">
+              {fase.rechazado ? "Rechazado por el cliente" : fase.label}
+            </span>
+            <Link
+              to="/app/gestion/$id"
+              params={{ id: g.id }}
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 text-[11px] font-semibold text-primary hover:underline"
+            >
+              Ver detalle
+            </Link>
           </div>
         </div>
+
       </div>
 
       {isBorrador && onDelete && (
