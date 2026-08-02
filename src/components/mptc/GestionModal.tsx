@@ -3,6 +3,7 @@ import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { logEvento } from "@/lib/mptc/eventos";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { MicButton } from "@/components/mptc/MicButton";
@@ -271,6 +272,13 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         },
       });
       await supabase.from("gestiones").update({ estado: "pedido", pedido_pena: true }).eq("id", g.id);
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "pedido_enviado",
+        detalle: "Pedido enviado a Grupo Peña (GPCat)",
+        metadata: { importe: g.importe, piezas: g.piezas },
+      });
       toast.success("Pedido enviado a Grupo Peña ✓");
       setConfirmPedido(false);
       onChanged();
@@ -284,6 +292,13 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
   const pedirPena = async () => {
     await supabase.from("gestiones").update({ pedido_pena: true }).eq("id", g.id);
+    await logEvento({
+      gestionId: g.id,
+      tallerId: g.taller_id,
+      tipo: "pedido_confirmado",
+      detalle: "Pedido confirmado a Grupo Peña",
+      metadata: { importe: g.importe, piezas: g.piezas },
+    });
     toast.success("El pedido se ha realizado correctamente");
     onChanged();
     onClose();
