@@ -404,6 +404,13 @@ function GestionDetallePage() {
               Reanudar borrador
             </button>
           )}
+          <button
+            type="button"
+            onClick={exportarGestionPdf}
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold"
+          >
+            <FileDown className="h-4 w-4" /> Exportar gestión (PDF)
+          </button>
           {g.cliente_telefono && (
             <a
               href={`tel:${g.cliente_telefono}`}
