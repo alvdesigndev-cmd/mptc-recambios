@@ -1670,9 +1670,11 @@ function NuevaPage() {
             ) : (
               <>
                 <MessageCircle className="mr-1 inline h-3 w-3" />
-                Se abrirá WhatsApp en una pestaña nueva.
+                Se abrirá WhatsApp en una pestaña nueva. Paso 6: cuando el cliente acepte,
+                confirma el pedido a Grupo Peña desde la gestión.
               </>
             )}
+
           </div>
         </section>
       )}
