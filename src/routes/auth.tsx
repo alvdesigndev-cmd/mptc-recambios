@@ -11,8 +11,10 @@ import { pickPostLoginPath } from "@/lib/mptc/redirect";
 // relleno y solo tenga que pulsar "Entrar".
 const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
 const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
+const REMEMBER_PROFILE_KEY = "mptc_remember_profile_v1";
 // Clave legacy previa: la limpiamos al arrancar.
 const LEGACY_REMEMBER_KEY = "mptc_remember_v1";
+
 
 function translateAuthError(msg: string): string {
   const m = (msg || "").toLowerCase();
