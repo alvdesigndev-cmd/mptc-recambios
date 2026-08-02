@@ -33,7 +33,7 @@ export function CredentialsTransfer({ onImported }: Props) {
   async function handleExport() {
     setErr(null);
     setMsg(null);
-    const saved = readSavedCredentials();
+    const saved = await readSavedCredentials();
     if (!saved) {
       setErr("No hay credenciales guardadas en este dispositivo. Entra marcando “Guardar mis credenciales” y vuelve aquí.");
       return;
@@ -59,7 +59,7 @@ export function CredentialsTransfer({ onImported }: Props) {
     try {
       const text = await file.text();
       const creds = await importCredentials(text, pass);
-      writeSavedCredentials(creds);
+      await writeSavedCredentials(creds);
       onImported(creds);
       setPass("");
       setMsg("Credenciales importadas y guardadas en este dispositivo.");
