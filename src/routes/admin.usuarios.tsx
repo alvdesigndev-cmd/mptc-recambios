@@ -318,7 +318,7 @@ function UsuariosAdminPage() {
                         {row.last_sign_in_at && ` · Último acceso ${new Date(row.last_sign_in_at).toLocaleString()}`}
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
                       <button
                         onClick={() => openPw(row)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
