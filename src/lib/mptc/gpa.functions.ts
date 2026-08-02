@@ -19,7 +19,7 @@ export type { GpaArticulo, GpaLineaPedido, GpaCriterio, GpaCriterioCategoria } f
 /** POST /IniciarSesion — devuelve el token de sesión de GPA (cacheado mientras sea válido). */
 export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: boolean; mock: boolean; token: string; expiraEn?: number; error?: string }> => {
-    if (gpaMockMode()) return mockIniciarSesion();
+    if (await gpaMockMode()) return mockIniciarSesion();
     try {
       const token = await fetchGpaToken();
       return { ok: true, mock: false, token };
@@ -36,7 +36,7 @@ export const consultaArticulosGPA = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; criterio: GpaCriterio; error?: string }> => {
     const query = (data.query ?? "").toString();
     const categoria = data.categoria ? data.categoria.toString() : undefined;
-    if (gpaMockMode()) {
+    if (await gpaMockMode()) {
       const r = mockConsultaArticulos(query, categoria);
       return { ok: true, mock: true, articulos: r.articulos, criterio: r.criterio };
     }
@@ -65,7 +65,7 @@ export const generarPedidoGPA = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; numeroPedido: string; total?: number; estado?: string; error?: string }> => {
     const lineas = data.lineas ?? [];
-    if (gpaMockMode()) return mockGenerarPedido(lineas);
+    if (await gpaMockMode()) return mockGenerarPedido(lineas);
     try {
       const res = await gpaAuthPost("GenerarPedido", {
         Referencia: data.gestionId,
@@ -85,7 +85,7 @@ export const generarPedidoGPA = createServerFn({ method: "POST" })
 export const consultaPedidosGPA = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => (data as { desde?: string; hasta?: string } | undefined) ?? {})
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; pedidos: Array<{ numeroPedido: string; fecha: string; estado: string; total: number }>; error?: string }> => {
-    if (gpaMockMode()) return mockConsultaPedidos();
+    if (await gpaMockMode()) return mockConsultaPedidos();
     try {
       const res = await gpaAuthPost("ConsultaPedidos", { Desde: data.desde, Hasta: data.hasta });
       if (!res.ok) return { ok: false, mock: false, pedidos: [], error: `Error ${res.status}` };

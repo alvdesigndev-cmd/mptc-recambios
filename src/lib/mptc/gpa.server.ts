@@ -472,8 +472,8 @@ const TOKEN_MARGEN_MS = 60_000; // renovar 1 min antes de expirar
 const TOKEN_TTL_FALLBACK_MS = 55 * 60_000; // si la API no informa expiración
 
 async function requestGpaToken(): Promise<string> {
-  const { usuario, password } = gpaConfig();
-  const res = await fetch(gpaEndpoint("IniciarSesion"), {
+  const { usuario, password } = await gpaConfig();
+  const res = await fetch(await gpaEndpoint("IniciarSesion"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ Usuario: usuario, Password: password }),
@@ -527,7 +527,7 @@ export function invalidateGpaToken(): void {
  */
 export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Response> {
   const call = async (token: string) =>
-    fetch(gpaEndpoint(endpoint), {
+    fetch(await gpaEndpoint(endpoint), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
