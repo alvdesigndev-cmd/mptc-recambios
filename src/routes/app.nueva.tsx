@@ -1925,7 +1925,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function BottomBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky bottom-[78px] z-20 flex items-center gap-2 rounded-2xl border border-border bg-surface/95 p-2 backdrop-blur-xl">
+    <div className="sticky bottom-[78px] z-[60] flex items-center gap-2 rounded-2xl border border-border bg-surface/95 p-2 backdrop-blur-xl">
       {children}
     </div>
   );
