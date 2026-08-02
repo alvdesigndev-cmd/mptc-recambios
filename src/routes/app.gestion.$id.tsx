@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
@@ -8,6 +9,8 @@ import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
+import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
+
 
 export const Route = createFileRoute("/app/gestion/$id")({
   head: () => ({
