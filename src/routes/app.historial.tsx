@@ -160,6 +160,44 @@ function HistorialPage() {
         </div>
       </div>
 
+      {/* Avance del flujo por fases */}
+      <div className="rounded-2xl border border-border bg-surface p-3">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Avance del flujo
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <button
+            onClick={() => setFase("todas")}
+            className={
+              "rounded-xl px-2 py-2 text-left text-xs font-semibold transition " +
+              (fase === "todas" ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground")
+            }
+          >
+            <div className="text-base font-bold">{items.length}</div>
+            Todas
+          </button>
+          {FASES.map((f) => {
+            const count = items.filter((g) => faseDeGestion(g).key === f.key).length;
+            const active = fase === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFase(f.key)}
+                className={
+                  "rounded-xl px-2 py-2 text-left text-xs font-semibold transition " +
+                  (active ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground")
+                }
+              >
+                <div className="text-base font-bold">{count}</div>
+                {f.short}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
+
       {feed.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Inbox className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
