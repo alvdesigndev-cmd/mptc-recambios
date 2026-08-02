@@ -21,6 +21,16 @@ interface Props {
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
   const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
+  const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
+
+  // Estado real del último envío del PDF, para poder reintentar en el sitio.
+  useEffect(() => {
+    let alive = true;
+    if (!puedeEnviarPdf(g)) { setEnvioPdf("sin-enviar"); return; }
+    fetchEstadoEnvioPdf(g.id).then((st) => { if (alive) setEnvioPdf(st); });
+    return () => { alive = false; };
+  }, [g.id, g.estado, g.cliente_telefono]);
+
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
