@@ -695,6 +695,28 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               >
                 <FileDown className="h-4 w-4" /> PDF
               </button>
+              {puedeEnviarPdf(g) && (
+                <button
+                  onClick={async () => {
+                    setEnviandoPdf(true);
+                    try {
+                      const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                      if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
+                      else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
+                      onChanged();
+                    } catch (e: any) {
+                      toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+                    } finally {
+                      setEnviandoPdf(false);
+                    }
+                  }}
+                  disabled={enviandoPdf}
+                  className={btnGhost + " disabled:opacity-50"}
+                >
+                  {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar PDF
+                </button>
+              )}
+
               {g.cliente_telefono && (
                 <a
                   href={`tel:${g.cliente_telefono}`}
