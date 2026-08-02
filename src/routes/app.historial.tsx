@@ -83,6 +83,7 @@ function HistorialPage() {
       } else if (filtro !== "todas" && g.estado !== filtro) {
         return false;
       }
+      if (fase !== "todas" && faseDeGestion(g).key !== fase) return false;
       if (!qq) return true;
       return (
         (g.cliente_nombre || "").toLowerCase().includes(qq) ||
@@ -91,7 +92,7 @@ function HistorialPage() {
         (g.subfamilia || "").toLowerCase().includes(qq)
       );
     });
-  }, [items, filtro, q]);
+  }, [items, filtro, fase, q]);
 
   const filteredDirectos = useMemo(() => {
     if (filtro !== "todas" && filtro !== "pedido-directo") return [];
