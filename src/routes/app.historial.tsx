@@ -329,7 +329,7 @@ function HistorialPage() {
 
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground">
-          {feed.length} {feed.length === 1 ? "resultado" : "resultados"}
+          {feedVisible.length} de {feed.length}{hayMas ? "+" : ""} {feed.length === 1 ? "resultado" : "resultados"}
         </span>
         {hayFiltros && (
           <button
@@ -344,8 +344,8 @@ function HistorialPage() {
       {feed.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Inbox className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No hay registros que coincidan.</p>
-          {hayFiltros && (
+          <p className="text-sm text-muted-foreground">{cargando ? "Cargando…" : "No hay registros que coincidan."}</p>
+          {hayFiltros && !cargando && (
             <button onClick={limpiar} className="mt-3 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
               Limpiar filtros
             </button>
@@ -354,7 +354,7 @@ function HistorialPage() {
 
       ) : (
         <div className="space-y-2">
-          {feed.map((entry) =>
+          {feedVisible.map((entry) =>
             entry.kind === "g" ? (
               <GestionCard
                 key={"g-" + entry.item.id}
@@ -372,7 +372,19 @@ function HistorialPage() {
               />
             )
           )}
+
+          <div ref={sentinelRef} />
+          {hayMas && (
+            <button
+              onClick={cargarMas}
+              disabled={cargando}
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
+            >
+              {cargando ? "Cargando…" : "Cargar más"}
+            </button>
+          )}
         </div>
+
       )}
 
       <GestionModal gestion={open} onClose={() => setOpen(null)} onChanged={load} />
