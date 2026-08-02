@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
+import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
 interface Props {
   g: Gestion;
@@ -20,6 +21,16 @@ interface Props {
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
   const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
+  const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
+
+  // Estado real del último envío del PDF, para poder reintentar en el sitio.
+  useEffect(() => {
+    let alive = true;
+    if (!puedeEnviarPdf(g)) { setEnvioPdf("sin-enviar"); return; }
+    fetchEstadoEnvioPdf(g.id).then((st) => { if (alive) setEnvioPdf(st); });
+    return () => { alive = false; };
+  }, [g.id, g.estado, g.cliente_telefono]);
+
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
@@ -96,23 +107,41 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
             {puedeEnviarPdf(g) && (
               <QuickBtn
                 busy={busy === "pdf"}
+                accent={envioPdf === "error" || envioPdf === "pendiente"}
                 onClick={async () => {
                   setBusy("pdf");
                   try {
                     const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                    setEnvioPdf(res.estado);
                     if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
                     else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
                     onChanged?.();
                   } catch (e: any) {
+                    setEnvioPdf("error");
                     toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
                   } finally {
                     setBusy(null);
                   }
                 }}
-                icon={<FileDown className="h-3.5 w-3.5" />}
-                label="Enviar PDF"
+                icon={envioPdf === "error" || envioPdf === "pendiente"
+                  ? <RefreshCw className="h-3.5 w-3.5" />
+                  : <FileDown className="h-3.5 w-3.5" />}
+                label={
+                  envioPdf === "error" ? "Reintentar envío PDF"
+                  : envioPdf === "pendiente" ? "Reintentar envío PDF"
+                  : envioPdf === "enviado" ? "Reenviar PDF"
+                  : "Enviar PDF"
+                }
               />
             )}
+            {puedeEnviarPdf(g) && envioPdf !== "sin-enviar" && (
+              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                {ENVIO_PDF_LABEL[envioPdf]}
+              </span>
+            )}
+
+
+
 
             {isBorrador && onResume && (
               <QuickBtn onClick={() => onResume(g)} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Reanudar borrador" />

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell , FileDown, Loader2 } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell , FileDown, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
@@ -13,6 +13,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
 import { generarYGuardarPresupuesto } from "@/lib/mptc/presupuesto-storage";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
+import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
 interface Props {
   gestion: Gestion | null;
@@ -64,6 +65,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [confirmPedido, setConfirmPedido] = useState(false);
   const [enviandoPedido, setEnviandoPedido] = useState(false);
   const [enviandoPdf, setEnviandoPdf] = useState(false);
+  const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
   const enviarPedidoGPA = useServerFn(generarPedidoGPA);
 
 
@@ -74,6 +76,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     resolveFotoUrls(fotos).then((urls) => { if (alive) setFotoSigned(urls); });
     return () => { alive = false; };
   }, [gestion?.id, gestion?.fotos]);
+
+  // Estado del último envío del PDF, para poder reintentar sin recargar.
+  useEffect(() => {
+    let alive = true;
+    if (!gestion?.id) { setEnvioPdf("sin-enviar"); return; }
+    fetchEstadoEnvioPdf(gestion.id).then((st) => { if (alive) setEnvioPdf(st); });
+    return () => { alive = false; };
+  }, [gestion?.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -703,10 +713,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                     setEnviandoPdf(true);
                     try {
                       const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                      setEnvioPdf(res.estado);
                       if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
                       else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
                       onChanged();
                     } catch (e: any) {
+                      setEnvioPdf("error");
                       toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
                     } finally {
                       setEnviandoPdf(false);
@@ -715,9 +727,22 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                   disabled={enviandoPdf}
                   className={btnGhost + " disabled:opacity-50"}
                 >
-                  {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar PDF
+                  {enviandoPdf
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : envioPdf === "error" || envioPdf === "pendiente"
+                      ? <RefreshCw className="h-4 w-4" />
+                      : <Send className="h-4 w-4" />}
+                  {envioPdf === "error" || envioPdf === "pendiente"
+                    ? "Reintentar envío PDF"
+                    : envioPdf === "enviado" ? "Reenviar PDF" : "Enviar PDF"}
                 </button>
               )}
+              {puedeEnviarPdf(g) && envioPdf !== "sin-enviar" && (
+                <span className={`inline-flex items-center self-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                  {ENVIO_PDF_LABEL[envioPdf]}
+                </span>
+              )}
+
 
               {g.cliente_telefono && (
                 <a
