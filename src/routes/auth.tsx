@@ -147,17 +147,39 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
-    // Prefill del email y contraseña recordados.
+    // Prefill del email, contraseña y perfil recordados.
     const saved = loadRemembered();
     if (saved.email) { setEmail(saved.email); setRemember(true); }
     if (saved.password) { setPassword(saved.password); }
+    if (saved.profile) setLoginProfile(saved.profile);
 
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
-      if (cancelled || !data.session) return;
-      const p = await syncProfileToSettings();
-      navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+      if (cancelled) return;
+      if (data.session) {
+        const p = await syncProfileToSettings();
+        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+        return;
+      }
+      // Sin sesión activa: si hay credenciales guardadas entramos solos.
+      if (!saved.email || !saved.password) return;
+      setAutoLogin(true);
+      try {
+        const { error } = await signIn(saved.email, saved.password);
+        if (error) throw error;
+        const p = await syncProfileToSettings();
+        if (cancelled) return;
+        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+      } catch {
+        // Credenciales caducadas: las limpiamos y dejamos el formulario manual.
+        clearRemembered();
+        setPassword("");
+        if (!cancelled) setError("Tus credenciales guardadas ya no son válidas. Vuelve a introducirlas.");
+      } finally {
+        if (!cancelled) setAutoLogin(false);
+      }
     });
+
     supabase.from("talleres").select("taller_id,nombre,activo").then(({ data }) => {
       if (cancelled) return;
       const rows = (data || []).filter((t: any) => t.activo);
