@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search } from "lucide-react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -10,6 +10,7 @@ import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
+import { listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
 
 
 export const Route = createFileRoute("/app/gestion/$id")({
@@ -46,11 +47,17 @@ function GestionDetallePage() {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [gpcat, setGpcat] = useState(false);
+  const [eventos, setEventos] = useState<GestionEvento[]>([]);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
     setG((data as Gestion) || null);
     setLoading(false);
+    try {
+      setEventos(await listEventos(id));
+    } catch {
+      setEventos([]);
+    }
   }, [id]);
 
   const startEdit = (section: string, fields: string[]) => {
@@ -414,6 +421,38 @@ function GestionDetallePage() {
             <span className="text-muted-foreground">Pendiente de aceptación del cliente.</span>
           )}
         </div>
+      </Block>
+
+      {/* Historial de envíos y aceptaciones (WhatsApp / Peña) */}
+      <Block icon={<History className="h-4 w-4" />} step="Historial" title="Envíos y aceptaciones">
+        {eventos.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground">
+            Todavía no hay eventos registrados para esta gestión.
+          </p>
+        ) : (
+          <ol className="space-y-3">
+            {eventos.map((e) => (
+              <li key={e.id} className="flex gap-3">
+                <span className="mt-0.5 text-base leading-none">{EVENTO_ICON[e.tipo] || "•"}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold">{EVENTO_LABEL[e.tipo] || e.tipo}</div>
+                  {e.detalle && (
+                    <div className="break-words text-[12px] text-muted-foreground">{e.detalle}</div>
+                  )}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                    <span>{formatEventoFecha(e.created_at)}</span>
+                    {e.actor && <span className="rounded-full bg-surface-2 px-2 py-0.5">{e.actor}</span>}
+                    {typeof e.metadata?.["importe"] === "string" && e.metadata["importe"] && (
+                      <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
+                        {String(e.metadata["importe"])} €
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
       </Block>
 
       <PhotoLightbox
