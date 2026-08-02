@@ -533,10 +533,11 @@ function NuevaPage() {
     setShowSuggest(false);
     setBuscador("");
     setClienteBloqueado(c);
-    // Cliente ya guardado: saltar directamente al paso 2 (avería + fotos).
+    // Cliente ya guardado: saltar directamente al paso 3 (avería).
     if (opts?.advance !== false) {
-      setStep(2);
+      setStep(3);
     }
+
   };
 
   const desbloquearCliente = () => {
