@@ -502,6 +502,8 @@ function NuevaPage() {
 
 
   const [previewOpen, setPreviewOpen] = useState(true);
+  // Confirmación con previsualización antes de abrir WhatsApp.
+  const [confirmDestino, setConfirmDestino] = useState<null | "cliente" | "pena">(null);
 
   // Resumen de piezas calculado en el paso 4.
   const resumenPiezas = useMemo(
@@ -723,6 +725,24 @@ function NuevaPage() {
     }
   };
 
+  // Mensaje que recibirá Grupo Peña con el detalle del pedido.
+  const buildMensajePena = () => {
+    const lista = (piezas || "")
+      .split(/\n|;/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => `• ${l}`)
+      .join("\n");
+    return (
+      `🔧 *Pedido ${settings?.tallerName || ""}*\n\n` +
+      `Vehículo: ${vehiculo || "—"}${matricula ? ` (${matricula})` : ""}\n` +
+      `Avería: ${averiaQuery || "—"}\n\n` +
+      `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
+      `💰 Importe estimado: *${importe || "—"} €*\n` +
+      `${settings?.mecanico ? `Mecánico: ${settings.mecanico}` : ""}`
+    );
+  };
+
   const onPedirPena = async () => {
     if (fotosBloquean) {
       alert(
@@ -733,22 +753,10 @@ function NuevaPage() {
       return;
     }
     setPedirPena(true);
-    // Mensaje para Grupo Peña con el detalle del pedido.
-    const lista = (piezas || "")
-      .split(/\n|;/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => `• ${l}`)
-      .join("\n");
-    const msgPena =
-      `🔧 *Pedido ${settings.tallerName || ""}*\n\n` +
-      `Vehículo: ${vehiculo || "—"}${matricula ? ` (${matricula})` : ""}\n` +
-      `Avería: ${averiaQuery || "—"}\n\n` +
-      `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
-      `💰 Importe estimado: *${importe || "—"} €*\n` +
-      `${settings.mecanico ? `Mecánico: ${settings.mecanico}` : ""}`;
+    const msgPena = buildMensajePena();
     const urlPena = buildWAUrl(PENA_PHONE, msgPena);
     const win = window.open(urlPena, "_blank", "noopener,noreferrer");
+
     try {
       // Guardamos la gestión marcada como pedido a Peña: aparecerá
       // automáticamente en su panel (con fotos) además del aviso por WhatsApp.
@@ -1761,7 +1769,7 @@ function NuevaPage() {
               </button>
               <button
                 type="button"
-                onClick={onPedirPena}
+                onClick={() => setConfirmDestino("pena")}
                 disabled={busy || fotosBloquean}
                 className={accentBtn}
                 title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
@@ -1771,7 +1779,7 @@ function NuevaPage() {
               </button>
               <button
                 type="button"
-                onClick={onEnviarCliente}
+                onClick={() => setConfirmDestino("cliente")}
                 disabled={busy || fotosBloquean}
                 className={primaryBtn}
                 title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
@@ -1779,6 +1787,7 @@ function NuevaPage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar al cliente
               </button>
+
             </div>
           </BottomBar>
           <div className="pb-2 text-center text-[11px] text-muted-foreground">
@@ -1799,9 +1808,97 @@ function NuevaPage() {
           </div>
         </section>
       )}
+
+      {confirmDestino && (
+        <ConfirmEnvioModal
+          destino={confirmDestino}
+          telefono={confirmDestino === "cliente" ? normalizeTelefono(telefono) : PENA_PHONE}
+          mensaje={confirmDestino === "cliente" ? mensaje : buildMensajePena()}
+          busy={busy}
+          onCancel={() => setConfirmDestino(null)}
+          onConfirm={async () => {
+            const destino = confirmDestino;
+            setConfirmDestino(null);
+            if (destino === "cliente") await onEnviarCliente();
+            else await onPedirPena();
+          }}
+        />
+      )}
     </div>
   );
 }
+
+/** Previsualización del mensaje de WhatsApp antes de abrir el enlace. */
+function ConfirmEnvioModal({
+  destino,
+  telefono,
+  mensaje,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  destino: "cliente" | "pena";
+  telefono: string;
+  mensaje: string;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const esCliente = destino === "cliente";
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-4 py-3">
+          <div className="text-sm font-semibold">
+            {esCliente ? "Revisar mensaje al cliente" : "Revisar pedido a Grupo Peña"}
+          </div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Se enviará por WhatsApp a{" "}
+            <span className="font-mono">{telefono || "—"}</span>
+            {esCliente ? "" : " (Grupo Peña)"}
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <div className="rounded-2xl bg-surface-2 p-3">
+            <div
+              className={
+                "max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-br-sm p-3 text-[13px] leading-relaxed text-foreground " +
+                (esCliente ? "bg-success/10" : "bg-accent/10")
+              }
+            >
+              {mensaje.trim() || "El mensaje está vacío."}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Así se verá en WhatsApp. Si algo no cuadra, cancela y edítalo antes de enviar.
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="shrink-0 border-t border-border px-4 py-3"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex gap-2">
+            <button type="button" onClick={onCancel} disabled={busy} className={ghostBtn + " flex-1 justify-center"}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy || !mensaje.trim()}
+              className={(esCliente ? primaryBtn : accentBtn) + " flex-1 justify-center"}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              Abrir WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 /* ---------- helpers UI ---------- */
 
