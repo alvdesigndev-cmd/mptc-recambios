@@ -678,7 +678,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         </div>
 
         {/* Acciones */}
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="shrink-0 border-t border-border px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-4 sm:pb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {editing ? (
             <>
               <button onClick={guardarEdicion} disabled={saving} className={btnPrimary}>
