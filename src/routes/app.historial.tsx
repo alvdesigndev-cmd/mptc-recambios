@@ -211,6 +211,8 @@ function HistorialPage() {
                 key={"g-" + entry.item.id}
                 g={entry.item}
                 onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)}
+                onResume={(x) => navigate({ to: "/app/nueva", search: { resume: x.id } })}
+                onChanged={load}
                 onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
               />
             ) : (
