@@ -333,8 +333,8 @@ function GestionDetallePage() {
       const { filename } = downloadGestionPdf(g, {
         taller: settings?.tallerName ?? g.taller_nombre,
         mecanico: settings?.mecanico ?? null,
-        categoriaLabel: fam?.nombre ?? g.categoria,
-        subfamiliaLabel: sub?.nombre ?? g.subfamilia,
+        categoriaLabel: fam?.name ?? g.categoria,
+        subfamiliaLabel: sub?.name ?? g.subfamilia,
         eventos,
       });
       toast.success("Informe descargado: " + filename);
