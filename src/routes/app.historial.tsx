@@ -52,6 +52,7 @@ function HistorialPage() {
   const [items, setItems] = useState<Gestion[]>([]);
   const [directos, setDirectos] = useState<PedidoDirecto[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [fase, setFase] = useState<FaseKey | "todas">("todas");
   const [q, setQ] = useState(search.q ?? "");
   const [open, setOpen] = useState<Gestion | null>(null);
   const [openDirecto, setOpenDirecto] = useState<PedidoDirecto | null>(null);
