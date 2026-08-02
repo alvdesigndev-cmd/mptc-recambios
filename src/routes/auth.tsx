@@ -297,13 +297,13 @@ function AuthPage() {
         {mode === "login" && (
           <div>
             <span className="text-sm text-muted-foreground">Acceder como</span>
-            <div className="mt-1 grid grid-cols-2 gap-2">
+            <div className="mt-1 grid grid-cols-3 gap-2">
               {([
-                { v: "auto", label: "Automático" },
                 { v: "taller", label: "Taller" },
                 { v: "admin", label: "Administrador" },
                 { v: "pena", label: "Grupo Peña" },
               ] as const).map((o) => (
+
                 <button
                   key={o.v}
                   type="button"
