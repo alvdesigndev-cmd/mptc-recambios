@@ -42,7 +42,7 @@ import { formatPiezaLinea, type PiezaSeleccionada } from "@/components/mptc/GPCa
 // build: 2026-08-01
 export const Route = createFileRoute("/app/nueva")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { clienteId?: string; resume?: string; fresh?: string } => ({
     clienteId: typeof s.clienteId === "string" ? s.clienteId : undefined,
     resume: typeof s.resume === "string" ? s.resume : undefined,
     fresh: typeof s.fresh === "string" ? s.fresh : undefined,
