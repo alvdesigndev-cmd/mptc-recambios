@@ -11,8 +11,10 @@ import { pickPostLoginPath } from "@/lib/mptc/redirect";
 // relleno y solo tenga que pulsar "Entrar".
 const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
 const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
+const REMEMBER_PROFILE_KEY = "mptc_remember_profile_v1";
 // Clave legacy previa: la limpiamos al arrancar.
 const LEGACY_REMEMBER_KEY = "mptc_remember_v1";
+
 
 function translateAuthError(msg: string): string {
   const m = (msg || "").toLowerCase();
@@ -35,24 +37,33 @@ function decodePass(v: string): string {
   try { return decodeURIComponent(escape(atob(v))); } catch { return ""; }
 }
 
-function loadRemembered(): { email: string | null; password: string | null } {
-  if (typeof window === "undefined") return { email: null, password: null };
+type LoginProfile = "taller" | "admin" | "pena";
+
+function isLoginProfile(v: unknown): v is LoginProfile {
+  return v === "taller" || v === "admin" || v === "pena";
+}
+
+function loadRemembered(): { email: string | null; password: string | null; profile: LoginProfile | null } {
+  if (typeof window === "undefined") return { email: null, password: null, profile: null };
   try {
     window.localStorage.removeItem(LEGACY_REMEMBER_KEY);
     const email = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
     const passEnc = window.localStorage.getItem(REMEMBER_PASS_KEY);
+    const profile = window.localStorage.getItem(REMEMBER_PROFILE_KEY);
     return {
       email: email && typeof email === "string" ? email : null,
       password: passEnc ? decodePass(passEnc) || null : null,
+      profile: isLoginProfile(profile) ? profile : null,
     };
-  } catch { return { email: null, password: null }; }
+  } catch { return { email: null, password: null, profile: null }; }
 }
 
-function saveRemembered(email: string, password: string) {
+function saveRemembered(email: string, password: string, profile: LoginProfile) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
     window.localStorage.setItem(REMEMBER_PASS_KEY, encodePass(password));
+    window.localStorage.setItem(REMEMBER_PROFILE_KEY, profile);
   } catch { /* noop */ }
 }
 
@@ -61,8 +72,10 @@ function clearRemembered() {
   try {
     window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
     window.localStorage.removeItem(REMEMBER_PASS_KEY);
+    window.localStorage.removeItem(REMEMBER_PROFILE_KEY);
   } catch { /* noop */ }
 }
+
 
 
 export const Route = createFileRoute("/auth")({
@@ -122,7 +135,10 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   // Perfil de acceso elegido en el login: sirve para validar el rol real de la
   // cuenta y redirigir al panel correspondiente.
-  const [loginProfile, setLoginProfile] = useState<"auto" | "taller" | "admin" | "pena">("auto");
+  const [loginProfile, setLoginProfile] = useState<LoginProfile>("taller");
+  // Acceso automático con credenciales guardadas.
+  const [autoLogin, setAutoLogin] = useState(false);
+
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
@@ -131,17 +147,39 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
-    // Prefill del email y contraseña recordados.
+    // Prefill del email, contraseña y perfil recordados.
     const saved = loadRemembered();
     if (saved.email) { setEmail(saved.email); setRemember(true); }
     if (saved.password) { setPassword(saved.password); }
+    if (saved.profile) setLoginProfile(saved.profile);
 
     let cancelled = false;
     supabase.auth.getSession().then(async ({ data }) => {
-      if (cancelled || !data.session) return;
-      const p = await syncProfileToSettings();
-      navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+      if (cancelled) return;
+      if (data.session) {
+        const p = await syncProfileToSettings();
+        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+        return;
+      }
+      // Sin sesión activa: si hay credenciales guardadas entramos solos.
+      if (!saved.email || !saved.password) return;
+      setAutoLogin(true);
+      try {
+        const { error } = await signIn(saved.email, saved.password);
+        if (error) throw error;
+        const p = await syncProfileToSettings();
+        if (cancelled) return;
+        navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
+      } catch {
+        // Credenciales caducadas: las limpiamos y dejamos el formulario manual.
+        clearRemembered();
+        setPassword("");
+        if (!cancelled) setError("Tus credenciales guardadas ya no son válidas. Vuelve a introducirlas.");
+      } finally {
+        if (!cancelled) setAutoLogin(false);
+      }
     });
+
     supabase.from("talleres").select("taller_id,nombre,activo").then(({ data }) => {
       if (cancelled) return;
       const rows = (data || []).filter((t: any) => t.activo);
@@ -188,15 +226,15 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        if (remember) saveRemembered(email, password); else clearRemembered();
+        if (remember) saveRemembered(email, password, loginProfile); else clearRemembered();
         const p = await syncProfileToSettings();
         const role = p?.role;
         const isTaller = !!role && role !== "admin" && role !== "pena";
         const matches =
-          loginProfile === "auto" ||
           (loginProfile === "admin" && role === "admin") ||
           (loginProfile === "pena" && role === "pena") ||
           (loginProfile === "taller" && isTaller);
+
         if (!matches) {
           await supabase.auth.signOut();
           const nombre = role === "admin" ? "Administrador" : role === "pena" ? "Grupo Peña" : "Taller";
@@ -259,13 +297,13 @@ function AuthPage() {
         {mode === "login" && (
           <div>
             <span className="text-sm text-muted-foreground">Acceder como</span>
-            <div className="mt-1 grid grid-cols-2 gap-2">
+            <div className="mt-1 grid grid-cols-3 gap-2">
               {([
-                { v: "auto", label: "Automático" },
                 { v: "taller", label: "Taller" },
                 { v: "admin", label: "Administrador" },
                 { v: "pena", label: "Grupo Peña" },
               ] as const).map((o) => (
+
                 <button
                   key={o.v}
                   type="button"
@@ -317,16 +355,28 @@ function AuthPage() {
         )}
 
         {mode === "login" && (
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="h-4 w-4 rounded border-border"
-            />
-            Recordar mi usuario en este dispositivo
-          </label>
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => { setRemember(e.target.checked); if (!e.target.checked) clearRemembered(); }}
+                className="h-4 w-4 rounded border-border"
+              />
+              Guardar mis credenciales y entrar automáticamente
+            </label>
+            <p className="pl-6 text-[11px] text-muted-foreground/80">
+              La próxima vez accederás directo a tu panel en este dispositivo.
+            </p>
+          </div>
         )}
+
+        {autoLogin && (
+          <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-muted-foreground">
+            Accediendo con tus credenciales guardadas…
+          </p>
+        )}
+
 
         {mode === "signup" && (
           <>
@@ -401,8 +451,9 @@ function AuthPage() {
         {error && <p className="text-sm text-red-500">{error}</p>}
         {info && <p className="text-sm text-emerald-500">{info}</p>}
 
-        <button type="submit" disabled={loading}
+        <button type="submit" disabled={loading || autoLogin}
           className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+
           {loading
             ? "Procesando…"
             : mode === "login"

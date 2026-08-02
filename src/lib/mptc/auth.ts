@@ -81,5 +81,15 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   clearSettings();
+  // Al salir a propósito olvidamos las credenciales guardadas para que el
+  // acceso automático no vuelva a entrar de inmediato.
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem("mptc_remember_email_v1");
+      window.localStorage.removeItem("mptc_remember_pass_v1");
+      window.localStorage.removeItem("mptc_remember_profile_v1");
+    } catch { /* noop */ }
+  }
   await supabase.auth.signOut();
 }
+
