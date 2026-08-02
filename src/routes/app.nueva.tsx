@@ -1769,7 +1769,7 @@ function NuevaPage() {
               </button>
               <button
                 type="button"
-                onClick={onPedirPena}
+                onClick={() => setConfirmDestino("pena")}
                 disabled={busy || fotosBloquean}
                 className={accentBtn}
                 title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
@@ -1779,7 +1779,7 @@ function NuevaPage() {
               </button>
               <button
                 type="button"
-                onClick={onEnviarCliente}
+                onClick={() => setConfirmDestino("cliente")}
                 disabled={busy || fotosBloquean}
                 className={primaryBtn}
                 title={fotosBloquean ? "Espera a que terminen de subirse las fotos" : undefined}
@@ -1787,6 +1787,7 @@ function NuevaPage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar al cliente
               </button>
+
             </div>
           </BottomBar>
           <div className="pb-2 text-center text-[11px] text-muted-foreground">
