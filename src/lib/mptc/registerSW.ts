@@ -56,27 +56,41 @@ export async function registerServiceWorker() {
 
   const updateSW = registerSW({
     immediate: true,
+    // Actualización 100% automática: en cuanto hay una versión nueva se activa
+    // el SW y se recarga la app sola (Android, iOS, tablet o PC).
     onNeedRefresh() {
-      toast("Nueva versión disponible", {
-        description: "Recarga para aplicar la actualización.",
-        duration: Infinity,
-        action: {
-          label: "Recargar",
-          onClick: () => updateSW(true),
-        },
-      });
+      toast("Actualizando a la última versión…", { duration: 2500 });
+      // Pequeño margen para que el toast se vea antes del reload.
+      window.setTimeout(() => { updateSW(true); }, 400);
     },
     onRegisteredSW(_swUrl, reg) {
       if (!reg) return;
-      // Sondeo puntual de actualizaciones al volver a primer plano.
-      const check = () => { reg.update().catch(() => {}); };
+      const check = () => {
+        if (navigator.onLine === false) return;
+        reg.update().catch(() => {});
+      };
+      // 1) Sondeo periódico mientras la app está abierta.
+      const timer = window.setInterval(check, 60_000);
+      // 2) Al volver a primer plano (cambio de pestaña / app en segundo plano).
       window.addEventListener("focus", check);
+      window.addEventListener("online", check);
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") check();
       });
+      // 3) Si otro SW toma el control, recargamos para servir el HTML nuevo.
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloading) return;
+        reloading = true;
+        window.location.reload();
+      });
+      window.addEventListener("pagehide", () => window.clearInterval(timer));
+      // Comprobación inmediata al arrancar.
+      check();
     },
     onRegisterError(err) {
       console.warn("SW registration failed", err);
     },
   });
 }
+
