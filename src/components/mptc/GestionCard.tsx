@@ -47,7 +47,28 @@ export function GestionCard({ g, onClick, onDelete }: Props) {
             {g.importe ? `${g.importe} €` : ""}
           </span>
         </div>
+
+        {/* Progreso del flujo: borrador → plantilla enviada → aceptado → pedido a Peña */}
+        <div className="mt-2">
+          <div className="flex items-center gap-1" aria-label={`Fase: ${fase.label}`}>
+            {FASES.map((f, i) => {
+              const done = i <= fase.index;
+              const cls = !done
+                ? "bg-surface-3"
+                : fase.rechazado && i >= 1
+                  ? "bg-destructive"
+                  : i === 3
+                    ? "bg-success"
+                    : "bg-primary";
+              return <span key={f.key} className={"h-1 flex-1 rounded-full " + cls} />;
+            })}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {fase.rechazado ? "Rechazado por el cliente" : fase.label}
+          </div>
+        </div>
       </div>
+
       {isBorrador && onDelete && (
         <button
           type="button"
