@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { consultaArticulosGPA, type GpaArticulo, type GpaCriterio } from "@/lib/mptc/gpa.functions";
 import { CATEGORIA_OPCIONES } from "@/lib/mptc/gpa-categorias";
+import { gpaCacheGet, gpaCacheSet } from "@/lib/mptc/gpa-cache";
 
 export interface PiezaSeleccionada extends GpaArticulo {
   cantidad: number;
@@ -32,20 +33,44 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [orden, setOrden] = useState<"relevancia" | "precio-asc" | "precio-desc" | "disponibilidad">(
     "relevancia",
   );
+  const [desdeCache, setDesdeCache] = useState(false);
 
 
-  const run = async (opts?: { query?: string; categoria?: string }) => {
+
+  const run = async (opts?: { query?: string; categoria?: string; forzar?: boolean }) => {
     const q = opts?.query ?? query;
     const cat = opts?.categoria ?? categoria;
-    setLoading(true);
-    try {
-      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
-      setItems(r.articulos);
-      setCriterio(r.criterio ?? null);
+    const claveCache = { query: q, categoria: cat || undefined, marca, modelo, motor };
+
+    const aplicar = (articulos: GpaArticulo[], crit: GpaCriterio | null) => {
+      setItems(articulos);
+      setCriterio(crit);
       setSel({});
       setDispo("todas");
       setMarcasSel([]);
       setOrden("relevancia");
+    };
+
+    if (!opts?.forzar) {
+      const cacheado = gpaCacheGet(claveCache);
+      if (cacheado) {
+        aplicar(cacheado.articulos, cacheado.criterio);
+        setDesdeCache(true);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setDesdeCache(false);
+    setLoading(true);
+    try {
+      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
+      aplicar(r.articulos, r.criterio ?? null);
+      gpaCacheSet(claveCache, {
+        articulos: r.articulos,
+        criterio: r.criterio ?? null,
+        mock: Boolean((r as { mock?: boolean }).mock),
+      });
 
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
@@ -54,6 +79,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (!open) return;
@@ -166,7 +192,20 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
               Buscar
             </button>
           </div>
+          {desdeCache && !loading ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 font-semibold">Resultados en caché</span>
+              <button
+                type="button"
+                onClick={() => void run({ forzar: true })}
+                className="rounded-full border border-border px-2 py-0.5 font-semibold text-foreground active:scale-95"
+              >
+                Actualizar precios
+              </button>
+            </div>
+          ) : null}
         </div>
+
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {!loading && criterio ? (
