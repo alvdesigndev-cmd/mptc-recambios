@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  Car,
+
   Image as ImageIcon,
   Search,
   Check,
