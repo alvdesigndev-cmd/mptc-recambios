@@ -15,6 +15,11 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    define: {
+      __APP_VERSION__: JSON.stringify(
+        `${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
+      ),
+    },
     plugins: [
       mcpPlugin(),
       VitePWA({
@@ -28,7 +33,9 @@ export default defineConfig({
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/\.mcp\//],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
-          skipWaiting: true, // activación inmediata: la app se actualiza sola
+          // No forzamos skipWaiting: el aviso en pantalla permite cancelar
+          // la recarga; la activación la dispara el wrapper al aceptar/expirar.
+          skipWaiting: false,
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
           // Script adicional que corre en el propio SW: al `activate`
           // elimina cachés antiguos con prefijos `mptc-*` / `workbox-*`
@@ -65,7 +72,6 @@ export default defineConfig({
         },
 
         manifest: false, // usamos el manifest.webmanifest ya presente en public/
-        workbox: undefined as never, // placeholder eliminado
       }),
     ],
   },
