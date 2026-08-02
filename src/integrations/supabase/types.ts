@@ -259,6 +259,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gpa_config: {
+        Row: {
+          activa: boolean
+          id: string
+          password: string
+          updated_at: string
+          updated_by: string | null
+          url_base: string
+          usuario: string
+        }
+        Insert: {
+          activa?: boolean
+          id?: string
+          password?: string
+          updated_at?: string
+          updated_by?: string | null
+          url_base?: string
+          usuario?: string
+        }
+        Update: {
+          activa?: boolean
+          id?: string
+          password?: string
+          updated_at?: string
+          updated_by?: string | null
+          url_base?: string
+          usuario?: string
+        }
+        Relationships: []
+      }
       pedidos_pena: {
         Row: {
           audio_url: string | null
