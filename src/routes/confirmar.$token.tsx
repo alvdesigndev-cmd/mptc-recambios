@@ -11,8 +11,16 @@ export const Route = createFileRoute("/confirmar/$token")({
     meta: [
       { title: "Confirmar reparación · MPTC" },
       { name: "description", content: "Pulsa para confirmar o rechazar la reparación de tu vehículo." },
-      { property: "og:title", content: "Confirmación de reparación" },
-      { property: "og:description", content: "Pulsa para confirmar o rechazar la reparación de tu vehículo." },
+      // Sin metadatos sociales: así WhatsApp no genera tarjeta de vista previa
+      // con el dominio de la app en el mensaje al cliente.
+      { property: "og:title", content: "" },
+      { property: "og:description", content: "" },
+      { property: "og:image", content: "" },
+      { name: "twitter:card", content: "" },
+      { name: "twitter:title", content: "" },
+      { name: "twitter:description", content: "" },
+      { name: "twitter:image", content: "" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: ConfirmarPage,
