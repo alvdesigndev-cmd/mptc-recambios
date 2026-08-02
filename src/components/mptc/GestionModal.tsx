@@ -366,8 +366,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
-        <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase " + meta.cls}>
