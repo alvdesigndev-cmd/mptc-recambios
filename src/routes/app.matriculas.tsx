@@ -450,7 +450,7 @@ function MatriculasPage() {
                 <button
                   type="button"
                   onClick={() => startGestion(r.plate, r.data)}
-                  className="rounded-md bg-primary/15 p-2 text-primary hover:bg-primary/25"
+                  className="shrink-0 rounded-md bg-primary/15 p-2 text-primary hover:bg-primary/25"
                   aria-label="Nueva gestión"
                   title="Nueva gestión"
                 >
@@ -459,7 +459,7 @@ function MatriculasPage() {
                 <button
                   type="button"
                   onClick={() => removeRecent(r.plate)}
-                  className="rounded-md p-2 text-muted-foreground hover:text-destructive"
+                  className="shrink-0 rounded-md p-2 text-muted-foreground hover:text-destructive"
                   aria-label="Eliminar"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
