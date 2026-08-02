@@ -355,16 +355,28 @@ function AuthPage() {
         )}
 
         {mode === "login" && (
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="h-4 w-4 rounded border-border"
-            />
-            Recordar mi usuario en este dispositivo
-          </label>
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => { setRemember(e.target.checked); if (!e.target.checked) clearRemembered(); }}
+                className="h-4 w-4 rounded border-border"
+              />
+              Guardar mis credenciales y entrar automáticamente
+            </label>
+            <p className="pl-6 text-[11px] text-muted-foreground/80">
+              La próxima vez accederás directo a tu panel en este dispositivo.
+            </p>
+          </div>
         )}
+
+        {autoLogin && (
+          <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-muted-foreground">
+            Accediendo con tus credenciales guardadas…
+          </p>
+        )}
+
 
         {mode === "signup" && (
           <>
