@@ -502,6 +502,8 @@ function NuevaPage() {
 
 
   const [previewOpen, setPreviewOpen] = useState(true);
+  // Confirmación con previsualización antes de abrir WhatsApp.
+  const [confirmDestino, setConfirmDestino] = useState<null | "cliente" | "pena">(null);
 
   // Resumen de piezas calculado en el paso 4.
   const resumenPiezas = useMemo(
