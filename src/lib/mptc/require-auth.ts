@@ -2,14 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import type { Database } from "@/integrations/supabase/types";
+import { getSupabaseServerConfig } from "./supabase-env.server";
 
 export const requireAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
-  const url = process.env.SUPABASE_URL;
-  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+  const { url, publishableKey } = getSupabaseServerConfig();
 
-  if (!url || !publishableKey) {
-    throw new Error("La conexión con el backend no está disponible temporalmente");
-  }
 
   const authHeader = getRequest().headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
