@@ -15,7 +15,7 @@ import { buildMessage } from "@/lib/mptc/messages";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
-import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
+import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, estadoEnvioPdf, estadoEventoPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type GestionEvento } from "@/lib/mptc/eventos";
 
 
 
@@ -335,6 +335,8 @@ function GestionDetallePage() {
     window.open(url, "_blank");
   };
 
+  const envioPdf = estadoEnvioPdf(eventos);
+
   const piezasList = (g.piezas || "")
     .split("\n")
     .map((l) => l.replace(/^[-•·]\s*/, "").trim())
@@ -590,8 +592,11 @@ function GestionDetallePage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
               >
                 {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-                Enviar PDF por WhatsApp
+                {envioPdf === "error" || envioPdf === "pendiente" ? "Reintentar envío del PDF" : "Enviar PDF por WhatsApp"}
               </button>
+              <span className={`inline-flex items-center gap-1 self-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                {ENVIO_PDF_LABEL[envioPdf]}
+              </span>
             </div>
           </>
         )}
@@ -690,6 +695,22 @@ function GestionDetallePage() {
                       <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
                         {String(e.metadata["importe"])} €
                       </span>
+                    )}
+                    {estadoEventoPdf(e) && (
+                      <span className={`rounded-full px-2 py-0.5 font-semibold ${ENVIO_PDF_CLASS[estadoEventoPdf(e)!]}`}>
+                        {ENVIO_PDF_LABEL[estadoEventoPdf(e)!]}
+                      </span>
+                    )}
+                    {(estadoEventoPdf(e) === "error" || estadoEventoPdf(e) === "pendiente") && (
+                      <button
+                        type="button"
+                        onClick={enviarPdfWhatsApp}
+                        disabled={enviandoPdf || !g.cliente_telefono}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary disabled:opacity-50"
+                      >
+                        {enviandoPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        Reintentar envío
+                      </button>
                     )}
                     {typeof e.metadata?.["path"] === "string" && e.metadata["path"] && (
                       <button
