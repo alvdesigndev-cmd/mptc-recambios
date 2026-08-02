@@ -703,10 +703,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                     setEnviandoPdf(true);
                     try {
                       const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                      setEnvioPdf(res.estado);
                       if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
                       else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
                       onChanged();
                     } catch (e: any) {
+                      setEnvioPdf("error");
                       toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
                     } finally {
                       setEnviandoPdf(false);
@@ -715,9 +717,22 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                   disabled={enviandoPdf}
                   className={btnGhost + " disabled:opacity-50"}
                 >
-                  {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar PDF
+                  {enviandoPdf
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : envioPdf === "error" || envioPdf === "pendiente"
+                      ? <RefreshCw className="h-4 w-4" />
+                      : <Send className="h-4 w-4" />}
+                  {envioPdf === "error" || envioPdf === "pendiente"
+                    ? "Reintentar envío PDF"
+                    : envioPdf === "enviado" ? "Reenviar PDF" : "Enviar PDF"}
                 </button>
               )}
+              {puedeEnviarPdf(g) && envioPdf !== "sin-enviar" && (
+                <span className={`inline-flex items-center self-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                  {ENVIO_PDF_LABEL[envioPdf]}
+                </span>
+              )}
+
 
               {g.cliente_telefono && (
                 <a
