@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
-  const [busy, setBusy] = useState<null | "wa" | "pena">(null);
+  const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
