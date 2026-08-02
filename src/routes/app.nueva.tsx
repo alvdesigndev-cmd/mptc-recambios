@@ -251,7 +251,8 @@ function NuevaPage() {
         setFotosError((g.fotos as string[]).map(() => false));
       }
       const s = (g.borrador_step ?? 1) as Step;
-      setStep(s === 2 || s === 3 ? s : 1);
+      setStep(s >= 1 && s <= 5 ? s : 1);
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
