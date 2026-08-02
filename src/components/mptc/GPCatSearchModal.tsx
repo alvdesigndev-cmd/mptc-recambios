@@ -33,6 +33,8 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   const [orden, setOrden] = useState<"relevancia" | "precio-asc" | "precio-desc" | "disponibilidad">(
     "relevancia",
   );
+  const [desdeCache, setDesdeCache] = useState(false);
+
 
 
   const run = async (opts?: { query?: string; categoria?: string; forzar?: boolean }) => {
