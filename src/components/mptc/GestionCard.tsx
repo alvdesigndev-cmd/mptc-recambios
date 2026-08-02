@@ -96,23 +96,34 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
             {puedeEnviarPdf(g) && (
               <QuickBtn
                 busy={busy === "pdf"}
+                accent={envioPdf === "error" || envioPdf === "pendiente"}
                 onClick={async () => {
                   setBusy("pdf");
                   try {
                     const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                    setEnvioPdf(res.estado);
                     if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
                     else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
                     onChanged?.();
                   } catch (e: any) {
+                    setEnvioPdf("error");
                     toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
                   } finally {
                     setBusy(null);
                   }
                 }}
-                icon={<FileDown className="h-3.5 w-3.5" />}
-                label="Enviar PDF"
+                icon={envioPdf === "error" || envioPdf === "pendiente"
+                  ? <RefreshCw className="h-3.5 w-3.5" />
+                  : <FileDown className="h-3.5 w-3.5" />}
+                label={
+                  envioPdf === "error" ? "Reintentar envío PDF"
+                  : envioPdf === "pendiente" ? "Reintentar envío PDF"
+                  : envioPdf === "enviado" ? "Reenviar PDF"
+                  : "Enviar PDF"
+                }
               />
             )}
+
 
             {isBorrador && onResume && (
               <QuickBtn onClick={() => onResume(g)} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Reanudar borrador" />
