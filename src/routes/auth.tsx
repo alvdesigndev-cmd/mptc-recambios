@@ -5,6 +5,7 @@ import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
+import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
 
 // Guardamos email y contraseña (ofuscada en base64) cuando el usuario marca
 // "Recordar mi usuario" para que en el próximo acceso el formulario ya venga
