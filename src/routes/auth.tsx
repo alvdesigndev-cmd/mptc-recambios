@@ -7,13 +7,10 @@ import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
 import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
 
-// Guardamos email y contraseña (ofuscada en base64) cuando el usuario marca
-// "Recordar mi usuario" para que en el próximo acceso el formulario ya venga
-// relleno y solo tenga que pulsar "Entrar".
-const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
-const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
-const REMEMBER_PROFILE_KEY = "mptc_remember_profile_v1";
-// Clave legacy previa: la limpiamos al arrancar.
+// Guardamos email, contraseña y perfil cuando el usuario marca "Guardar mis
+// credenciales". La contraseña se cifra con AES-GCM usando una clave no
+// exportable propia del dispositivo (ver `device-crypto`) y se descifra al
+// abrir la app para poder entrar automáticamente.
 const LEGACY_REMEMBER_KEY = "mptc_remember_v1";
 
 
@@ -31,51 +28,24 @@ function translateAuthError(msg: string): string {
   return msg;
 }
 
-function encodePass(v: string): string {
-  try { return btoa(unescape(encodeURIComponent(v))); } catch { return ""; }
-}
-function decodePass(v: string): string {
-  try { return decodeURIComponent(escape(atob(v))); } catch { return ""; }
-}
-
-type LoginProfile = "taller" | "admin" | "pena";
-
-function isLoginProfile(v: unknown): v is LoginProfile {
-  return v === "taller" || v === "admin" || v === "pena";
-}
-
-function loadRemembered(): { email: string | null; password: string | null; profile: LoginProfile | null } {
+async function loadRemembered(): Promise<{ email: string | null; password: string | null; profile: LoginProfile | null }> {
   if (typeof window === "undefined") return { email: null, password: null, profile: null };
   try {
     window.localStorage.removeItem(LEGACY_REMEMBER_KEY);
-    const email = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
-    const passEnc = window.localStorage.getItem(REMEMBER_PASS_KEY);
-    const profile = window.localStorage.getItem(REMEMBER_PROFILE_KEY);
-    return {
-      email: email && typeof email === "string" ? email : null,
-      password: passEnc ? decodePass(passEnc) || null : null,
-      profile: isLoginProfile(profile) ? profile : null,
-    };
+    const saved = await readSavedCredentials();
+    if (!saved) return { email: null, password: null, profile: null };
+    return { email: saved.email, password: saved.password, profile: saved.profile };
   } catch { return { email: null, password: null, profile: null }; }
 }
 
-function saveRemembered(email: string, password: string, profile: LoginProfile) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(REMEMBER_EMAIL_KEY, email);
-    window.localStorage.setItem(REMEMBER_PASS_KEY, encodePass(password));
-    window.localStorage.setItem(REMEMBER_PROFILE_KEY, profile);
-  } catch { /* noop */ }
+async function saveRemembered(email: string, password: string, profile: LoginProfile) {
+  await writeSavedCredentials({ email, password, profile });
 }
 
 function clearRemembered() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
-    window.localStorage.removeItem(REMEMBER_PASS_KEY);
-    window.localStorage.removeItem(REMEMBER_PROFILE_KEY);
-  } catch { /* noop */ }
+  clearSavedCredentials();
 }
+
 
 
 
