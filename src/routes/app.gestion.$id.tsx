@@ -298,18 +298,38 @@ function GestionDetallePage() {
         tallerId: g.taller_id,
         tipo: "presupuesto_enviado",
         actor: settings?.mecanico || settings?.tallerName || "taller",
-        detalle: `Presupuesto PDF (${res.filename}) enviado por WhatsApp a ${tel}`,
-        metadata: { path: res.path, filename: res.filename, importe: g.importe, telefono: tel },
+        detalle: win
+          ? `Presupuesto PDF (${res.filename}) enviado por WhatsApp a ${tel}`
+          : `Presupuesto PDF (${res.filename}) preparado para ${tel}: WhatsApp no se pudo abrir automáticamente`,
+        metadata: {
+          path: res.path,
+          filename: res.filename,
+          importe: g.importe,
+          telefono: tel,
+          estado: win ? "enviado" : "pendiente",
+        },
       });
-      toast.success("Presupuesto PDF enviado por WhatsApp");
+      if (win) toast.success("Presupuesto PDF enviado por WhatsApp");
+      else toast.warning("WhatsApp no se abrió: envío pendiente, puedes reintentarlo");
       await load();
       if (!win) window.location.href = url;
     } catch (e: any) {
-      toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+      const motivo = e?.message || "error";
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "presupuesto_envio_error",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `No se pudo enviar el presupuesto PDF a ${tel}: ${motivo}`,
+        metadata: { telefono: tel, importe: g.importe, error: motivo, estado: "error" },
+      });
+      toast.error("No se pudo enviar el PDF: " + motivo);
+      await load();
     } finally {
       setEnviandoPdf(false);
     }
   };
+
 
   const reabrirPdf = async (path: string) => {
     const url = await getPresupuestoUrl(path);
