@@ -733,15 +733,42 @@ function NuevaPage() {
       return;
     }
     setPedirPena(true);
+    // Mensaje para Grupo Peña con el detalle del pedido.
+    const lista = (piezas || "")
+      .split(/\n|;/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => `• ${l}`)
+      .join("\n");
+    const msgPena =
+      `🔧 *Pedido ${settings.tallerName || ""}*\n\n` +
+      `Vehículo: ${vehiculo || "—"}${matricula ? ` (${matricula})` : ""}\n` +
+      `Avería: ${averiaQuery || "—"}\n\n` +
+      `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
+      `💰 Importe estimado: *${importe || "—"} €*\n` +
+      `${settings.mecanico ? `Mecánico: ${settings.mecanico}` : ""}`;
+    const urlPena = buildWAUrl(PENA_PHONE, msgPena);
+    const win = window.open(urlPena, "_blank", "noopener,noreferrer");
     try {
       // Guardamos la gestión marcada como pedido a Peña: aparecerá
-      // automáticamente en el panel de Grupo Peña (con sus fotos).
-      // No abrimos WhatsApp: el envío al panel es directo.
-      await saveGestion("en-curso", { pedirPena: true, waAbierto: false });
+      // automáticamente en su panel (con fotos) además del aviso por WhatsApp.
+      const id = await saveGestion("en-curso", { pedirPena: true, waAbierto: false });
+      await logEvento({
+        gestionId: id,
+        tallerId: settings.tallerId,
+        tipo: "pedido_confirmado",
+        actor: settings.mecanico || settings.tallerName || "taller",
+        detalle: win
+          ? "Pedido enviado a Grupo Peña (panel + WhatsApp)"
+          : "Pedido enviado al panel de Grupo Peña; WhatsApp no se pudo abrir automáticamente",
+        metadata: { importe, piezas, matricula, vehiculo },
+      });
       navigate({ to: "/app/historial" });
     } catch (e: any) {
       console.error("saveGestion pena", e);
       alert("No se pudo guardar el pedido a Peña: " + (e?.message || "error desconocido"));
+    } finally {
+      if (!win) window.location.href = urlPena;
     }
   };
 
