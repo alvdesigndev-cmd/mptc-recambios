@@ -429,6 +429,17 @@ function GestionDetallePage() {
         onClose={() => setModal(false)}
         onChanged={() => { setModal(false); load(); }}
       />
+
+      <GPCatSearchModal
+        open={gpcat}
+        onClose={() => setGpcat(false)}
+        marca={g.marca ?? undefined}
+        modelo={g.modelo ?? undefined}
+        motor={g.motor ?? undefined}
+        averia={[g.categoria, g.subfamilia].filter(Boolean).join(" ") || undefined}
+        onAdd={addPiezas}
+      />
+
     </div>
   );
 }
