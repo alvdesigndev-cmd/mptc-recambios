@@ -95,6 +95,7 @@ function HistorialPage() {
   }, [items, filtro, fase, q]);
 
   const filteredDirectos = useMemo(() => {
+    if (fase !== "todas") return [];
     if (filtro !== "todas" && filtro !== "pedido-directo") return [];
     const qq = q.trim().toLowerCase();
     return directos.filter((d) => {
