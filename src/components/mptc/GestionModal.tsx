@@ -65,6 +65,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [confirmPedido, setConfirmPedido] = useState(false);
   const [enviandoPedido, setEnviandoPedido] = useState(false);
   const [enviandoPdf, setEnviandoPdf] = useState(false);
+  const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
   const enviarPedidoGPA = useServerFn(generarPedidoGPA);
 
 
