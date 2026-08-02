@@ -35,8 +35,12 @@ export function buildPresupuestoFilename(g: Gestion): string {
   return `presupuesto-${mat}-${fecha}.pdf`;
 }
 
-/** Genera y descarga el PDF del presupuesto de una gestión. */
-export function downloadPresupuestoPdf(g: Gestion, opts: PresupuestoPdfOpts = {}) {
+/** Genera el PDF del presupuesto (y opcionalmente lo descarga). */
+export function downloadPresupuestoPdf(
+  g: Gestion,
+  opts: PresupuestoPdfOpts = {},
+  download = true,
+) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210;
   const M = 16;
@@ -182,6 +186,6 @@ export function downloadPresupuestoPdf(g: Gestion, opts: PresupuestoPdfOpts = {}
   );
 
   const filename = buildPresupuestoFilename(g);
-  doc.save(filename);
+  if (download) doc.save(filename);
   return { blob: doc.output("blob") as Blob, filename };
 }
