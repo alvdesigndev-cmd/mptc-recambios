@@ -355,20 +355,6 @@ function AuthPage() {
           </div>
         )}
 
-        {mode === "login" && (
-          <CredentialsTransfer
-            onImported={(c) => {
-              setEmail(c.email);
-              setPassword(c.password);
-              setLoginProfile(c.profile);
-              setRemember(true);
-              setError(null);
-              setInfo("Credenciales importadas. Pulsa “Entrar” para acceder.");
-            }}
-          />
-        )}
-
-
         {autoLogin && (
           <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-muted-foreground">
             Accediendo con tus credenciales guardadas…
