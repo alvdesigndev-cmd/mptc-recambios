@@ -389,6 +389,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {editing ? (
           <div className="space-y-3 text-sm">
             <Field label="Avería" value={form.subfamilia} onChange={(v) => setForm({ ...form, subfamilia: v })} />
