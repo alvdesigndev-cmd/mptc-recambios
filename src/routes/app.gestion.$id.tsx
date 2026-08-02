@@ -414,6 +414,13 @@ function GestionDetallePage() {
             ) : (
               <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
             )}
+            <button
+              type="button"
+              onClick={descargarPdf}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold hover:bg-surface-2"
+            >
+              <FileDown className="h-4 w-4" /> Descargar presupuesto PDF
+            </button>
           </>
         )}
       </Block>
