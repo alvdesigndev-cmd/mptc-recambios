@@ -366,8 +366,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
-        <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase " + meta.cls}>
@@ -389,6 +389,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
         {editing ? (
           <div className="space-y-3 text-sm">
             <Field label="Avería" value={form.subfamilia} onChange={(v) => setForm({ ...form, subfamilia: v })} />
@@ -674,8 +675,10 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
           </div>
         )}
 
+        </div>
+
         {/* Acciones */}
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="shrink-0 border-t border-border px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-4 sm:pb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {editing ? (
             <>
               <button onClick={guardarEdicion} disabled={saving} className={btnPrimary}>
@@ -791,8 +794,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
       {confirmPedido && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
-            <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+            <div className="shrink-0 border-b border-border px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4 flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
                 <p className="text-[11px] text-muted-foreground">
@@ -809,6 +812,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               </button>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
             <div className="space-y-3 text-sm">
               <div>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -829,8 +833,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               <Row label="Importe total" value={`${g.importe || "—"} €`} />
               <Row label="Dirección de entrega" value="Taller" />
             </div>
+            </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <div className="shrink-0 border-t border-border px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-4 sm:pb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <button onClick={confirmarPedidoGPA} disabled={enviandoPedido} className={btnAccent + " disabled:opacity-60"}>
                 <Truck className="h-4 w-4" /> {enviandoPedido ? "Enviando…" : "Confirmar pedido"}
               </button>
