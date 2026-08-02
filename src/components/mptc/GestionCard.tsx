@@ -134,6 +134,12 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
                 }
               />
             )}
+            {puedeEnviarPdf(g) && envioPdf !== "sin-enviar" && (
+              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                {ENVIO_PDF_LABEL[envioPdf]}
+              </span>
+            )}
+            {false && (
 
 
             {isBorrador && onResume && (
