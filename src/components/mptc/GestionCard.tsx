@@ -1,5 +1,6 @@
 import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2 } from "lucide-react";
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
+import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 
 interface Props {
   g: Gestion;
