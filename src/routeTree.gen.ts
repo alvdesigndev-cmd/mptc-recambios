@@ -29,6 +29,7 @@ import { Route as AppClientesRouteImport } from './routes/app.clientes'
 import { Route as AppAjustesRouteImport } from './routes/app.ajustes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminTalleresRouteImport } from './routes/admin.talleres'
+import { Route as AdminGpaRouteImport } from './routes/admin.gpa'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AppMatriculasHistorialRouteImport } from './routes/app.matriculas.historial'
@@ -137,6 +138,11 @@ const AdminTalleresRoute = AdminTalleresRouteImport.update({
   path: '/talleres',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminGpaRoute = AdminGpaRouteImport.update({
+  id: '/gpa',
+  path: '/gpa',
+  getParentRoute: () => AdminRoute,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/gpa': typeof AdminGpaRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/gpa': typeof AdminGpaRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin/gpa': typeof AdminGpaRoute
   '/admin/talleres': typeof AdminTalleresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/app/ajustes': typeof AppAjustesRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/gpa'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/gpa'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/admin/gpa'
     | '/admin/talleres'
     | '/admin/usuarios'
     | '/app/ajustes'
@@ -509,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTalleresRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/gpa': {
+      id: '/admin/gpa'
+      path: '/gpa'
+      fullPath: '/admin/gpa'
+      preLoaderRoute: typeof AdminGpaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -562,6 +581,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminGpaRoute: typeof AdminGpaRoute
   AdminTalleresRoute: typeof AdminTalleresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -569,6 +589,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminGpaRoute: AdminGpaRoute,
   AdminTalleresRoute: AdminTalleresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
