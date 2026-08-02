@@ -426,18 +426,21 @@ function MatriculasPage() {
             {recent.map((r) => (
               <li
                 key={r.plate}
-                className="flex min-w-0 items-center gap-2 rounded-lg bg-surface-2 p-2"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg bg-surface-2 p-2"
               >
                 <button
                   type="button"
                   onClick={() => submit(r.plate)}
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left sm:gap-3"
+                  className="flex min-w-0 items-center gap-2 text-left sm:gap-3"
                 >
                   <div className="shrink-0 rounded border-2 border-foreground bg-yellow-300 px-1.5 py-1 font-mono text-[11px] font-bold tracking-wider text-black sm:px-2 sm:text-xs sm:tracking-widest">
                     {r.plate}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 break-words text-[13px] font-medium leading-snug sm:text-sm">
+                    <div
+                      className="line-clamp-2 break-all text-[13px] font-medium leading-snug sm:text-sm"
+                      title={r.vehiculo || "Vehículo"}
+                    >
                       {r.vehiculo || "Vehículo"}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
@@ -447,23 +450,25 @@ function MatriculasPage() {
                     </div>
                   </div>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => startGestion(r.plate, r.data)}
-                  className="shrink-0 rounded-md bg-primary/15 p-2 text-primary hover:bg-primary/25"
-                  aria-label="Nueva gestión"
-                  title="Nueva gestión"
-                >
-                  <Wrench className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeRecent(r.plate)}
-                  className="shrink-0 rounded-md p-2 text-muted-foreground hover:text-destructive"
-                  aria-label="Eliminar"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => startGestion(r.plate, r.data)}
+                    className="rounded-md bg-primary/15 p-2 text-primary hover:bg-primary/25"
+                    aria-label="Nueva gestión"
+                    title="Nueva gestión"
+                  >
+                    <Wrench className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeRecent(r.plate)}
+                    className="rounded-md p-2 text-muted-foreground hover:text-destructive"
+                    aria-label="Eliminar"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
