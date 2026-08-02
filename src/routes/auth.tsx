@@ -267,11 +267,11 @@ function AuthPage() {
 
 
   return (
-    <div className="mptc-splash-bg flex min-h-[100dvh] items-center justify-center px-6 py-10">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-border-strong bg-surface p-6">
+    <div className="mptc-splash-bg flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-border-strong bg-surface p-5 sm:p-6">
         <header className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary text-xl font-black">M</div>
-          <h1 className="mt-3 text-xl font-bold">
+          <h1 className="mt-3 text-lg font-bold sm:text-xl">
             {mode === "login" ? "Iniciar sesión" : mode === "signup" ? "Crear cuenta" : "Recuperar contraseña"}
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">MPTC · Taller Conectado</p>
@@ -280,7 +280,7 @@ function AuthPage() {
         {mode === "login" && (
           <div>
             <span className="text-sm text-muted-foreground">Acceder como</span>
-            <div className="mt-1 grid grid-cols-3 gap-2">
+            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {([
                 { v: "taller", label: "Taller" },
                 { v: "admin", label: "Administrador" },
@@ -292,7 +292,7 @@ function AuthPage() {
                   type="button"
                   aria-pressed={loginProfile === o.v}
                   onClick={() => { setError(null); setLoginProfile(o.v); }}
-                  className={`rounded-lg border px-3 py-2 text-[13px] font-medium transition ${
+                  className={`truncate rounded-lg border px-3 py-2 text-[13px] font-medium leading-tight transition sm:px-2 ${
                     loginProfile === o.v
                       ? "border-primary bg-primary/15 text-primary"
                       : "border-border bg-surface-2 text-muted-foreground hover:text-foreground"
@@ -304,6 +304,7 @@ function AuthPage() {
             </div>
           </div>
         )}
+
 
 
 
