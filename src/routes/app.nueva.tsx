@@ -1581,6 +1581,76 @@ function NuevaPage() {
       {/* STEP 5 — plantilla al cliente con el precio */}
       {step === 5 && (
         <section className="space-y-4">
+          {/* Resumen del paso 4 */}
+          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <div className="text-sm font-semibold">Resumen del presupuesto</div>
+            <div className="flex flex-wrap items-center gap-2 text-[12px]">
+              <span className="rounded-full bg-surface-2 px-2.5 py-1">
+                {vehiculo || "—"} · <span className="font-mono">{matricula || "—"}</span>
+              </span>
+              <span className="rounded-full bg-surface-2 px-2.5 py-1">{sub?.name || "Sin avería"}</span>
+              <span
+                className={
+                  "rounded-full px-2.5 py-1 font-semibold " +
+                  (importe.trim()
+                    ? "bg-primary/15 text-primary"
+                    : "bg-warning/15 text-warning")
+                }
+              >
+                {importe.trim() ? `${importe} €` : "Sin importe"}
+              </span>
+              <span className="rounded-full bg-surface-2 px-2.5 py-1">
+                {resumenPiezas.length} pieza{resumenPiezas.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            {resumenPiezas.length > 0 ? (
+              <ul className="space-y-1 text-[12px] text-muted-foreground">
+                {resumenPiezas.map((l, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span className="min-w-0 flex-1 break-words">{l}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[12px] text-warning">
+                No hay piezas del paso 4. Vuelve atrás para consultar precio y stock en Peña.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setStep(4)}
+              className="text-[11px] font-semibold text-primary hover:underline"
+            >
+              Editar precio y piezas (paso 4)
+            </button>
+          </div>
+
+          {/* Vista previa de la plantilla */}
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold">Vista previa de la plantilla</div>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((v) => !v)}
+                className="text-[11px] font-semibold text-primary hover:underline"
+              >
+                {previewOpen ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
+            {previewOpen && (
+              <div className="rounded-2xl bg-surface-2 p-3">
+                <div className="max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-success/10 p-3 text-[13px] leading-relaxed text-foreground">
+                  {mensaje.trim() || "El mensaje está vacío."}
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Así lo verá el cliente en WhatsApp (los enlaces se envían sin vista previa).
+                </p>
+              </div>
+            )}
+          </div>
+
+
 
 
           <div className="rounded-2xl border border-border bg-surface p-4">
