@@ -833,8 +833,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               <Row label="Importe total" value={`${g.importe || "—"} €`} />
               <Row label="Dirección de entrega" value="Taller" />
             </div>
+            </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <div className="shrink-0 border-t border-border px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-4 sm:pb-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <button onClick={confirmarPedidoGPA} disabled={enviandoPedido} className={btnAccent + " disabled:opacity-60"}>
                 <Truck className="h-4 w-4" /> {enviandoPedido ? "Enviando…" : "Confirmar pedido"}
               </button>
