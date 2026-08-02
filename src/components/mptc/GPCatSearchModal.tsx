@@ -192,7 +192,20 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
               Buscar
             </button>
           </div>
+          {desdeCache && !loading ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 font-semibold">Resultados en caché</span>
+              <button
+                type="button"
+                onClick={() => void run({ forzar: true })}
+                className="rounded-full border border-border px-2 py-0.5 font-semibold text-foreground active:scale-95"
+              >
+                Actualizar precios
+              </button>
+            </div>
+          ) : null}
         </div>
+
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {!loading && criterio ? (
