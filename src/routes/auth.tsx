@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
+import { signIn, signUp, syncProfileToSettings, normalizeEmail } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
