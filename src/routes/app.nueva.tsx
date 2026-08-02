@@ -25,6 +25,7 @@ import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
+import { logEvento } from "@/lib/mptc/eventos";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { lookupPlate } from "@/lib/mptc/matriculas.functions";
 import { mapApiData } from "@/lib/mptc/plate-map";
@@ -704,7 +705,15 @@ function NuevaPage() {
     const url = buildWAUrl(telefono, mensaje);
     const win = window.open(url, "_blank");
     try {
-      await saveGestion("enviado", { waAbierto: true });
+      const id = await saveGestion("enviado", { waAbierto: true });
+      await logEvento({
+        gestionId: id,
+        tallerId: settings.tallerId,
+        tipo: gestionId ? "plantilla_reenviada" : "plantilla_enviada",
+        actor: settings.mecanico || settings.tallerName || "taller",
+        detalle: `Plantilla enviada por WhatsApp a ${normalizeTelefono(telefono)}`,
+        metadata: { importe, piezas, telefono: normalizeTelefono(telefono) },
+      });
       navigate({ to: "/app/historial" });
     } catch (e: any) {
       console.error("saveGestion enviado", e);
