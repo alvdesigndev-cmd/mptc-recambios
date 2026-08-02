@@ -21,6 +21,7 @@ interface Props {
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
   const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
+  const [showConfirmPena, setShowConfirmPena] = useState(false);
   const [envioPdf, setEnvioPdf] = useState<EstadoEnvioPdf>("sin-enviar");
 
   // Estado real del último envío del PDF, para poder reintentar en el sitio.
