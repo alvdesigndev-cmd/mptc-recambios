@@ -46,6 +46,16 @@ interface PedidoDirecto {
   created_at: string;
 }
 
+const CAMPOS = ["todo", "matricula", "cliente"] as const;
+type Campo = (typeof CAMPOS)[number];
+const CAMPO_LABEL: Record<Campo, string> = {
+  todo: "Todo",
+  matricula: "Matrícula",
+  cliente: "Cliente",
+};
+
+const norm = (v: string) => v.toLowerCase().replace(/[\s-]/g, "");
+
 function HistorialPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -54,6 +64,7 @@ function HistorialPage() {
   const [directos, setDirectos] = useState<PedidoDirecto[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [fase, setFase] = useState<FaseKey | "todas">("todas");
+  const [campo, setCampo] = useState<Campo>("todo");
   const [q, setQ] = useState(search.q ?? "");
   const [open, setOpen] = useState<Gestion | null>(null);
   const [openDirecto, setOpenDirecto] = useState<PedidoDirecto | null>(null);
@@ -77,6 +88,7 @@ function HistorialPage() {
   const filteredGestiones = useMemo(() => {
     if (filtro === "pedido-directo") return [];
     const qq = q.trim().toLowerCase();
+    const qn = norm(q);
     return items.filter((g) => {
       if (filtro === "pedido-pena") {
         if (!g.pedido_pena) return false;
@@ -85,29 +97,40 @@ function HistorialPage() {
       }
       if (fase !== "todas" && faseDeGestion(g).key !== fase) return false;
       if (!qq) return true;
+      if (campo === "matricula") return norm(g.matricula || "").includes(qn);
+      if (campo === "cliente") {
+        return (
+          (g.cliente_nombre || "").toLowerCase().includes(qq) ||
+          norm(g.cliente_telefono || "").includes(qn)
+        );
+      }
       return (
         (g.cliente_nombre || "").toLowerCase().includes(qq) ||
-        (g.matricula || "").toLowerCase().includes(qq) ||
+        norm(g.cliente_telefono || "").includes(qn) ||
+        norm(g.matricula || "").includes(qn) ||
         (g.vehiculo || "").toLowerCase().includes(qq) ||
         (g.subfamilia || "").toLowerCase().includes(qq)
       );
     });
-  }, [items, filtro, fase, q]);
+  }, [items, filtro, fase, q, campo]);
 
   const filteredDirectos = useMemo(() => {
     if (fase !== "todas") return [];
     if (filtro !== "todas" && filtro !== "pedido-directo") return [];
+    if (campo === "cliente" && q.trim()) return [];
     const qq = q.trim().toLowerCase();
+    const qn = norm(q);
     return directos.filter((d) => {
       if (!qq) return true;
+      if (campo === "matricula") return norm(d.matricula || "").includes(qn);
       return (
-        (d.matricula || "").toLowerCase().includes(qq) ||
+        norm(d.matricula || "").includes(qn) ||
         (d.vehiculo || "").toLowerCase().includes(qq) ||
         (d.piezas || "").toLowerCase().includes(qq) ||
         (d.transcripcion || "").toLowerCase().includes(qq)
       );
     });
-  }, [directos, filtro, fase, q]);
+  }, [directos, filtro, fase, q, campo]);
 
   // Vista unificada ordenada por fecha
   const feed = useMemo(() => {
@@ -116,24 +139,55 @@ function HistorialPage() {
     return [...a, ...b].sort((x, y) => (x.at < y.at ? 1 : -1));
   }, [filteredGestiones, filteredDirectos]);
 
+  const hayFiltros = Boolean(q.trim()) || filtro !== "todas" || fase !== "todas" || campo !== "todo";
+  const limpiar = () => { setQ(""); setCampo("todo"); setFiltro("todas"); setFase("todas"); };
+
   if (!settings) return null;
 
   return (
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Historial</h1>
-        <p className="text-sm text-muted-foreground">Filtra por estado o busca por matrícula/cliente. Incluye pedidos directos con audio.</p>
+        <p className="text-sm text-muted-foreground">Busca por matrícula o cliente y filtra por estado de la reparación. Incluye pedidos directos con audio.</p>
       </header>
 
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar…"
-          className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/60"
-        />
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={campo === "matricula" ? "Buscar matrícula…" : campo === "cliente" ? "Buscar cliente o teléfono…" : "Buscar matrícula, cliente, vehículo…"}
+            className="w-full rounded-xl bg-surface-2 py-2.5 pl-9 pr-9 text-sm outline-none placeholder:text-muted-foreground/60"
+          />
+          {q && (
+            <button
+              onClick={() => setQ("")}
+              aria-label="Limpiar búsqueda"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Buscar en</span>
+          {CAMPOS.map((c) => (
+            <button
+              key={c}
+              onClick={() => setCampo(c)}
+              className={
+                "shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition " +
+                (campo === c ? "bg-primary text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground")
+              }
+            >
+              {CAMPO_LABEL[c]}
+            </button>
+          ))}
+        </div>
       </div>
+
 
       <div className="-mx-4 overflow-x-auto px-4">
         <div className="flex gap-2">
