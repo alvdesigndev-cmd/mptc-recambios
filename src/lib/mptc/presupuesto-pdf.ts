@@ -181,5 +181,7 @@ export function downloadPresupuestoPdf(g: Gestion, opts: PresupuestoPdfOpts = {}
     M, 287,
   );
 
-  doc.save(buildPresupuestoFilename(g));
+  const filename = buildPresupuestoFilename(g);
+  doc.save(filename);
+  return { blob: doc.output("blob") as Blob, filename };
 }
