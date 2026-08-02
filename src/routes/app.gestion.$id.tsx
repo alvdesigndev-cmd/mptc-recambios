@@ -51,6 +51,7 @@ function GestionDetallePage() {
   const [gpcat, setGpcat] = useState(false);
   const [eventos, setEventos] = useState<GestionEvento[]>([]);
   const [enviandoWA, setEnviandoWA] = useState(false);
+  const [enviandoPdf, setEnviandoPdf] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
@@ -190,6 +191,54 @@ function GestionDetallePage() {
       await load();
     } catch {
       toast.error("No se pudo generar el PDF");
+    }
+  };
+
+  // Envía el PDF de ESTA gestión por WhatsApp: lo archiva en Storage y manda
+  // un enlace firmado al PDF concreto (WhatsApp Web no permite adjuntar ficheros
+  // por URL, así que el enlace es la vía fiable en móvil y escritorio).
+  const enviarPdfWhatsApp = async () => {
+    if (!g) return;
+    const tel = (g.cliente_telefono || "").trim();
+    if (!tel) { toast.error("Falta el teléfono del cliente"); return; }
+    setEnviandoPdf(true);
+    try {
+      const res = await generarYGuardarPresupuesto(
+        g,
+        { taller: settings?.tallerName, mecanico: settings?.mecanico },
+        false,
+      );
+      if (!res.path) {
+        toast.error("No se pudo guardar el PDF para enviarlo");
+        return;
+      }
+      const link = await getPresupuestoUrl(res.path, 60 * 60 * 24 * 7);
+      if (!link) {
+        toast.error("No se pudo generar el enlace del PDF");
+        return;
+      }
+      const msg =
+        `Hola${g.cliente_nombre ? ` ${g.cliente_nombre}` : ""}, te envío el presupuesto en PDF ` +
+        `de tu ${g.vehiculo || "vehículo"}${g.matricula ? ` (${g.matricula})` : ""}` +
+        `${g.importe ? ` por ${g.importe} € IVA incluido` : ""}:\n${link}\n\n` +
+        `${settings?.tallerName || "Tu taller"}`;
+      const url = buildWAUrl(tel, msg);
+      const win = window.open(url, "_blank");
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "presupuesto_enviado",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `Presupuesto PDF (${res.filename}) enviado por WhatsApp a ${tel}`,
+        metadata: { path: res.path, filename: res.filename, importe: g.importe, telefono: tel },
+      });
+      toast.success("Presupuesto PDF enviado por WhatsApp");
+      await load();
+      if (!win) window.location.href = url;
+    } catch (e: any) {
+      toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+    } finally {
+      setEnviandoPdf(false);
     }
   };
 
@@ -442,13 +491,24 @@ function GestionDetallePage() {
             ) : (
               <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
             )}
-            <button
-              type="button"
-              onClick={descargarPdf}
-              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold hover:bg-surface-2"
-            >
-              <FileDown className="h-4 w-4" /> Descargar presupuesto PDF
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={descargarPdf}
+                className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold hover:bg-surface-2"
+              >
+                <FileDown className="h-4 w-4" /> Descargar presupuesto PDF
+              </button>
+              <button
+                type="button"
+                onClick={enviarPdfWhatsApp}
+                disabled={enviandoPdf || !g.cliente_telefono}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
+              >
+                {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                Enviar PDF por WhatsApp
+              </button>
+            </div>
           </>
         )}
       </Block>
