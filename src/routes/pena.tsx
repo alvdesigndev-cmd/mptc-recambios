@@ -154,31 +154,31 @@ function PenaPage() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
             <Truck className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold leading-tight">Grupo Peña</div>
-            <div className="text-[11px] text-muted-foreground leading-tight">Panel de pedidos</div>
+            <div className="truncate text-[11px] text-muted-foreground leading-tight">Panel de pedidos</div>
           </div>
           <button
             onClick={() => setCreating(true)}
-            className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95"
+            className="hidden shrink-0 whitespace-nowrap sm:inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95"
           >
             <Plus className="h-4 w-4" /> Pedido directo
           </button>
-          <button onClick={onExit} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Salir">
+          <button onClick={onExit} className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Salir">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
       </header>
 
       <main className="mx-auto max-w-[1200px] space-y-5 px-4 pb-24 pt-5">
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-4">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-2xl border border-border bg-surface p-4">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
-              <div className="mt-1 text-2xl font-bold">{k.value}</div>
+              <div className="mt-1 text-xl font-bold sm:text-2xl">{k.value}</div>
             </div>
           ))}
         </section>
@@ -194,7 +194,7 @@ function PenaPage() {
         </div>
 
         <div className="-mx-4 overflow-x-auto px-4">
-          <div className="flex gap-2">
+          <div className="flex gap-2 whitespace-nowrap">
             {(["todas", "gestion", "aceptado", "directo"] as Filtro[]).map((f) => {
               const labels: Record<Filtro, string> = { todas: "Todos", gestion: "Gestión", aceptado: "Aceptado", directo: "Directo" };
               const active = filtro === f;
