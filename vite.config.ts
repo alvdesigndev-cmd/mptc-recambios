@@ -28,7 +28,7 @@ export default defineConfig({
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/\.mcp\//],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
-          skipWaiting: false, // controlamos la activación con el toast
+          skipWaiting: true, // activación inmediata: la app se actualiza sola
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
           // Script adicional que corre en el propio SW: al `activate`
           // elimina cachés antiguos con prefijos `mptc-*` / `workbox-*`
