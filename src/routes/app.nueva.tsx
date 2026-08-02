@@ -24,7 +24,10 @@ import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
+import { lookupPlate } from "@/lib/mptc/matriculas.functions";
+import { mapApiData } from "@/lib/mptc/plate-map";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
+
 import { MicButton } from "@/components/mptc/MicButton";
 import { toast } from "sonner";
 import { lazy, Suspense } from "react";
