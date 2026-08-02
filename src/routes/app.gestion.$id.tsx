@@ -42,12 +42,56 @@ function GestionDetallePage() {
   const [fotos, setFotos] = useState<string[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [gpcat, setGpcat] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
     setG((data as Gestion) || null);
     setLoading(false);
   }, [id]);
+
+  const startEdit = (section: string, fields: string[]) => {
+    const d: Record<string, string> = {};
+    for (const f of fields) d[f] = ((g as unknown as Record<string, string | null>)?.[f] ?? "") || "";
+    setDraft(d);
+    setEditing(section);
+  };
+
+  const setField = (k: string, v: string) => setDraft((p) => ({ ...p, [k]: v }));
+
+  const saveEdit = async () => {
+    if (!g) return;
+    setSaving(true);
+    const payload: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(draft)) payload[k] = v.trim() === "" ? null : v.trim();
+    const { error } = await supabase.from("gestiones").update(payload).eq("id", g.id);
+    setSaving(false);
+    if (error) { toast.error("No se pudo guardar: " + error.message); return; }
+    toast.success("Cambios guardados");
+    setEditing(null);
+    setDraft({});
+    load();
+  };
+
+  const addPiezas = (piezas: Parameters<typeof formatPiezaLinea>[0][]) => {
+    const lineas = piezas.map(formatPiezaLinea);
+    const total = piezas.reduce((s, p) => s + p.precio * p.cantidad, 0);
+    setDraft((prev) => {
+      const actuales = (prev["piezas"] ?? g?.piezas ?? "").trim();
+      const importePrev = Number(String(prev["importe"] ?? g?.importe ?? "").replace(",", ".")) || 0;
+      return {
+        ...prev,
+        piezas: actuales ? actuales + "\n" + lineas.join("\n") : lineas.join("\n"),
+        importe: (importePrev + total).toFixed(2),
+      };
+    });
+    setEditing("piezas");
+    setGpcat(false);
+  };
+
 
   useEffect(() => { if (settings) load(); }, [settings, load]);
 
