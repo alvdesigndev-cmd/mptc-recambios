@@ -135,7 +135,10 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   // Perfil de acceso elegido en el login: sirve para validar el rol real de la
   // cuenta y redirigir al panel correspondiente.
-  const [loginProfile, setLoginProfile] = useState<"auto" | "taller" | "admin" | "pena">("auto");
+  const [loginProfile, setLoginProfile] = useState<LoginProfile>("taller");
+  // Acceso automático con credenciales guardadas.
+  const [autoLogin, setAutoLogin] = useState(false);
+
 
   const roleFallback = (r: Role | undefined | null) =>
     r === "admin" ? "/admin/talleres" : r === "pena" ? "/pena" : "/app";
