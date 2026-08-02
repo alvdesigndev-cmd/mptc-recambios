@@ -124,17 +124,22 @@ function AuthPage() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("disabled") === "1") {
       setError("Tu taller ha sido desactivado. Contacta con el administrador.");
     }
-    // Prefill del email, contraseña y perfil recordados.
-    const saved = loadRemembered();
-    if (saved.email) { setEmail(saved.email); setRemember(true); }
-    if (saved.password) { setPassword(saved.password); }
-    if (saved.profile) setLoginProfile(saved.profile);
 
     let cancelled = false;
-    supabase.auth.getSession().then(async ({ data }) => {
+
+    (async () => {
+      // Prefill del email, contraseña (descifrada) y perfil recordados.
+      const saved = await loadRemembered();
+      if (cancelled) return;
+      if (saved.email) { setEmail(saved.email); setRemember(true); }
+      if (saved.password) { setPassword(saved.password); }
+      if (saved.profile) setLoginProfile(saved.profile);
+
+      const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       if (data.session) {
         const p = await syncProfileToSettings();
+        if (cancelled) return;
         navigate({ to: pickPostLoginPath(roleFallback(p?.role)) as any, replace: true });
         return;
       }
@@ -155,7 +160,8 @@ function AuthPage() {
       } finally {
         if (!cancelled) setAutoLogin(false);
       }
-    });
+    })();
+
 
     supabase.from("talleres").select("taller_id,nombre,activo").then(({ data }) => {
       if (cancelled) return;
