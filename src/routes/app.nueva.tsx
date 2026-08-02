@@ -723,6 +723,24 @@ function NuevaPage() {
     }
   };
 
+  // Mensaje que recibirá Grupo Peña con el detalle del pedido.
+  const buildMensajePena = () => {
+    const lista = (piezas || "")
+      .split(/\n|;/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => `• ${l}`)
+      .join("\n");
+    return (
+      `🔧 *Pedido ${settings?.tallerName || ""}*\n\n` +
+      `Vehículo: ${vehiculo || "—"}${matricula ? ` (${matricula})` : ""}\n` +
+      `Avería: ${averiaQuery || "—"}\n\n` +
+      `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
+      `💰 Importe estimado: *${importe || "—"} €*\n` +
+      `${settings?.mecanico ? `Mecánico: ${settings.mecanico}` : ""}`
+    );
+  };
+
   const onPedirPena = async () => {
     if (fotosBloquean) {
       alert(
@@ -733,22 +751,10 @@ function NuevaPage() {
       return;
     }
     setPedirPena(true);
-    // Mensaje para Grupo Peña con el detalle del pedido.
-    const lista = (piezas || "")
-      .split(/\n|;/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => `• ${l}`)
-      .join("\n");
-    const msgPena =
-      `🔧 *Pedido ${settings.tallerName || ""}*\n\n` +
-      `Vehículo: ${vehiculo || "—"}${matricula ? ` (${matricula})` : ""}\n` +
-      `Avería: ${averiaQuery || "—"}\n\n` +
-      `Piezas a pedir:\n${lista || "• (ver gestión en el panel)"}\n\n` +
-      `💰 Importe estimado: *${importe || "—"} €*\n` +
-      `${settings.mecanico ? `Mecánico: ${settings.mecanico}` : ""}`;
+    const msgPena = buildMensajePena();
     const urlPena = buildWAUrl(PENA_PHONE, msgPena);
     const win = window.open(urlPena, "_blank", "noopener,noreferrer");
+
     try {
       // Guardamos la gestión marcada como pedido a Peña: aparecerá
       // automáticamente en su panel (con fotos) además del aviso por WhatsApp.
