@@ -107,7 +107,7 @@ function HistorialPage() {
         (d.transcripcion || "").toLowerCase().includes(qq)
       );
     });
-  }, [directos, filtro, q]);
+  }, [directos, filtro, fase, q]);
 
   // Vista unificada ordenada por fecha
   const feed = useMemo(() => {
