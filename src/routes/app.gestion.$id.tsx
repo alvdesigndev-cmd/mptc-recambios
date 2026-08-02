@@ -127,7 +127,7 @@ function GestionDetallePage() {
         gestionId: g.id,
         tallerId: g.taller_id,
         tipo: yaEnviado ? "plantilla_reenviada" : "plantilla_enviada",
-        actor: settings.mecanico || settings.tallerName || "taller",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
         detalle: `Plantilla enviada por WhatsApp a ${tel} desde el detalle`,
         metadata: { importe: g.importe, piezas: g.piezas, telefono: tel },
       });
