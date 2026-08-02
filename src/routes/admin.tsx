@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, Link } from "@tanstack/react-router";
-import { LogOut, Store, ShieldPlus } from "lucide-react";
+import { LogOut, Store, ShieldPlus, Plug } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
@@ -63,6 +63,13 @@ function AdminLayout() {
             >
               <ShieldPlus className="h-4 w-4" /> Admins
             </Link>
+            <Link
+              to="/admin/gpa"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+              activeProps={{ className: "inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm bg-surface-2 text-foreground" }}
+            >
+              <Plug className="h-4 w-4" /> GPCat
+            </Link>
           </nav>
           <button onClick={onExit} className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Salir">
             <LogOut className="h-5 w-5" />
@@ -83,6 +90,13 @@ function AdminLayout() {
             activeProps={{ className: "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary" }}
           >
             <ShieldPlus className="h-4 w-4" /> Admins
+          </Link>
+          <Link
+            to="/admin/gpa"
+            className="col-span-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-2 text-[13px] font-semibold text-muted-foreground"
+            activeProps={{ className: "col-span-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary" }}
+          >
+            <Plug className="h-4 w-4" /> GPCat
           </Link>
         </nav>
       </header>

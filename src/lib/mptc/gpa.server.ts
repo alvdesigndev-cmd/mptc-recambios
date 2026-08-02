@@ -22,24 +22,81 @@ export interface GpaLineaPedido {
 
 export const GPA_URL_BASE_DEFAULT = "https://svc-test.gpautomocion.com:4433";
 
-export function gpaConfig() {
+export interface GpaConfigResuelta {
+  urlBase: string;
+  usuario: string;
+  password: string;
+  activa: boolean;
+  origen: "bd" | "env";
+}
+
+/** Config desde variables de entorno (fallback si no hay nada guardado en BD). */
+export function gpaConfigEnv(): GpaConfigResuelta {
+  const usuario = process.env["GPA_USUARIO"] || "";
+  const password = process.env["GPA_PASSWORD"] || "";
   return {
     urlBase: process.env["GPA_URL_BASE"] || GPA_URL_BASE_DEFAULT,
-    usuario: process.env["GPA_USUARIO"] || "",
-    password: process.env["GPA_PASSWORD"] || "",
+    usuario,
+    password,
+    activa: Boolean(usuario && password),
+    origen: "env",
   };
 }
 
-export function gpaEndpoint(path: string): string {
-  const { urlBase } = gpaConfig();
+/** Caché en memoria de la config guardada en BD (evita un SELECT por llamada). */
+let configCache: { valor: GpaConfigResuelta; expiresAt: number } | null = null;
+const CONFIG_TTL_MS = 30_000;
+
+/** Invalida la caché de configuración (usar tras guardar cambios). */
+export function invalidateGpaConfigCache(): void {
+  configCache = null;
+  tokenCache = null;
+}
+
+/**
+ * Configuración efectiva de la integración GPA:
+ * primero la guardada desde el panel de administración, si no las variables de entorno.
+ */
+export async function gpaConfig(): Promise<GpaConfigResuelta> {
+  if (configCache && configCache.expiresAt > Date.now()) return configCache.valor;
+  const env = gpaConfigEnv();
+  let valor = env;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("gpa_config")
+      .select("url_base, usuario, password, activa")
+      .eq("id", "default")
+      .maybeSingle();
+    if (data && data.usuario && data.password) {
+      valor = {
+        urlBase: data.url_base || GPA_URL_BASE_DEFAULT,
+        usuario: data.usuario,
+        password: data.password,
+        activa: data.activa,
+        origen: "bd",
+      };
+    } else if (data && data.activa === false) {
+      valor = { ...env, activa: false };
+    }
+  } catch {
+    /* si la BD no responde, seguimos con las variables de entorno */
+  }
+  configCache = { valor, expiresAt: Date.now() + CONFIG_TTL_MS };
+  return valor;
+}
+
+export async function gpaEndpoint(path: string): Promise<string> {
+  const { urlBase } = await gpaConfig();
   return `${urlBase.replace(/\/+$/, "")}/api/SvcGPA/${path.replace(/^\/+/, "")}`;
 }
 
-/** Modo mock mientras no haya credenciales configuradas. */
-export function gpaMockMode(): boolean {
-  const { usuario, password } = gpaConfig();
-  return !usuario || !password;
+/** Modo mock mientras no haya credenciales configuradas o la integración esté desactivada. */
+export async function gpaMockMode(): Promise<boolean> {
+  const { usuario, password, activa } = await gpaConfig();
+  return !activa || !usuario || !password;
 }
+
 
 /** Catálogo mock por categorías, con referencias/marcas/precios de mercado. */
 const MOCK_CATALOGO: Record<string, GpaArticulo[]> = {
@@ -415,8 +472,8 @@ const TOKEN_MARGEN_MS = 60_000; // renovar 1 min antes de expirar
 const TOKEN_TTL_FALLBACK_MS = 55 * 60_000; // si la API no informa expiración
 
 async function requestGpaToken(): Promise<string> {
-  const { usuario, password } = gpaConfig();
-  const res = await fetch(gpaEndpoint("IniciarSesion"), {
+  const { usuario, password } = await gpaConfig();
+  const res = await fetch(await gpaEndpoint("IniciarSesion"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ Usuario: usuario, Password: password }),
@@ -470,7 +527,7 @@ export function invalidateGpaToken(): void {
  */
 export async function gpaAuthPost(endpoint: string, body: unknown): Promise<Response> {
   const call = async (token: string) =>
-    fetch(gpaEndpoint(endpoint), {
+    fetch(await gpaEndpoint(endpoint), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
