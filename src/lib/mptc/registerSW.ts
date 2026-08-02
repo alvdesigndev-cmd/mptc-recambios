@@ -10,6 +10,7 @@ declare const __APP_VERSION__: string;
 
 const SW_URL = "/sw.js";
 const AUTO_RELOAD_SECONDS = 8;
+const RETRY_LATER_MS = 5 * 60 * 1000;
 
 function nuevaVersion(): string {
   try {
