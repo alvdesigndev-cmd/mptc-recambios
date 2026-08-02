@@ -764,7 +764,7 @@ function NuevaPage() {
         </Link>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-            {[1, 2, 3].map((n) => (
+            {[1, 2, 3, 4, 5].map((n) => (
               <span
                 key={n}
                 className={
@@ -780,66 +780,34 @@ function NuevaPage() {
               </span>
             ))}
           </div>
-          {step === 1 && (
-            <>
-              <Link to="/app" aria-label="Volver al inicio" className={ghostBtn + " px-3"}>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-              <button
-                type="button"
-                disabled={!canNext1}
-                onClick={onContinuarPaso1}
-                className={primaryBtn}
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <button
-                type="button"
-                aria-label="Volver al paso 1"
-                onClick={() => setStep(1)}
-                className={ghostBtn + " px-3"}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                disabled={!canNext2}
-                onClick={() => setStep(3)}
-                className={primaryBtn}
-              >
-                Continuar <ArrowRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          {step === 3 && (
+          <button
+            type="button"
+            aria-label="Paso anterior"
+            onClick={goBack}
+            className={ghostBtn + " px-3"}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          {step < 5 && (
             <button
               type="button"
-              aria-label="Volver al paso 2"
-              onClick={() => setStep(2)}
-              className={ghostBtn + " px-3"}
+              disabled={!canGoNext}
+              onClick={goNext}
+              className={primaryBtn}
             >
-              <ArrowLeft className="h-4 w-4" />
+              Continuar <ArrowRight className="h-4 w-4" />
             </button>
           )}
         </div>
       </div>
 
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {step === 1 ? "Datos del cliente" : step === 2 ? "¿Qué avería?" : "Mensaje al cliente"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {step === 1 ? "Vehículo, matrícula y fotos del problema." :
-           step === 2 ? "Elige la categoría y la subfamilia exacta." :
-           "Revisa el WhatsApp antes de enviarlo."}
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{STEP_TITLES[step]}</h1>
+        <p className="text-sm text-muted-foreground">{STEP_SUBTITLES[step]}</p>
       </header>
 
-      {/* STEP 1 */}
+
+      {/* STEP 1 — matrícula y vehículo */}
       {step === 1 && (
         <section
           className="space-y-4"
@@ -850,7 +818,169 @@ function NuevaPage() {
             if ((t as HTMLInputElement).type === "file") return;
             if (!canNext1) return;
             e.preventDefault();
-            onContinuarPaso1();
+            setStep(2);
+          }}
+        >
+          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <Field label="Matrícula">
+              <div className="flex gap-2">
+                <input
+                  value={matricula}
+                  onChange={(e) => setMatricula(normalizeMatricula(e.target.value))}
+                  placeholder="1234ABC"
+                  className={inputCls + " font-mono uppercase"}
+                  autoComplete="off"
+                  inputMode="text"
+                />
+                <label
+                  title="Escanear matrícula con la cámara"
+                  className={
+                    "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
+                    (ocrBusy ? "pointer-events-none opacity-60" : "")
+                  }
+                >
+                  {ocrBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ScanLine className="h-4 w-4" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+            </Field>
+
+            <button
+              type="button"
+              onClick={onConsultarMatricula}
+              disabled={plateBusy || matricula.trim().length < 4}
+              className={primaryBtn + " w-full justify-center"}
+            >
+              {plateBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Car className="h-4 w-4" />}
+              Consultar datos del vehículo
+            </button>
+            {plateMsg && <p className="text-[11px] text-muted-foreground">{plateMsg}</p>}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Vehículo">
+                <input
+                  value={vehiculo}
+                  onChange={(e) => setVehiculo(e.target.value)}
+                  placeholder="Marca y modelo"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Km">
+                <input
+                  value={km}
+                  onChange={(e) => setKm(e.target.value)}
+                  inputMode="numeric"
+                  placeholder="120000"
+                  className={inputCls}
+                />
+              </Field>
+            </div>
+
+            {(() => {
+              const hasTecnicos = Boolean(vin || marca || modelo || motor || fechaMatriculacion);
+              if (!hasTecnicos && !showTecnicos) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setShowTecnicos(true)}
+                    className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    + Añadir datos técnicos (marca, modelo, VIN…)
+                  </button>
+                );
+              }
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Marca">
+                      <input
+                        value={marca}
+                        onChange={(e) => setMarca(e.target.value)}
+                        placeholder="Ej. NISSAN"
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="Modelo">
+                      <input
+                        value={modelo}
+                        onChange={(e) => setModelo(e.target.value)}
+                        placeholder="Ej. Micra"
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Motor">
+                      <input
+                        value={motor}
+                        onChange={(e) => setMotor(e.target.value)}
+                        placeholder="Ej. CG12DE"
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field label="Fecha matriculación">
+                      <input
+                        value={fechaMatriculacion}
+                        onChange={(e) => setFechaMatriculacion(e.target.value)}
+                        placeholder="DD/MM/AAAA"
+                        className={inputCls}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="VIN">
+                    <input
+                      value={vin}
+                      onChange={(e) => setVin(e.target.value.toUpperCase())}
+                      placeholder="17 caracteres (opcional)"
+                      maxLength={17}
+                      className={inputCls}
+                    />
+                    {vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin) && (
+                      <p className="mt-1 text-[11px] text-warning">
+                        El VIN debe tener 17 caracteres alfanuméricos (sin I, O, Q).
+                      </p>
+                    )}
+                  </Field>
+                </>
+              );
+            })()}
+          </div>
+
+          <BottomBar>
+            <Link to="/app" className={ghostBtn}>
+              <ArrowLeft className="h-4 w-4" /> Cancelar
+            </Link>
+            <div className="flex flex-1 justify-end">
+              <button type="button" disabled={!canNext1} onClick={() => setStep(2)} className={primaryBtn}>
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </BottomBar>
+        </section>
+      )}
+
+      {/* STEP 2 — cliente */}
+      {step === 2 && (
+        <section
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            const t = e.target as HTMLElement;
+            if (t.tagName !== "INPUT") return;
+            if ((t as HTMLInputElement).type === "file") return;
+            if (!canNext2) return;
+            e.preventDefault();
+            onContinuarPaso2();
           }}
         >
           {/* Buscador encima */}
@@ -1025,152 +1155,15 @@ function NuevaPage() {
                 />
               </Field>
               <Field label="Matrícula">
-                <div className="relative">
-                  <div className="flex gap-2">
-                    <input
-                      value={matricula}
-                      onChange={(e) => setMatricula(e.target.value.toUpperCase())}
-                      onFocus={() => setInlineFocus("matricula")}
-                      onBlur={() => setTimeout(() => setInlineFocus((f) => (f === "matricula" ? null : f)), 150)}
-                      placeholder="1234 ABC"
-                      className={inputCls + " font-mono uppercase"}
-                      autoComplete="off"
-                    />
-                    <label
-                      title="Escanear matrícula con la cámara"
-                      className={
-                        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border-strong bg-surface-2 px-3 text-muted-foreground hover:bg-surface-3 " +
-                        (ocrBusy ? "pointer-events-none opacity-60" : "")
-                      }
-                    >
-                      {ocrBusy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ScanLine className="h-4 w-4" />
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => onScanMatricula(e.target.files?.[0] ?? null)}
-                      />
-                    </label>
-                  </div>
-                  {inlineFocus === "matricula" && inlineSuggest.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-border-strong bg-surface shadow-lg">
-                      {inlineSuggest.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => pickCliente(c, { advance: false })}
-                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-surface-2"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate font-mono text-sm font-semibold uppercase">{c.matricula || "—"}</div>
-                            <div className="truncate text-xs text-muted-foreground">
-                              {[c.nombre, c.vehiculo].filter(Boolean).join(" · ")}
-                            </div>
-                          </div>
-                          <span className="shrink-0 text-[11px] text-primary">Usar</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Field>
-            </div>
-
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Vehículo">
                 <input
-                  value={vehiculo}
-                  onChange={(e) => setVehiculo(e.target.value)}
-                  placeholder="Marca y modelo"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Km">
-                <input
-                  value={km}
-                  onChange={(e) => setKm(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="120000"
-                  className={inputCls}
+                  value={matricula}
+                  onChange={(e) => setMatricula(normalizeMatricula(e.target.value))}
+                  placeholder="1234ABC"
+                  className={inputCls + " font-mono uppercase"}
+                  autoComplete="off"
                 />
               </Field>
             </div>
-            {(() => {
-              const hasTecnicos = Boolean(vin || marca || modelo || motor || fechaMatriculacion);
-              if (!hasTecnicos && !showTecnicos) {
-                return (
-                  <button
-                    type="button"
-                    onClick={() => setShowTecnicos(true)}
-                    className="text-xs font-medium text-primary underline-offset-2 hover:underline"
-                  >
-                    + Añadir datos técnicos (marca, modelo, VIN…)
-                  </button>
-                );
-              }
-              return (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Marca">
-                      <input
-                        value={marca}
-                        onChange={(e) => setMarca(e.target.value)}
-                        placeholder="Ej. NISSAN"
-                        className={inputCls}
-                      />
-                    </Field>
-                    <Field label="Modelo">
-                      <input
-                        value={modelo}
-                        onChange={(e) => setModelo(e.target.value)}
-                        placeholder="Ej. Micra"
-                        className={inputCls}
-                      />
-                    </Field>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Motor">
-                      <input
-                        value={motor}
-                        onChange={(e) => setMotor(e.target.value)}
-                        placeholder="Ej. CG12DE"
-                        className={inputCls}
-                      />
-                    </Field>
-                    <Field label="Fecha matriculación">
-                      <input
-                        value={fechaMatriculacion}
-                        onChange={(e) => setFechaMatriculacion(e.target.value)}
-                        placeholder="DD/MM/AAAA"
-                        className={inputCls}
-                      />
-                    </Field>
-                  </div>
-                  <Field label="VIN">
-                    <input
-                      value={vin}
-                      onChange={(e) => setVin(e.target.value.toUpperCase())}
-                      placeholder="17 caracteres (opcional)"
-                      maxLength={17}
-                      className={inputCls}
-                    />
-                    {vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin) && (
-                      <p className="mt-1 text-[11px] text-warning">
-                        El VIN debe tener 17 caracteres alfanuméricos (sin I, O, Q).
-                      </p>
-                    )}
-                  </Field>
-                </>
-              );
-            })()}
-
           </div>
 
           {/* Fotos */}
@@ -1254,22 +1247,34 @@ function NuevaPage() {
             )}
           </div>
 
+          <BottomBar>
+            <button type="button" onClick={() => setStep(1)} className={ghostBtn}>
+              <ArrowLeft className="h-4 w-4" /> Atrás
+            </button>
+            <div className="flex flex-1 justify-end">
+              <button type="button" disabled={!canNext2} onClick={onContinuarPaso2} className={primaryBtn}>
+                Continuar <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </BottomBar>
         </section>
       )}
 
-      {/* STEP 2 */}
-      {step === 2 && (
+
+      {/* STEP 3 — avería */}
+      {step === 3 && (
         <section
           className="space-y-4"
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             const t = e.target as HTMLElement;
             if (t.tagName !== "INPUT") return;
-            if (!canNext2) return;
+            if (!canNext3) return;
             e.preventDefault();
-            setStep(3);
+            setStep(4);
           }}
         >
+
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1405,15 +1410,42 @@ function NuevaPage() {
             </div>
           )}
 
-          {subfamilia && (
-            <button
-              type="button"
-              onClick={() => setGpcatOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-3 text-sm font-semibold text-accent-foreground active:scale-95"
-            >
-              <Search className="h-4 w-4" /> Buscar piezas en GPCat
+          <BottomBar>
+            <button type="button" onClick={() => setStep(2)} className={ghostBtn}>
+              <ArrowLeft className="h-4 w-4" /> Atrás
             </button>
-          )}
+            <div className="flex flex-1 justify-end">
+              <button
+                type="button"
+                disabled={!canNext3}
+                onClick={() => setStep(4)}
+                className={primaryBtn}
+              >
+                Consultar a Peña <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </BottomBar>
+        </section>
+      )}
+
+
+      {/* STEP 4 — consulta de precio y stock a Grupo Peña */}
+      {step === 4 && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-accent/40 bg-accent/10 p-3 text-[12px] text-muted-foreground">
+            Consulta el <b className="text-foreground">precio y el stock</b> de las piezas en Grupo
+            Peña antes de enviar el presupuesto al cliente. Mientras la API de Grupo Peña no esté
+            conectada, el catálogo funciona en modo demostración: también puedes escribir las piezas
+            y el importe a mano.
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setGpcatOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-3 text-sm font-semibold text-accent-foreground active:scale-95"
+          >
+            <Search className="h-4 w-4" /> Consultar precio y stock en GPCat
+          </button>
 
           <Suspense fallback={null}>
             <GPCatSearchModal
@@ -1427,17 +1459,6 @@ function NuevaPage() {
             />
           </Suspense>
 
-          <BottomBar>
-            <button type="button" onClick={() => setStep(1)} className={ghostBtn}>
-              <ArrowLeft className="h-4 w-4" /> Atrás
-            </button>
-          </BottomBar>
-        </section>
-      )}
-
-      {/* STEP 3 */}
-      {step === 3 && (
-        <section className="space-y-4">
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Importe (€)">
@@ -1473,6 +1494,24 @@ function NuevaPage() {
               />
             </Field>
           </div>
+
+          <BottomBar>
+            <button type="button" onClick={() => setStep(3)} className={ghostBtn}>
+              <ArrowLeft className="h-4 w-4" /> Atrás
+            </button>
+            <div className="flex flex-1 justify-end">
+              <button type="button" onClick={() => setStep(5)} className={primaryBtn}>
+                Preparar mensaje <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </BottomBar>
+        </section>
+      )}
+
+      {/* STEP 5 — plantilla al cliente con el precio */}
+      {step === 5 && (
+        <section className="space-y-4">
+
 
           <div className="rounded-2xl border border-border bg-surface p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -1522,9 +1561,10 @@ function NuevaPage() {
           </div>
 
           <BottomBar>
-            <button type="button" onClick={() => setStep(2)} className={ghostBtn} disabled={busy}>
+            <button type="button" onClick={() => setStep(4)} className={ghostBtn} disabled={busy}>
               <ArrowLeft className="h-4 w-4" /> Atrás
             </button>
+
             <div className="flex flex-1 flex-wrap justify-end gap-2">
               <button type="button" onClick={onGuardar} disabled={busy} className={ghostBtn}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
