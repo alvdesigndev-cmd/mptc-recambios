@@ -11,7 +11,7 @@ import type { Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion, type FaseKey } from "@/lib/mptc/fases";
 
 export const Route = createFileRoute("/app/historial")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { q?: string } => ({
     q: typeof s.q === "string" ? s.q : undefined,
   }),
   component: HistorialPage,

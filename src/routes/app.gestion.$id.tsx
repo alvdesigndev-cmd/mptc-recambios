@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History } from "lucide-react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -10,7 +10,8 @@ import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
-import { listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
+import { buildWAUrl } from "@/lib/mptc/wa";
+import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
 
 
 export const Route = createFileRoute("/app/gestion/$id")({
@@ -48,6 +49,7 @@ function GestionDetallePage() {
   const [saving, setSaving] = useState(false);
   const [gpcat, setGpcat] = useState(false);
   const [eventos, setEventos] = useState<GestionEvento[]>([]);
+  const [enviandoWA, setEnviandoWA] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
@@ -102,6 +104,42 @@ function GestionDetallePage() {
     setGpcat(false);
   };
 
+
+  // Envío directo por WhatsApp con la plantilla y el precio finales guardados.
+  const enviarWhatsApp = async () => {
+    if (!g) return;
+    const tel = (g.cliente_telefono || "").trim();
+    if (!tel) { toast.error("Falta el teléfono del cliente"); return; }
+    const msg = (g.mensaje || "").trim();
+    if (!msg) { toast.error("No hay plantilla guardada. Edita el mensaje antes de enviar."); return; }
+
+    const url = buildWAUrl(tel, msg);
+    const win = window.open(url, "_blank");
+    setEnviandoWA(true);
+    try {
+      const yaEnviado = g.wa_abierto || fase.index >= 1;
+      const nuevoEstado = g.estado === "en-curso" || g.estado === "borrador" ? "enviado" : g.estado;
+      await supabase
+        .from("gestiones")
+        .update({ wa_abierto: true, estado: nuevoEstado })
+        .eq("id", g.id);
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: yaEnviado ? "plantilla_reenviada" : "plantilla_enviada",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `Plantilla enviada por WhatsApp a ${tel} desde el detalle`,
+        metadata: { importe: g.importe, piezas: g.piezas, telefono: tel },
+      });
+      toast.success(yaEnviado ? "Plantilla reenviada por WhatsApp" : "Plantilla enviada por WhatsApp");
+      load();
+    } catch (e: any) {
+      toast.error("No se pudo registrar el envío: " + (e?.message || "error"));
+    } finally {
+      setEnviandoWA(false);
+      if (!win) window.location.href = url;
+    }
+  };
 
   useEffect(() => { if (settings) load(); }, [settings, load]);
 
@@ -398,6 +436,23 @@ function GestionDetallePage() {
         <div className="text-[12px] text-muted-foreground">
           {g.wa_abierto || fase.index >= 1 ? "WhatsApp enviado al cliente." : "Todavía no se ha enviado."}
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={enviarWhatsApp}
+            disabled={enviandoWA || editing === "mensaje" || !g.mensaje || !g.cliente_telefono}
+            className="inline-flex items-center gap-2 rounded-xl bg-success px-3 py-2 text-[13px] font-semibold text-success-foreground disabled:opacity-50"
+          >
+            {enviandoWA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {g.wa_abierto || fase.index >= 1 ? "Reenviar por WhatsApp" : "Enviar por WhatsApp"}
+          </button>
+          <span className="text-[11px] text-muted-foreground">
+            Importe actual: <span className="font-semibold text-foreground">{g.importe ? `${g.importe} €` : "—"}</span>
+          </span>
+        </div>
+        {!g.cliente_telefono && (
+          <p className="mt-1 text-[11px] text-warning">Añade el teléfono del cliente para poder enviar.</p>
+        )}
         {editing === "mensaje" ? (
           <Area label="Mensaje" value={draft["mensaje"] ?? ""} onChange={(v) => setField("mensaje", v)} rows={8} />
         ) : g.mensaje ? (
