@@ -30,7 +30,7 @@ export const iniciarSesionGPA = createServerFn({ method: "POST" }).handler(
 
 /** POST /ConsultaArticulos — busca artículos por descripción o referencia. */
 export const consultaArticulosGPA = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => (data as { query?: string; marca?: string; modelo?: string; motor?: string; categoria?: string } | undefined) ?? {})
+  .inputValidator((data: unknown) => (data as { query?: string; marca?: string; modelo?: string; motor?: string; matricula?: string; categoria?: string } | undefined) ?? {})
   .handler(async ({ data }): Promise<{ ok: boolean; mock: boolean; articulos: GpaArticulo[]; criterio: GpaCriterio; error?: string }> => {
     const query = (data.query ?? "").toString();
     const categoria = data.categoria ? data.categoria.toString() : undefined;
@@ -38,22 +38,17 @@ export const consultaArticulosGPA = createServerFn({ method: "POST" })
       const r = mockConsultaArticulos(query, categoria);
       return { ok: true, mock: true, articulos: r.articulos, criterio: r.criterio };
     }
-    const criterio = detectarCriterio(query, categoria);
-    try {
-      const res = await gpaAuthPost("ConsultaArticulos", {
-        Texto: query,
-        Marca: data.marca,
-        Modelo: data.modelo,
-        Motor: data.motor,
-        Categoria: categoria,
-      });
-      if (!res.ok) return { ok: false, mock: false, articulos: [], criterio, error: `Error ${res.status}` };
-      const json = (await res.json()) as { articulos?: GpaArticulo[] };
-      return { ok: true, mock: false, articulos: json.articulos ?? [], criterio };
-    } catch {
-      return { ok: false, mock: false, articulos: [], criterio, error: "No se pudo consultar el catálogo" };
-    }
+    const r = await consultaArticulosReal({
+      query,
+      categoria,
+      marca: data.marca,
+      modelo: data.modelo,
+      motor: data.motor,
+      matricula: data.matricula,
+    });
+    return { ok: r.ok, mock: false, articulos: r.articulos, criterio: r.criterio, ...(r.error ? { error: r.error } : {}) };
   });
+
 
 /** POST /GenerarPedido — envía el pedido a Grupo Peña. */
 export const generarPedidoGPA = createServerFn({ method: "POST" })
