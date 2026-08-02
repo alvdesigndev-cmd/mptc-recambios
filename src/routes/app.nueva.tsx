@@ -496,23 +496,27 @@ function NuevaPage() {
         if (isEditable && (tgt as HTMLInputElement | HTMLTextAreaElement).value) return;
         e.preventDefault();
         if (step === 1) navigate({ to: "/app" });
-        else if (step === 2) setStep(1);
-        else if (step === 3) setStep(2);
+        else setStep((step - 1) as Step);
       } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        if (step === 1 && nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2)) {
+        if (step === 1 && (matricula.trim().length > 2 || vehiculo.trim().length > 1)) {
+          setStep(2);
+        } else if (step === 2 && nombre.trim().length > 1 && (telefono.trim().length > 5 || matricula.trim().length > 2)) {
           (async () => {
             try { await upsertClienteRef.current?.(); } catch {}
-            setStep(2);
+            setStep(3);
           })();
-        } else if (step === 2 && !!subfamilia) {
-          setStep(3);
+        } else if (step === 3 && !!subfamilia) {
+          setStep(4);
+        } else if (step === 4) {
+          setStep(5);
         }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [step, busy, navigate, nombre, telefono, matricula, subfamilia]);
+  }, [step, busy, navigate, nombre, telefono, matricula, vehiculo, subfamilia]);
+
 
   // Ref mutable para llamar upsertCliente desde el listener sin recrear el efecto.
   const upsertClienteRef = useRef<(() => Promise<void>) | null>(null);
