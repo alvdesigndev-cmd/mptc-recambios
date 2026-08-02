@@ -42,17 +42,17 @@ export function AppShell({ children }: Props) {
     <div className="min-h-[100dvh] bg-background text-foreground">
       {/* Topbar */}
       <header className="sticky top-0 z-30 border-b border-border bg-surface/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
+        <div className="mx-auto flex max-w-[1200px] items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary font-bold">
             M
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold leading-tight">{settings.tallerName}</div>
-            <div className="text-[11px] text-muted-foreground leading-tight">MPTC · Taller Conectado</div>
+            <div className="truncate text-[11px] text-muted-foreground leading-tight">MPTC · Taller Conectado</div>
           </div>
           <span
             className={
-              "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide " +
+              "hidden max-w-[40%] shrink-0 truncate rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide sm:inline-block " +
               (isPena
                 ? "bg-accent/15 text-accent"
                 : "bg-primary/15 text-primary")
@@ -64,13 +64,14 @@ export function AppShell({ children }: Props) {
           <button
             type="button"
             onClick={onExit}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+            className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
             aria-label="Salir"
           >
             <LogOut className="h-5 w-5" />
           </button>
         </div>
       </header>
+
 
       {/* Page */}
       <main className="mx-auto max-w-[1200px] px-4 pb-[120px] pt-5">{children}</main>
