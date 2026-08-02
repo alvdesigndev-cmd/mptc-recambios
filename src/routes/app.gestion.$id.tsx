@@ -67,7 +67,10 @@ function GestionDetallePage() {
     setSaving(true);
     const payload: Record<string, string | null> = {};
     for (const [k, v] of Object.entries(draft)) payload[k] = v.trim() === "" ? null : v.trim();
-    const { error } = await supabase.from("gestiones").update(payload).eq("id", g.id);
+    const { error } = await supabase
+      .from("gestiones")
+      .update(payload as never)
+      .eq("id", g.id);
     setSaving(false);
     if (error) { toast.error("No se pudo guardar: " + error.message); return; }
     toast.success("Cambios guardados");
