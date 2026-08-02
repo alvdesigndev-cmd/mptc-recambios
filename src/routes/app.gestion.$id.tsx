@@ -15,6 +15,7 @@ import { buildMessage } from "@/lib/mptc/messages";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
+import { downloadGestionPdf } from "@/lib/mptc/gestion-pdf";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, estadoEnvioPdf, estadoEventoPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type GestionEvento } from "@/lib/mptc/eventos";
 
 
@@ -326,6 +327,22 @@ function GestionDetallePage() {
   };
 
 
+  const exportarGestionPdf = () => {
+    if (!g) return;
+    try {
+      const { filename } = downloadGestionPdf(g, {
+        taller: settings?.tallerName ?? g.taller_nombre,
+        mecanico: settings?.mecanico ?? null,
+        categoriaLabel: fam?.name ?? g.categoria,
+        subfamiliaLabel: sub?.name ?? g.subfamilia,
+        eventos,
+      });
+      toast.success("Informe descargado: " + filename);
+    } catch (e: any) {
+      toast.error("No se pudo generar el PDF: " + (e?.message || "error"));
+    }
+  };
+
   const reabrirPdf = async (path: string) => {
     const url = await getPresupuestoUrl(path);
     if (!url) {
@@ -403,6 +420,13 @@ function GestionDetallePage() {
               Reanudar borrador
             </button>
           )}
+          <button
+            type="button"
+            onClick={exportarGestionPdf}
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold"
+          >
+            <FileDown className="h-4 w-4" /> Exportar gestión (PDF)
+          </button>
           {g.cliente_telefono && (
             <a
               href={`tel:${g.cliente_telefono}`}
