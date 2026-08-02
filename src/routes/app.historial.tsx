@@ -76,6 +76,8 @@ function HistorialPage() {
   const [moreD, setMoreD] = useState(true);
   const [cargando, setCargando] = useState(false);
   const [visibles, setVisibles] = useState(PAGE);
+  const feedLenRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const fetchPage = useCallback(
     async (pg: number, pd: number, reset: boolean) => {
