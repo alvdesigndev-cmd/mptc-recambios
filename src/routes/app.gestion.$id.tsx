@@ -456,23 +456,102 @@ function BackLink() {
 }
 
 function Block({
-  icon, step, title, children,
-}: { icon: React.ReactNode; step: string; title: string; children: React.ReactNode }) {
+  icon, step, title, action, children,
+}: { icon: React.ReactNode; step: string; title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 text-primary">
           {icon}
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{step}</div>
           <h2 className="truncate text-sm font-semibold">{title}</h2>
         </div>
+        {action}
       </div>
       {children}
     </section>
   );
 }
+
+function EditActions({
+  editing, saving, onEdit, onSave, onCancel,
+}: { editing: boolean; saving: boolean; onEdit: () => void; onSave: () => void; onCancel: () => void }) {
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border-strong bg-surface px-2.5 py-1.5 text-[12px] font-semibold active:scale-95"
+      >
+        <Pencil className="h-3.5 w-3.5" /> Editar
+      </button>
+    );
+  }
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="inline-flex items-center gap-1 rounded-xl border border-border-strong bg-surface px-2.5 py-1.5 text-[12px] font-semibold disabled:opacity-50"
+      >
+        <X className="h-3.5 w-3.5" /> Cancelar
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="inline-flex items-center gap-1 rounded-xl bg-primary px-2.5 py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Guardar
+      </button>
+    </div>
+  );
+}
+
+const inputCls =
+  "mt-1 w-full rounded-xl border border-border-strong bg-surface-2 px-3 py-2 text-[16px] outline-none focus:border-primary";
+
+function Field({
+  label, value, onChange, mono, inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  mono?: boolean;
+  inputMode?: "text" | "tel" | "decimal" | "numeric";
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        inputMode={inputMode}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls + (mono ? " font-mono" : "")}
+      />
+    </label>
+  );
+}
+
+function Area({
+  label, value, onChange, rows = 3,
+}: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <label className="mt-3 block">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <textarea
+        value={value}
+        rows={rows}
+        onChange={(e) => onChange(e.target.value)}
+        className={inputCls + " resize-y leading-relaxed"}
+      />
+    </label>
+  );
+}
+
 
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-x-3 gap-y-2">{children}</div>;
