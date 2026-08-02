@@ -207,25 +207,71 @@ function GestionDetallePage() {
       </header>
 
       {/* PASO 1 — Matrícula y vehículo */}
-      <Block icon={<Car className="h-4 w-4" />} step="Paso 1" title="Matrícula y vehículo">
-        <Grid>
-          <Row label="Matrícula" value={g.matricula} mono />
-          <Row label="Km" value={g.km} />
-          <Row label="Marca" value={g.marca} />
-          <Row label="Modelo" value={g.modelo} />
-          <Row label="Motor" value={g.motor} />
-          <Row label="Matriculación" value={g.fecha_matriculacion} />
-          <Row label="VIN" value={g.vin} mono />
-          <Row label="Taller" value={g.taller_nombre} />
-        </Grid>
+      <Block
+        icon={<Car className="h-4 w-4" />}
+        step="Paso 1"
+        title="Matrícula y vehículo"
+        action={
+          <EditActions
+            editing={editing === "veh"}
+            saving={saving}
+            onEdit={() => startEdit("veh", ["matricula", "km", "marca", "modelo", "motor", "fecha_matriculacion", "vin", "vehiculo"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "veh" ? (
+          <Grid>
+            <Field label="Matrícula" value={draft["matricula"] ?? ""} onChange={(v) => setField("matricula", v.toUpperCase())} mono />
+            <Field label="Km" value={draft["km"] ?? ""} onChange={(v) => setField("km", v)} />
+            <Field label="Marca" value={draft["marca"] ?? ""} onChange={(v) => setField("marca", v)} />
+            <Field label="Modelo" value={draft["modelo"] ?? ""} onChange={(v) => setField("modelo", v)} />
+            <Field label="Motor" value={draft["motor"] ?? ""} onChange={(v) => setField("motor", v)} />
+            <Field label="Matriculación" value={draft["fecha_matriculacion"] ?? ""} onChange={(v) => setField("fecha_matriculacion", v)} />
+            <Field label="VIN" value={draft["vin"] ?? ""} onChange={(v) => setField("vin", v.toUpperCase())} mono />
+            <Field label="Vehículo (resumen)" value={draft["vehiculo"] ?? ""} onChange={(v) => setField("vehiculo", v)} />
+          </Grid>
+        ) : (
+          <Grid>
+            <Row label="Matrícula" value={g.matricula} mono />
+            <Row label="Km" value={g.km} />
+            <Row label="Marca" value={g.marca} />
+            <Row label="Modelo" value={g.modelo} />
+            <Row label="Motor" value={g.motor} />
+            <Row label="Matriculación" value={g.fecha_matriculacion} />
+            <Row label="VIN" value={g.vin} mono />
+            <Row label="Taller" value={g.taller_nombre} />
+          </Grid>
+        )}
       </Block>
 
       {/* PASO 2 — Cliente y fotos */}
-      <Block icon={<User className="h-4 w-4" />} step="Paso 2" title="Cliente">
-        <Grid>
-          <Row label="Nombre" value={g.cliente_nombre} />
-          <Row label="Teléfono" value={g.cliente_telefono} mono />
-        </Grid>
+      <Block
+        icon={<User className="h-4 w-4" />}
+        step="Paso 2"
+        title="Cliente"
+        action={
+          <EditActions
+            editing={editing === "cliente"}
+            saving={saving}
+            onEdit={() => startEdit("cliente", ["cliente_nombre", "cliente_telefono"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "cliente" ? (
+          <Grid>
+            <Field label="Nombre" value={draft["cliente_nombre"] ?? ""} onChange={(v) => setField("cliente_nombre", v)} />
+            <Field label="Teléfono" value={draft["cliente_telefono"] ?? ""} onChange={(v) => setField("cliente_telefono", v)} mono inputMode="tel" />
+          </Grid>
+        ) : (
+          <Grid>
+            <Row label="Nombre" value={g.cliente_nombre} />
+            <Row label="Teléfono" value={g.cliente_telefono} mono />
+          </Grid>
+        )}
         {fotos.length > 0 && (
           <div className="mt-3 flex gap-2 overflow-x-auto">
             {fotos.map((u, i) => (
@@ -243,41 +289,111 @@ function GestionDetallePage() {
       </Block>
 
       {/* PASO 3 — Avería */}
-      <Block icon={<Wrench className="h-4 w-4" />} step="Paso 3" title="Avería">
-        <Grid>
-          <Row label="Familia" value={g.categoria} />
-          <Row label="Subfamilia" value={g.subfamilia} />
-        </Grid>
-        {g.descripcion && <Long label="Notas internas" value={g.descripcion} />}
-        {g.objecion && <Long label="Objeción del cliente" value={g.objecion} />}
+      <Block
+        icon={<Wrench className="h-4 w-4" />}
+        step="Paso 3"
+        title="Avería"
+        action={
+          <EditActions
+            editing={editing === "averia"}
+            saving={saving}
+            onEdit={() => startEdit("averia", ["categoria", "subfamilia", "descripcion", "objecion"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "averia" ? (
+          <>
+            <Grid>
+              <Field label="Familia" value={draft["categoria"] ?? ""} onChange={(v) => setField("categoria", v)} />
+              <Field label="Subfamilia" value={draft["subfamilia"] ?? ""} onChange={(v) => setField("subfamilia", v)} />
+            </Grid>
+            <Area label="Notas internas" value={draft["descripcion"] ?? ""} onChange={(v) => setField("descripcion", v)} />
+            <Area label="Objeción del cliente" value={draft["objecion"] ?? ""} onChange={(v) => setField("objecion", v)} />
+          </>
+        ) : (
+          <>
+            <Grid>
+              <Row label="Familia" value={g.categoria} />
+              <Row label="Subfamilia" value={g.subfamilia} />
+            </Grid>
+            {g.descripcion && <Long label="Notas internas" value={g.descripcion} />}
+            {g.objecion && <Long label="Objeción del cliente" value={g.objecion} />}
+          </>
+        )}
       </Block>
 
       {/* PASO 4 — Consulta a Peña */}
-      <Block icon={<Package className="h-4 w-4" />} step="Paso 4" title="Presupuesto y piezas (Peña)">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Importe final</span>
-          <span className="font-mono text-lg font-bold text-primary">{g.importe ? `${g.importe} €` : "—"}</span>
-        </div>
-        {piezasList.length > 0 ? (
-          <ul className="mt-2 space-y-1 text-[13px]">
-            {piezasList.map((l, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-primary">•</span>
-                <span className="min-w-0 flex-1 break-words">{l}</span>
-              </li>
-            ))}
-          </ul>
+      <Block
+        icon={<Package className="h-4 w-4" />}
+        step="Paso 4"
+        title="Presupuesto y piezas (Peña)"
+        action={
+          <EditActions
+            editing={editing === "piezas"}
+            saving={saving}
+            onEdit={() => startEdit("piezas", ["importe", "piezas"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
+        {editing === "piezas" ? (
+          <>
+            <Field label="Importe € (IVA incl.)" value={draft["importe"] ?? ""} onChange={(v) => setField("importe", v.replace(",", "."))} mono inputMode="decimal" />
+            <Area label="Piezas a pedir (una por línea)" value={draft["piezas"] ?? ""} onChange={(v) => setField("piezas", v)} rows={6} />
+            <button
+              type="button"
+              onClick={() => setGpcat(true)}
+              className="mt-2 inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold"
+            >
+              <Search className="h-4 w-4" /> Buscar piezas en GPCat
+            </button>
+          </>
         ) : (
-          <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
+          <>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Importe final</span>
+              <span className="font-mono text-lg font-bold text-primary">{g.importe ? `${g.importe} €` : "—"}</span>
+            </div>
+            {piezasList.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-[13px]">
+                {piezasList.map((l, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span className="min-w-0 flex-1 break-words">{l}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[12px] text-muted-foreground">Sin piezas registradas.</p>
+            )}
+          </>
         )}
       </Block>
 
       {/* PASO 5 — Plantilla enviada */}
-      <Block icon={<MessageCircle className="h-4 w-4" />} step="Paso 5" title="Plantilla al cliente">
+      <Block
+        icon={<MessageCircle className="h-4 w-4" />}
+        step="Paso 5"
+        title="Plantilla al cliente"
+        action={
+          <EditActions
+            editing={editing === "mensaje"}
+            saving={saving}
+            onEdit={() => startEdit("mensaje", ["mensaje"])}
+            onSave={saveEdit}
+            onCancel={() => { setEditing(null); setDraft({}); }}
+          />
+        }
+      >
         <div className="text-[12px] text-muted-foreground">
           {g.wa_abierto || fase.index >= 1 ? "WhatsApp enviado al cliente." : "Todavía no se ha enviado."}
         </div>
-        {g.mensaje ? (
+        {editing === "mensaje" ? (
+          <Area label="Mensaje" value={draft["mensaje"] ?? ""} onChange={(v) => setField("mensaje", v)} rows={8} />
+        ) : g.mensaje ? (
           <div className="mt-2 whitespace-pre-wrap break-words rounded-2xl bg-surface-2 p-3 text-[13px] leading-relaxed">
             {g.mensaje}
           </div>
@@ -285,6 +401,7 @@ function GestionDetallePage() {
           <p className="mt-2 text-[12px] text-muted-foreground">Sin mensaje guardado.</p>
         )}
       </Block>
+
 
       {/* PASO 6 — Pedido a Peña */}
       <Block icon={<Truck className="h-4 w-4" />} step="Paso 6" title="Pedido a Grupo Peña">
