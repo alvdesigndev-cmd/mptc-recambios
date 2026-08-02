@@ -240,3 +240,62 @@ function QuickBtn({
     </button>
   );
 }
+
+function ConfirmPenaModal({
+  mensaje,
+  onCancel,
+  onConfirm,
+}: {
+  mensaje: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-4 py-3">
+          <div className="text-sm font-semibold">Revisar pedido a Grupo Peña</div>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Se enviará por WhatsApp a{" "}
+            <span className="font-mono">34634954491</span> (Grupo Peña)
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+          <div className="rounded-2xl bg-surface-2 p-3">
+            <div className="max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-accent/10 p-3 text-[13px] leading-relaxed text-foreground">
+              {mensaje.trim() || "El mensaje está vacío."}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Así se verá en WhatsApp. Si algo no cuadra, cancela y edítalo desde el detalle.
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="shrink-0 border-t border-border px-4 py-3"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={!mensaje.trim()}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition active:scale-95 disabled:opacity-50"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Abrir WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
