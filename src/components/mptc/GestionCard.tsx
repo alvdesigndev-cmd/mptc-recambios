@@ -17,6 +17,7 @@ export function GestionCard({ g, onClick, onDelete }: Props) {
     g.estado === "completado" ? CheckCheck : Clock;
 
   const isBorrador = g.estado === "borrador";
+  const fase = faseDeGestion(g);
 
   return (
     <div
