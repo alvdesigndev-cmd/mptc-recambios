@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send, FileDown } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send, FileDown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -11,8 +11,12 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { buildMessage } from "@/lib/mptc/messages";
+import { useFamilias } from "@/lib/mptc/useFamilias";
+import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
+
 
 
 export const Route = createFileRoute("/app/gestion/$id")({
@@ -52,6 +56,15 @@ function GestionDetallePage() {
   const [eventos, setEventos] = useState<GestionEvento[]>([]);
   const [enviandoWA, setEnviandoWA] = useState(false);
   const [enviandoPdf, setEnviandoPdf] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+
+  const { data: FAMILIES_DATA = [] } = useFamilias();
+  const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, g?.categoria ?? null), [FAMILIES_DATA, g?.categoria]);
+  const sub = useMemo(
+    () => findSubfamilyBySlug(FAMILIES_DATA, g?.categoria ?? null, g?.subfamilia ?? null),
+    [FAMILIES_DATA, g?.categoria, g?.subfamilia],
+  );
+
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
@@ -142,6 +155,62 @@ function GestionDetallePage() {
       if (!win) window.location.href = url;
     }
   };
+
+  // Reenvía la plantilla al cliente REGENERÁNDOLA con el precio final y las
+  // piezas actuales del paso 4 (por si se editaron después del primer envío).
+  const reenviarPlantilla = async () => {
+    if (!g) return;
+    const tel = (g.cliente_telefono || "").trim();
+    if (!tel) { toast.error("Falta el teléfono del cliente"); return; }
+    if (!g.importe) { toast.error("Falta el importe del paso 4"); return; }
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const token = g.confirm_token || "";
+    const msg = buildMessage(
+      {
+        cliente: g.cliente_nombre || "",
+        vehiculo: g.vehiculo || "",
+        matricula: g.matricula || "",
+        km: g.km ? String(g.km) : "",
+        importe: String(g.importe),
+        taller: settings?.tallerName || "",
+        mecanico: settings?.mecanico || "",
+        confirmUrl: token ? `${origin}/confirmar/${token}` : "",
+        rejectUrl: token ? `${origin}/confirmar/${token}?action=rechazar` : undefined,
+        fotos,
+        piezas: g.piezas || "",
+      },
+      { template: sub?.mensaje, subfamiliaNombre: sub?.name, familiaNombre: fam?.name },
+    );
+
+    const url = buildWAUrl(tel, msg);
+    const win = window.open(url, "_blank");
+    setReenviando(true);
+    try {
+      const nuevoEstado = g.estado === "en-curso" || g.estado === "borrador" ? "enviado" : g.estado;
+      await supabase
+        .from("gestiones")
+        .update({ mensaje: msg, wa_abierto: true, estado: nuevoEstado })
+        .eq("id", g.id);
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "plantilla_reenviada",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `Plantilla reenviada a ${tel} con el precio final ${g.importe} €`,
+        metadata: { importe: g.importe, piezas: g.piezas, telefono: tel, regenerada: true },
+      });
+      toast.success("Plantilla reenviada con el precio final");
+      load();
+    } catch (e: any) {
+      toast.error("No se pudo registrar el reenvío: " + (e?.message || "error"));
+    } finally {
+      setReenviando(false);
+      if (!win) window.location.href = url;
+    }
+  };
+
+
 
   useEffect(() => { if (settings) load(); }, [settings, load]);
 
@@ -540,6 +609,16 @@ function GestionDetallePage() {
           >
             {enviandoWA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {g.wa_abierto || fase.index >= 1 ? "Reenviar por WhatsApp" : "Enviar por WhatsApp"}
+          </button>
+          <button
+            type="button"
+            onClick={reenviarPlantilla}
+            disabled={reenviando || editing === "mensaje" || !g.cliente_telefono || !g.importe}
+            title="Regenera la plantilla con el precio final del paso 4 y la reenvía"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold hover:bg-surface-2 disabled:opacity-50"
+          >
+            {reenviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Reenviar plantilla al cliente
           </button>
           <span className="text-[11px] text-muted-foreground">
             Importe actual: <span className="font-semibold text-foreground">{g.importe ? `${g.importe} €` : "—"}</span>
