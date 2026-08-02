@@ -8,6 +8,8 @@ import {
   fetchGpaToken,
   gpaAuthPost,
   detectarCriterio,
+  consultaArticulosReal,
+
 } from "./gpa.server";
 import type { GpaArticulo, GpaLineaPedido, GpaCriterio } from "./gpa.server";
 
