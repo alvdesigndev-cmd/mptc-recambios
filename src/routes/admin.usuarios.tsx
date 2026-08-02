@@ -303,7 +303,8 @@ function UsuariosAdminPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     <div className="min-w-0 flex-1">
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+
                         <span className="truncate text-sm font-medium">{row.email ?? "(sin email)"}</span>
                         {row.is_self && (
                           <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">Tú</span>
