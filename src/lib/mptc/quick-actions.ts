@@ -5,6 +5,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "./wa";
 import { logEvento } from "./eventos";
+import { PENA_PHONE } from "./profiles";
 import type { Gestion } from "./types";
 
 /** ¿Se puede reenviar la plantilla por WhatsApp? */
