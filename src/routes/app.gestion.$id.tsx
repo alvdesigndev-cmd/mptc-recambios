@@ -15,6 +15,7 @@ import { buildMessage } from "@/lib/mptc/messages";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
+import { downloadGestionPdf } from "@/lib/mptc/gestion-pdf";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, estadoEnvioPdf, estadoEventoPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type GestionEvento } from "@/lib/mptc/eventos";
 
 
