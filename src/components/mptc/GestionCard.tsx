@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2 } from "lucide-react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
 import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
+import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
 
 interface Props {
   g: Gestion;
@@ -18,7 +19,7 @@ interface Props {
 }
 
 export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
-  const [busy, setBusy] = useState<null | "wa" | "pena">(null);
+  const [busy, setBusy] = useState<null | "wa" | "pena" | "pdf">(null);
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
@@ -90,8 +91,29 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
         </div>
 
         {/* Acciones rápidas */}
-        {(isBorrador || puedeReenviar(g) || puedePedirPena(g)) && (
+        {(isBorrador || puedeReenviar(g) || puedeEnviarPdf(g) || puedePedirPena(g)) && (
           <div className="mt-2.5 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {puedeEnviarPdf(g) && (
+              <QuickBtn
+                busy={busy === "pdf"}
+                onClick={async () => {
+                  setBusy("pdf");
+                  try {
+                    const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                    if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
+                    else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
+                    onChanged?.();
+                  } catch (e: any) {
+                    toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+                icon={<FileDown className="h-3.5 w-3.5" />}
+                label="Enviar PDF"
+              />
+            )}
+
             {isBorrador && onResume && (
               <QuickBtn onClick={() => onResume(g)} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Reanudar borrador" />
             )}

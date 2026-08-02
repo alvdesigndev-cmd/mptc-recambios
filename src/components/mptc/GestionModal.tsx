@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell , FileDown} from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell , FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
@@ -12,6 +12,7 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
 import { generarYGuardarPresupuesto } from "@/lib/mptc/presupuesto-storage";
+import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
 
 interface Props {
   gestion: Gestion | null;
@@ -62,6 +63,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [confirmPedido, setConfirmPedido] = useState(false);
   const [enviandoPedido, setEnviandoPedido] = useState(false);
+  const [enviandoPdf, setEnviandoPdf] = useState(false);
   const enviarPedidoGPA = useServerFn(generarPedidoGPA);
 
 
@@ -695,6 +697,28 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               >
                 <FileDown className="h-4 w-4" /> PDF
               </button>
+              {puedeEnviarPdf(g) && (
+                <button
+                  onClick={async () => {
+                    setEnviandoPdf(true);
+                    try {
+                      const res = await enviarPresupuestoPdfWhatsApp(g, { taller: g.taller_nombre });
+                      if (res.estado === "enviado") toast.success("Presupuesto PDF enviado por WhatsApp");
+                      else { toast.warning("WhatsApp no se abrió: reintentando…"); window.location.href = res.url; }
+                      onChanged();
+                    } catch (e: any) {
+                      toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+                    } finally {
+                      setEnviandoPdf(false);
+                    }
+                  }}
+                  disabled={enviandoPdf}
+                  className={btnGhost + " disabled:opacity-50"}
+                >
+                  {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Enviar PDF
+                </button>
+              )}
+
               {g.cliente_telefono && (
                 <a
                   href={`tel:${g.cliente_telefono}`}
