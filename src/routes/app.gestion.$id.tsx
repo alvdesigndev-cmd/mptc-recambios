@@ -327,6 +327,22 @@ function GestionDetallePage() {
   };
 
 
+  const exportarGestionPdf = () => {
+    if (!g) return;
+    try {
+      const { filename } = downloadGestionPdf(g, {
+        taller: settings?.tallerName ?? g.taller_nombre,
+        mecanico: settings?.mecanico ?? null,
+        categoriaLabel: fam?.nombre ?? g.categoria,
+        subfamiliaLabel: sub?.nombre ?? g.subfamilia,
+        eventos,
+      });
+      toast.success("Informe descargado: " + filename);
+    } catch (e: any) {
+      toast.error("No se pudo generar el PDF: " + (e?.message || "error"));
+    }
+  };
+
   const reabrirPdf = async (path: string) => {
     const url = await getPresupuestoUrl(path);
     if (!url) {
