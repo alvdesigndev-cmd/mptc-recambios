@@ -610,6 +610,16 @@ function GestionDetallePage() {
             {enviandoWA ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {g.wa_abierto || fase.index >= 1 ? "Reenviar por WhatsApp" : "Enviar por WhatsApp"}
           </button>
+          <button
+            type="button"
+            onClick={reenviarPlantilla}
+            disabled={reenviando || editing === "mensaje" || !g.cliente_telefono || !g.importe}
+            title="Regenera la plantilla con el precio final del paso 4 y la reenvía"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-[13px] font-semibold hover:bg-surface-2 disabled:opacity-50"
+          >
+            {reenviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Reenviar plantilla al cliente
+          </button>
           <span className="text-[11px] text-muted-foreground">
             Importe actual: <span className="font-semibold text-foreground">{g.importe ? `${g.importe} €` : "—"}</span>
           </span>
