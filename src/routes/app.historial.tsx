@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Search, Inbox, Truck, X, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -69,21 +69,81 @@ function HistorialPage() {
   const [open, setOpen] = useState<Gestion | null>(null);
   const [openDirecto, setOpenDirecto] = useState<PedidoDirecto | null>(null);
 
-  const load = useCallback(async () => {
-    if (!settings) return;
-    const [{ data: g }, { data: d }] = await Promise.all([
-      supabase.from("gestiones").select("*")
-        .eq("taller_id", settings.tallerId)
-        .order("created_at", { ascending: false }),
-      supabase.from("pedidos_pena").select("*")
-        .eq("taller_id", settings.tallerId)
-        .order("created_at", { ascending: false }),
-    ]);
-    setItems((g as Gestion[]) || []);
-    setDirectos((d as PedidoDirecto[]) || []);
-  }, [settings]);
+  const PAGE = 30;
+  const [pageG, setPageG] = useState(0);
+  const [pageD, setPageD] = useState(0);
+  const [moreG, setMoreG] = useState(true);
+  const [moreD, setMoreD] = useState(true);
+  const [cargando, setCargando] = useState(false);
+  const [visibles, setVisibles] = useState(PAGE);
+  const feedLenRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { load(); }, [load]);
+  const fetchPage = useCallback(
+    async (pg: number, pd: number, reset: boolean) => {
+      if (!settings) return;
+      setCargando(true);
+      const [gRes, dRes] = await Promise.all([
+        (reset || moreG)
+          ? supabase.from("gestiones").select("*")
+              .eq("taller_id", settings.tallerId)
+              .order("created_at", { ascending: false })
+              .range(pg * PAGE, pg * PAGE + PAGE - 1)
+          : Promise.resolve({ data: [] as unknown[] }),
+        (reset || moreD)
+          ? supabase.from("pedidos_pena").select("*")
+              .eq("taller_id", settings.tallerId)
+              .order("created_at", { ascending: false })
+              .range(pd * PAGE, pd * PAGE + PAGE - 1)
+          : Promise.resolve({ data: [] as unknown[] }),
+      ]);
+      const g = (gRes.data as Gestion[]) || [];
+      const d = (dRes.data as PedidoDirecto[]) || [];
+      if (reset) {
+        setItems(g);
+        setDirectos(d);
+        setMoreG(g.length === PAGE);
+        setMoreD(d.length === PAGE);
+        setPageG(0);
+        setPageD(0);
+        setVisibles(PAGE);
+      } else {
+        if (g.length) {
+          setItems((prev) => {
+            const ids = new Set(prev.map((x) => x.id));
+            return [...prev, ...g.filter((x) => !ids.has(x.id))];
+          });
+          setPageG(pg);
+        }
+        if (d.length) {
+          setDirectos((prev) => {
+            const ids = new Set(prev.map((x) => x.id));
+            return [...prev, ...d.filter((x) => !ids.has(x.id))];
+          });
+          setPageD(pd);
+        }
+        if (g.length < PAGE) setMoreG(false);
+        if (d.length < PAGE) setMoreD(false);
+      }
+      setCargando(false);
+    },
+    [settings, moreG, moreD]
+  );
+
+  const load = useCallback(async () => { await fetchPage(0, 0, true); }, [fetchPage]);
+
+  useEffect(() => { if (settings) fetchPage(0, 0, true); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.tallerId]);
+
+  const cargarMas = useCallback(() => {
+    if (cargando) return;
+    if (visibles < feedLenRef.current) { setVisibles((v) => v + PAGE); return; }
+    if (moreG || moreD) {
+      fetchPage(moreG ? pageG + 1 : pageG, moreD ? pageD + 1 : pageD, false);
+      setVisibles((v) => v + PAGE);
+    }
+  }, [cargando, visibles, moreG, moreD, pageG, pageD, fetchPage]);
+
 
   const filteredGestiones = useMemo(() => {
     if (filtro === "pedido-directo") return [];
@@ -139,8 +199,25 @@ function HistorialPage() {
     return [...a, ...b].sort((x, y) => (x.at < y.at ? 1 : -1));
   }, [filteredGestiones, filteredDirectos]);
 
+  feedLenRef.current = feed.length;
+  const feedVisible = useMemo(() => feed.slice(0, visibles), [feed, visibles]);
+  const hayMas = visibles < feed.length || moreG || moreD;
+
+  useEffect(() => { setVisibles(PAGE); }, [q, campo, filtro, fase]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hayMas) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) cargarMas();
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hayMas, cargarMas]);
+
   const hayFiltros = Boolean(q.trim()) || filtro !== "todas" || fase !== "todas" || campo !== "todo";
   const limpiar = () => { setQ(""); setCampo("todo"); setFiltro("todas"); setFase("todas"); };
+
 
   if (!settings) return null;
 
@@ -252,7 +329,7 @@ function HistorialPage() {
 
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground">
-          {feed.length} {feed.length === 1 ? "resultado" : "resultados"}
+          {feedVisible.length} de {feed.length}{hayMas ? "+" : ""} {feed.length === 1 ? "resultado" : "resultados"}
         </span>
         {hayFiltros && (
           <button
@@ -267,8 +344,8 @@ function HistorialPage() {
       {feed.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Inbox className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No hay registros que coincidan.</p>
-          {hayFiltros && (
+          <p className="text-sm text-muted-foreground">{cargando ? "Cargando…" : "No hay registros que coincidan."}</p>
+          {hayFiltros && !cargando && (
             <button onClick={limpiar} className="mt-3 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
               Limpiar filtros
             </button>
@@ -277,7 +354,7 @@ function HistorialPage() {
 
       ) : (
         <div className="space-y-2">
-          {feed.map((entry) =>
+          {feedVisible.map((entry) =>
             entry.kind === "g" ? (
               <GestionCard
                 key={"g-" + entry.item.id}
@@ -295,7 +372,19 @@ function HistorialPage() {
               />
             )
           )}
+
+          <div ref={sentinelRef} />
+          {hayMas && (
+            <button
+              onClick={cargarMas}
+              disabled={cargando}
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
+            >
+              {cargando ? "Cargando…" : "Cargar más"}
+            </button>
+          )}
         </div>
+
       )}
 
       <GestionModal gestion={open} onClose={() => setOpen(null)} onChanged={load} />
