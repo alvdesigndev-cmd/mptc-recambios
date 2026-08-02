@@ -51,6 +51,52 @@ async function unregisterMatching() {
 
 let started = false;
 
+// Scripts/estilos que la pestaña actual ya tiene cargados (rutas con hash).
+function assetsActuales(): Set<string> {
+  const urls = new Set<string>();
+  document.querySelectorAll<HTMLScriptElement>("script[src]").forEach((s) => {
+    urls.add(new URL(s.src, location.href).pathname);
+  });
+  document
+    .querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href], link[rel="modulepreload"][href]')
+    .forEach((l) => urls.add(new URL(l.href, location.href).pathname));
+  return urls;
+}
+
+// Descarga el HTML de la ruta actual (sin caché) y comprueba si referencia
+// algún asset con hash que esta pestaña NO tenga ya cargado. Si no hay ninguno
+// nuevo, el cambio es sólo del HTML/precache: no hace falta recargar y así
+// evitamos parpadeos y volver a pedir todos los datos.
+async function necesitaRecarga(): Promise<boolean> {
+  try {
+    const res = await fetch(location.href, { cache: "no-store", credentials: "same-origin" });
+    if (!res.ok) return true;
+    const html = await res.text();
+    const actuales = assetsActuales();
+    const refs = html.match(/(?:src|href)="(\/[^"]+\.(?:js|css))"/g) ?? [];
+    for (const ref of refs) {
+      const path = ref.replace(/^(?:src|href)="/, "").replace(/"$/, "");
+      // Sólo nos importan los bundles con hash: si aparece uno desconocido,
+      // el código JS/CSS ha cambiado de verdad.
+      if (!/\/assets\//.test(path)) continue;
+      if (!actuales.has(path)) return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+// Evita recargar en medio de una interacción (formularios, modales abiertos).
+function usuarioOcupado(): boolean {
+  const el = document.activeElement as HTMLElement | null;
+  if (el) {
+    const tag = el.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable) return true;
+  }
+  return false;
+}
+
 export async function registerServiceWorker() {
   if (started) return;
   started = true;
@@ -70,8 +116,17 @@ export async function registerServiceWorker() {
 
   const updateSW = registerSW({
     immediate: true,
-    onNeedRefresh() {
-      if (avisoActivo) return;
+    async onNeedRefresh() {
+      if (avisoActivo || aplicando) return;
+
+      // Si sólo cambió el HTML (mismos bundles), activamos el SW nuevo en
+      // silencio: sin aviso, sin recarga y sin refetch de datos.
+      if (!(await necesitaRecarga())) {
+        aplicando = false;
+        updateSW(false);
+        return;
+      }
+
       avisoActivo = true;
 
       const version = nuevaVersion();
@@ -110,6 +165,13 @@ export async function registerServiceWorker() {
       timer = window.setInterval(() => {
         restantes -= 1;
         if (restantes <= 0) {
+          // Si el usuario está escribiendo, esperamos: nada de recargas
+          // en medio de un formulario.
+          if (usuarioOcupado()) {
+            restantes = 3;
+            pintar();
+            return;
+          }
           aplicar();
           return;
         }
@@ -118,8 +180,14 @@ export async function registerServiceWorker() {
     },
     onRegisteredSW(_swUrl, reg) {
       if (!reg) return;
+      // Throttle: como comprobamos en focus/online/visibilidad además del
+      // intervalo, evitamos ráfagas de peticiones al SW.
+      let ultimaComprobacion = 0;
       const check = () => {
         if (navigator.onLine === false) return;
+        const ahora = Date.now();
+        if (ahora - ultimaComprobacion < 30_000) return;
+        ultimaComprobacion = ahora;
         reg.update().catch(() => {});
       };
       const timer = window.setInterval(check, 60_000);
@@ -142,3 +210,4 @@ export async function registerServiceWorker() {
     },
   });
 }
+
