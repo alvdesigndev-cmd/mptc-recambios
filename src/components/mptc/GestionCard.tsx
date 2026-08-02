@@ -1,16 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
+import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
 
 interface Props {
   g: Gestion;
   onClick: () => void;
   onDelete?: (g: Gestion) => void;
+  /** Reabrir el borrador en el flujo de nueva gestión. */
+  onResume?: (g: Gestion) => void;
+  /** Recargar el listado tras una acción rápida. */
+  onChanged?: () => void;
 }
 
-export function GestionCard({ g, onClick, onDelete }: Props) {
+export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props) {
+  const [busy, setBusy] = useState<null | "wa" | "pena">(null);
   const meta = estadoBadge(g.estado);
   const Icon =
     g.estado === "enviado" ? Send :
@@ -81,6 +89,54 @@ export function GestionCard({ g, onClick, onDelete }: Props) {
           </div>
         </div>
 
+        {/* Acciones rápidas */}
+        {(isBorrador || puedeReenviar(g) || puedePedirPena(g)) && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {isBorrador && onResume && (
+              <QuickBtn onClick={() => onResume(g)} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Reanudar borrador" />
+            )}
+            {puedeReenviar(g) && (
+              <QuickBtn
+                busy={busy === "wa"}
+                onClick={async () => {
+                  setBusy("wa");
+                  try {
+                    await reenviarPlantilla(g);
+                    toast.success("Plantilla reenviada por WhatsApp");
+                    onChanged?.();
+                  } catch {
+                    toast.error("No se pudo reenviar la plantilla");
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+                icon={<Send className="h-3.5 w-3.5" />}
+                label={g.wa_abierto ? "Reenviar plantilla" : "Enviar plantilla"}
+              />
+            )}
+            {puedePedirPena(g) && (
+              <QuickBtn
+                busy={busy === "pena"}
+                accent
+                onClick={async () => {
+                  setBusy("pena");
+                  try {
+                    await pedirAPena(g);
+                    toast.success("Pedido enviado a Grupo Peña");
+                    onChanged?.();
+                  } catch {
+                    toast.error("No se pudo enviar el pedido a Peña");
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+                icon={<Truck className="h-3.5 w-3.5" />}
+                label="Pedir a Peña"
+              />
+            )}
+          </div>
+        )}
+
       </div>
 
       {isBorrador && onDelete && (
@@ -99,5 +155,26 @@ export function GestionCard({ g, onClick, onDelete }: Props) {
         </button>
       )}
     </div>
+  );
+}
+
+function QuickBtn({
+  onClick, icon, label, busy, accent,
+}: { onClick: () => void; icon: React.ReactNode; label: string; busy?: boolean; accent?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className={
+        "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition disabled:opacity-60 " +
+        (accent
+          ? "border-accent/40 bg-accent/10 text-accent hover:bg-accent/20"
+          : "border-border-strong bg-surface-2 text-text-2 hover:bg-surface-3 hover:text-foreground")
+      }
+    >
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
+      {label}
+    </button>
   );
 }
