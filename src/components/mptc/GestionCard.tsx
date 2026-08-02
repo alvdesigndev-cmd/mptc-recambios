@@ -139,7 +139,8 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
                 {ENVIO_PDF_LABEL[envioPdf]}
               </span>
             )}
-            {false && (
+
+
 
 
             {isBorrador && onResume && (
