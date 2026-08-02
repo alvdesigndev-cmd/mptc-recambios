@@ -277,15 +277,10 @@ function GestionDetallePage() {
         { taller: settings?.tallerName, mecanico: settings?.mecanico },
         false,
       );
-      if (!res.path) {
-        toast.error("No se pudo guardar el PDF para enviarlo");
-        return;
-      }
+      if (!res.path) throw new Error("No se pudo guardar el PDF para enviarlo");
       const link = await getPresupuestoUrl(res.path, 60 * 60 * 24 * 7);
-      if (!link) {
-        toast.error("No se pudo generar el enlace del PDF");
-        return;
-      }
+      if (!link) throw new Error("No se pudo generar el enlace del PDF");
+
       const msg =
         `Hola${g.cliente_nombre ? ` ${g.cliente_nombre}` : ""}, te envío el presupuesto en PDF ` +
         `de tu ${g.vehiculo || "vehículo"}${g.matricula ? ` (${g.matricula})` : ""}` +
