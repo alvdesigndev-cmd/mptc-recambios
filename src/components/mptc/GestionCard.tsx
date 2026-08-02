@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion } from "@/lib/mptc/fases";
-import { puedeReenviar, puedePedirPena, reenviarPlantilla, pedirAPena } from "@/lib/mptc/quick-actions";
+import { puedeReenviar, puedePedirPena, reenviarPlantilla, buildMensajePena, openWhatsAppPena, registrarPedidoPena } from "@/lib/mptc/quick-actions";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
 import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
