@@ -5,6 +5,7 @@
 // "___" por el importe y se anexan acciones (confirmar/rechazar) y fotos.
 
 import { publicFotoUrls } from "./public-links";
+
 export interface MsgContext {
   cliente: string;
   vehiculo: string;
@@ -83,6 +84,6 @@ export function buildPenaMessage(opts: {
   notas: string;
   fotos?: string[];
 }): string {
-  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${opts.fotos.map((u) => `<${u}>`).join("\n")}\n` : "";
+  const fotos = opts.fotos?.length ? `\n📸 Fotos:\n${publicFotoUrls(opts.fotos).join("\n")}\n` : "";
   return `🔧 *Pedido ${opts.taller}*\n\n🚗 ${opts.vehiculo} — ${opts.matricula}\n\n📦 Piezas:\n${opts.piezas}\n${fotos}\n${opts.notas ? `📝 ${opts.notas}\n\n` : ""}Gracias 🙌`;
 }
