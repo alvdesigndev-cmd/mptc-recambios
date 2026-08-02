@@ -15,6 +15,8 @@ export interface MsgContext {
   confirmUrl: string;
   rejectUrl?: string;
   fotos?: string[];
+  /** Piezas presupuestadas en el paso 4 (una por línea). */
+  piezas?: string;
 }
 
 const noPreview = (url: string) => `<${url}>`;
@@ -30,9 +32,24 @@ function fotosBlock(c: MsgContext): string {
   return `\n\n📸 Fotos:\n${c.fotos.map(noPreview).join("\n")}`;
 }
 
+/** Resumen de piezas del paso 4, listo para el cliente. */
+export function piezasBlock(piezas?: string): string {
+  const lineas = (piezas || "")
+    .split("\n")
+    .map((l) => l.replace(/^[-•·]\s*/, "").trim())
+    .filter(Boolean);
+  if (!lineas.length) return "";
+  return `\n\n🔧 Trabajo/piezas incluidas:\n${lineas.map((l) => `• ${l}`).join("\n")}`;
+}
+
+/** Línea de precio final. */
+function precioBlock(importe: string): string {
+  return `\n\n💰 Total: *${importe || "—"} €* (IVA incluido).`;
+}
+
 /**
  * Construye el mensaje final a partir de la plantilla de la subfamilia.
- * Si no hay plantilla, genera un mensaje genérico.
+ * Siempre incluye el precio final y el resumen de piezas del paso 4.
  */
 export function buildMessage(
   c: MsgContext,
@@ -41,7 +58,9 @@ export function buildMessage(
   const template = opts?.template?.trim();
   if (template) {
     const body = template.replaceAll("___", c.importe || "___");
-    return `${body}\n\n${actions(c)}${fotosBlock(c)}`;
+    // Si la plantilla no muestra el importe, lo añadimos para no enviar presupuestos sin precio.
+    const yaTienePrecio = template.includes("___") || (!!c.importe && body.includes(c.importe));
+    return `${body}${piezasBlock(c.piezas)}${yaTienePrecio ? "" : precioBlock(c.importe)}\n\n${actions(c)}${fotosBlock(c)}`;
   }
 
   const sub = opts?.subfamiliaNombre;
@@ -50,8 +69,9 @@ export function buildMessage(
     ? `He revisado tu ${c.vehiculo} (${c.matricula}) y hay que actuar sobre *${sub}*${fam ? ` (${fam})` : ""}.`
     : `He revisado tu ${c.vehiculo} (${c.matricula}) y te paso presupuesto de la reparación.`;
 
-  return `Hola ${c.cliente} 👋\n\n${repairLine}\n\n💰 Presupuesto: *${c.importe || "—"} €* (IVA incluido).\n\n${actions(c)}${fotosBlock(c)}\n\nUn saludo,\n${c.mecanico || c.taller}`;
+  return `Hola ${c.cliente} 👋\n\n${repairLine}${piezasBlock(c.piezas)}${precioBlock(c.importe)}\n\n${actions(c)}${fotosBlock(c)}\n\nUn saludo,\n${c.mecanico || c.taller}`;
 }
+
 
 export function buildPenaMessage(opts: {
   taller: string;
