@@ -59,7 +59,7 @@ export async function signUp(input: SignUpInput) {
       : TALLER_INFO[input.role as Exclude<Role, "pena" | "admin">].name;
   const taller_id = input.tallerId && !isPena && !isAdmin ? input.tallerId : default_taller_id;
   return await supabase.auth.signUp({
-    email: input.email,
+    email: normalizeEmail(input.email),
     password: input.password,
     options: {
       emailRedirectTo: redirect,
@@ -75,9 +75,20 @@ export async function signUp(input: SignUpInput) {
   });
 }
 
-export async function signIn(email: string, password: string) {
-  return await supabase.auth.signInWithPassword({ email, password });
+// Los emails no admiten "ñ" ni acentos: normalizamos lo que escribe el usuario
+// (p. ej. grupopeñamptc@gmail.com -> grupopenamptc@gmail.com).
+export function normalizeEmail(email: string) {
+  return email
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
+
+export async function signIn(email: string, password: string) {
+  return await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+}
+
 
 export async function signOut() {
   clearSettings();

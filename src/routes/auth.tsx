@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
+import { signIn, signUp, syncProfileToSettings, normalizeEmail } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
@@ -201,7 +201,7 @@ function AuthPage() {
         const redirectTo = typeof window !== "undefined"
           ? `${window.location.origin}/reset-password`
           : undefined;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), { redirectTo });
         if (error) throw error;
         setInfo("Te hemos enviado un correo con un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).");
         return;
