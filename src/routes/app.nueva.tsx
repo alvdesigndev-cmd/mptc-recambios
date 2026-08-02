@@ -25,6 +25,7 @@ import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { buildMessage, buildPenaMessage } from "@/lib/mptc/messages";
 import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
+import { logEvento } from "@/lib/mptc/eventos";
 import { ocrMatricula } from "@/lib/mptc/ocr.functions";
 import { lookupPlate } from "@/lib/mptc/matriculas.functions";
 import { mapApiData } from "@/lib/mptc/plate-map";
