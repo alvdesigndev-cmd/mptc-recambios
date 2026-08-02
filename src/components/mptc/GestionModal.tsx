@@ -812,6 +812,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               </button>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
             <div className="space-y-3 text-sm">
               <div>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
