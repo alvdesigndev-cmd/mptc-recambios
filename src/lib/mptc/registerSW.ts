@@ -10,6 +10,7 @@ declare const __APP_VERSION__: string;
 
 const SW_URL = "/sw.js";
 const AUTO_RELOAD_SECONDS = 8;
+const RETRY_LATER_MS = 5 * 60 * 1000;
 
 function nuevaVersion(): string {
   try {
@@ -134,12 +135,6 @@ export async function registerServiceWorker() {
       let restantes = AUTO_RELOAD_SECONDS;
       let timer = 0;
 
-      const cerrar = () => {
-        window.clearInterval(timer);
-        avisoActivo = false;
-        toast.dismiss(toastId);
-      };
-
       const aplicar = () => {
         window.clearInterval(timer);
         aplicando = true;
@@ -147,36 +142,56 @@ export async function registerServiceWorker() {
         updateSW(true);
       };
 
+      // "Reintentar más tarde": cerramos el aviso y lo volvemos a mostrar
+      // pasados unos minutos, sin recargar nada mientras tanto.
+      const masTarde = () => {
+        window.clearInterval(timer);
+        avisoActivo = false;
+        toast.dismiss(toastId);
+        window.setTimeout(() => {
+          if (aplicando || avisoActivo) return;
+          mostrar();
+        }, RETRY_LATER_MS);
+      };
+
       const pintar = () => {
         toast(
           `Actualización lista${version ? ` · versión ${version}` : ""}`,
           {
             id: toastId,
-            description: `Se recargará en ${restantes} s para aplicar los cambios.`,
+            description: `Se recargará en ${restantes} s. Puedes recargar ahora o reintentar más tarde.`,
             duration: Infinity,
-            action: { label: "Recargar ya", onClick: aplicar },
-            cancel: { label: "Cancelar", onClick: cerrar },
-            onDismiss: cerrar,
+            className: "sm:max-w-[420px]",
+            action: { label: "Recargar ahora", onClick: aplicar },
+            cancel: { label: "Reintentar más tarde", onClick: masTarde },
+            onDismiss: masTarde,
           },
         );
       };
 
-      pintar();
-      timer = window.setInterval(() => {
-        restantes -= 1;
-        if (restantes <= 0) {
-          // Si el usuario está escribiendo, esperamos: nada de recargas
-          // en medio de un formulario.
-          if (usuarioOcupado()) {
-            restantes = 3;
-            pintar();
+      function mostrar() {
+        avisoActivo = true;
+        restantes = AUTO_RELOAD_SECONDS;
+        pintar();
+        timer = window.setInterval(() => {
+          restantes -= 1;
+          if (restantes <= 0) {
+            // Si el usuario está escribiendo, esperamos: nada de recargas
+            // en medio de un formulario.
+            if (usuarioOcupado()) {
+              restantes = 3;
+              pintar();
+              return;
+            }
+            aplicar();
             return;
           }
-          aplicar();
-          return;
-        }
-        pintar();
-      }, 1000);
+          pintar();
+        }, 1000);
+      }
+
+      mostrar();
+
     },
     onRegisteredSW(_swUrl, reg) {
       if (!reg) return;
