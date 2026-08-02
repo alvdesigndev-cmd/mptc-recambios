@@ -5,7 +5,7 @@ import { signIn, signUp, syncProfileToSettings, normalizeEmail } from "@/lib/mpt
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
-import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
+
 import {
   clearSavedCredentials,
   readSavedCredentials,
