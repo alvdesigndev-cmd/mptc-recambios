@@ -197,8 +197,25 @@ function HistorialPage() {
     return [...a, ...b].sort((x, y) => (x.at < y.at ? 1 : -1));
   }, [filteredGestiones, filteredDirectos]);
 
+  feedLenRef.current = feed.length;
+  const feedVisible = useMemo(() => feed.slice(0, visibles), [feed, visibles]);
+  const hayMas = visibles < feed.length || moreG || moreD;
+
+  useEffect(() => { setVisibles(PAGE); }, [q, campo, filtro, fase]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hayMas) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) cargarMas();
+    }, { rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hayMas, cargarMas]);
+
   const hayFiltros = Boolean(q.trim()) || filtro !== "todas" || fase !== "todas" || campo !== "todo";
   const limpiar = () => { setQ(""); setCampo("todo"); setFiltro("todas"); setFase("todas"); };
+
 
   if (!settings) return null;
 
