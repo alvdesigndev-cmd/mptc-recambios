@@ -203,6 +203,32 @@ function HistorialPage() {
   const feedVisible = useMemo(() => feed.slice(0, visibles), [feed, visibles]);
   const hayMas = visibles < feed.length || moreG || moreD;
 
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [montado, setMontado] = useState(false);
+  useEffect(() => { setMontado(true); }, []);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useEffect(() => {
+    const medirOffset = () => setScrollMargin(listRef.current?.offsetTop ?? 0);
+    medirOffset();
+    window.addEventListener("resize", medirOffset);
+    return () => window.removeEventListener("resize", medirOffset);
+  }, [montado, feedVisible.length]);
+
+  const virtualizer = useWindowVirtualizer({
+    count: montado ? feedVisible.length : 0,
+    estimateSize: () => 168,
+    overscan: 6,
+    scrollMargin,
+    getItemKey: (index) => {
+      const e = feedVisible[index];
+      return e ? e.kind + "-" + e.item.id : index;
+    },
+  });
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize() - scrollMargin > 0 ? virtualizer.getTotalSize() - scrollMargin : undefined;
+  const medir = virtualizer.measureElement;
+
+
   useEffect(() => { setVisibles(PAGE); }, [q, campo, filtro, fase]);
 
   useEffect(() => {
