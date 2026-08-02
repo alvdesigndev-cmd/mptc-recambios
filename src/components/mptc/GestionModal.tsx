@@ -77,6 +77,14 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
     return () => { alive = false; };
   }, [gestion?.id, gestion?.fotos]);
 
+  // Estado del último envío del PDF, para poder reintentar sin recargar.
+  useEffect(() => {
+    let alive = true;
+    if (!gestion?.id) { setEnvioPdf("sin-enviar"); return; }
+    fetchEstadoEnvioPdf(gestion.id).then((st) => { if (alive) setEnvioPdf(st); });
+    return () => { alive = false; };
+  }, [gestion?.id]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
