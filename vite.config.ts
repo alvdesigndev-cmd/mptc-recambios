@@ -65,6 +65,7 @@ export default defineConfig({
         },
 
         manifest: false, // usamos el manifest.webmanifest ya presente en public/
+        workbox: undefined as never, // placeholder eliminado
       }),
     ],
   },
