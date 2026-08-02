@@ -15,7 +15,7 @@ import { buildMessage } from "@/lib/mptc/messages";
 import { useFamilias } from "@/lib/mptc/useFamilias";
 import { findFamilyBySlug, findSubfamilyBySlug } from "@/lib/mptc/families";
 import { generarYGuardarPresupuesto, getPresupuestoUrl } from "@/lib/mptc/presupuesto-storage";
-import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
+import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, estadoEnvioPdf, estadoEventoPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type GestionEvento } from "@/lib/mptc/eventos";
 
 
 
@@ -277,15 +277,10 @@ function GestionDetallePage() {
         { taller: settings?.tallerName, mecanico: settings?.mecanico },
         false,
       );
-      if (!res.path) {
-        toast.error("No se pudo guardar el PDF para enviarlo");
-        return;
-      }
+      if (!res.path) throw new Error("No se pudo guardar el PDF para enviarlo");
       const link = await getPresupuestoUrl(res.path, 60 * 60 * 24 * 7);
-      if (!link) {
-        toast.error("No se pudo generar el enlace del PDF");
-        return;
-      }
+      if (!link) throw new Error("No se pudo generar el enlace del PDF");
+
       const msg =
         `Hola${g.cliente_nombre ? ` ${g.cliente_nombre}` : ""}, te envío el presupuesto en PDF ` +
         `de tu ${g.vehiculo || "vehículo"}${g.matricula ? ` (${g.matricula})` : ""}` +
@@ -298,18 +293,38 @@ function GestionDetallePage() {
         tallerId: g.taller_id,
         tipo: "presupuesto_enviado",
         actor: settings?.mecanico || settings?.tallerName || "taller",
-        detalle: `Presupuesto PDF (${res.filename}) enviado por WhatsApp a ${tel}`,
-        metadata: { path: res.path, filename: res.filename, importe: g.importe, telefono: tel },
+        detalle: win
+          ? `Presupuesto PDF (${res.filename}) enviado por WhatsApp a ${tel}`
+          : `Presupuesto PDF (${res.filename}) preparado para ${tel}: WhatsApp no se pudo abrir automáticamente`,
+        metadata: {
+          path: res.path,
+          filename: res.filename,
+          importe: g.importe,
+          telefono: tel,
+          estado: win ? "enviado" : "pendiente",
+        },
       });
-      toast.success("Presupuesto PDF enviado por WhatsApp");
+      if (win) toast.success("Presupuesto PDF enviado por WhatsApp");
+      else toast.warning("WhatsApp no se abrió: envío pendiente, puedes reintentarlo");
       await load();
       if (!win) window.location.href = url;
     } catch (e: any) {
-      toast.error("No se pudo enviar el PDF: " + (e?.message || "error"));
+      const motivo = e?.message || "error";
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "presupuesto_envio_error",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `No se pudo enviar el presupuesto PDF a ${tel}: ${motivo}`,
+        metadata: { telefono: tel, importe: g.importe, error: motivo, estado: "error" },
+      });
+      toast.error("No se pudo enviar el PDF: " + motivo);
+      await load();
     } finally {
       setEnviandoPdf(false);
     }
   };
+
 
   const reabrirPdf = async (path: string) => {
     const url = await getPresupuestoUrl(path);
@@ -319,6 +334,8 @@ function GestionDetallePage() {
     }
     window.open(url, "_blank");
   };
+
+  const envioPdf = estadoEnvioPdf(eventos);
 
   const piezasList = (g.piezas || "")
     .split("\n")
@@ -575,8 +592,11 @@ function GestionDetallePage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
               >
                 {enviandoPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-                Enviar PDF por WhatsApp
+                {envioPdf === "error" || envioPdf === "pendiente" ? "Reintentar envío del PDF" : "Enviar PDF por WhatsApp"}
               </button>
+              <span className={`inline-flex items-center gap-1 self-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${ENVIO_PDF_CLASS[envioPdf]}`}>
+                {ENVIO_PDF_LABEL[envioPdf]}
+              </span>
             </div>
           </>
         )}
@@ -675,6 +695,22 @@ function GestionDetallePage() {
                       <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
                         {String(e.metadata["importe"])} €
                       </span>
+                    )}
+                    {estadoEventoPdf(e) && (
+                      <span className={`rounded-full px-2 py-0.5 font-semibold ${ENVIO_PDF_CLASS[estadoEventoPdf(e)!]}`}>
+                        {ENVIO_PDF_LABEL[estadoEventoPdf(e)!]}
+                      </span>
+                    )}
+                    {(estadoEventoPdf(e) === "error" || estadoEventoPdf(e) === "pendiente") && (
+                      <button
+                        type="button"
+                        onClick={enviarPdfWhatsApp}
+                        disabled={enviandoPdf || !g.cliente_telefono}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary disabled:opacity-50"
+                      >
+                        {enviandoPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        Reintentar envío
+                      </button>
                     )}
                     {typeof e.metadata?.["path"] === "string" && e.metadata["path"] && (
                       <button
