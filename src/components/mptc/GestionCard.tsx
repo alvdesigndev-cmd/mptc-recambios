@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw } from "lucide-react";
+import { Clock, Send, Check, X as XIcon, CheckCheck, Trash2, PlayCircle, Truck, Loader2, FileDown, RefreshCw, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { estadoBadge, type Gestion } from "@/lib/mptc/types";
