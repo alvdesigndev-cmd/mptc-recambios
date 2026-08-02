@@ -172,8 +172,9 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
                 onClick={async () => {
                   setBusy("pena");
                   try {
-                    await pedirAPena(g);
-                    toast.success("Pedido enviado a Grupo Peña");
+                    const estado = await pedirAPena(g);
+                    if (estado === "enviado") toast.success("Pedido enviado a Grupo Peña por WhatsApp");
+                    else toast.warning("Pedido guardado. Abriendo WhatsApp de Grupo Peña…");
                     onChanged?.();
                   } catch {
                     toast.error("No se pudo enviar el pedido a Peña");
