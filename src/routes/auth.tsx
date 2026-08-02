@@ -209,7 +209,7 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        if (remember) saveRemembered(email, password, loginProfile); else clearRemembered();
+        if (remember) await saveRemembered(email, password, loginProfile); else clearRemembered();
         const p = await syncProfileToSettings();
         const role = p?.role;
         const isTaller = !!role && role !== "admin" && role !== "pena";
