@@ -56,6 +56,15 @@ function GestionDetallePage() {
   const [eventos, setEventos] = useState<GestionEvento[]>([]);
   const [enviandoWA, setEnviandoWA] = useState(false);
   const [enviandoPdf, setEnviandoPdf] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+
+  const { data: FAMILIES_DATA = [] } = useFamilias();
+  const fam = useMemo(() => findFamilyBySlug(FAMILIES_DATA, g?.categoria ?? null), [FAMILIES_DATA, g?.categoria]);
+  const sub = useMemo(
+    () => findSubfamilyBySlug(FAMILIES_DATA, g?.categoria ?? null, g?.subfamilia ?? null),
+    [FAMILIES_DATA, g?.categoria, g?.subfamilia],
+  );
+
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("gestiones").select("*").eq("id", id).maybeSingle();
