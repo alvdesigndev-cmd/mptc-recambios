@@ -13,6 +13,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
 import { generarYGuardarPresupuesto } from "@/lib/mptc/presupuesto-storage";
 import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
+import { fetchEstadoEnvioPdf, ENVIO_PDF_LABEL, ENVIO_PDF_CLASS, type EstadoEnvioPdf } from "@/lib/mptc/eventos";
 
 interface Props {
   gestion: Gestion | null;
