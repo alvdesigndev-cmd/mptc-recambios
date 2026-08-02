@@ -170,19 +170,7 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
               <QuickBtn
                 busy={busy === "pena"}
                 accent
-                onClick={async () => {
-                  setBusy("pena");
-                  try {
-                    const estado = await pedirAPena(g);
-                    if (estado === "enviado") toast.success("Pedido enviado a Grupo Peña por WhatsApp");
-                    else toast.warning("Pedido guardado. Abriendo WhatsApp de Grupo Peña…");
-                    onChanged?.();
-                  } catch {
-                    toast.error("No se pudo enviar el pedido a Peña");
-                  } finally {
-                    setBusy(null);
-                  }
-                }}
+                onClick={() => setShowConfirmPena(true)}
                 icon={<Truck className="h-3.5 w-3.5" />}
                 label="Pedir a Peña"
               />
@@ -190,6 +178,27 @@ export function GestionCard({ g, onClick, onDelete, onResume, onChanged }: Props
           </div>
         )}
 
+        {showConfirmPena && (
+          <ConfirmPenaModal
+            mensaje={buildMensajePena(g)}
+            onCancel={() => setShowConfirmPena(false)}
+            onConfirm={() => {
+              setShowConfirmPena(false);
+              setBusy("pena");
+              const abierto = openWhatsAppPena(g);
+              registrarPedidoPena(g, { abierto })
+                .then(() => {
+                  if (abierto) toast.success("Pedido enviado a Grupo Peña por WhatsApp");
+                  else toast.warning("Pedido guardado. Abriendo WhatsApp de Grupo Peña…");
+                  onChanged?.();
+                })
+                .catch(() => {
+                  toast.error("No se pudo registrar el pedido a Peña");
+                })
+                .finally(() => setBusy(null));
+            }}
+          />
+        )}
       </div>
 
       {isBorrador && onDelete && (
