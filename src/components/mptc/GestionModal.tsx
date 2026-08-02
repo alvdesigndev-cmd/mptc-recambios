@@ -794,8 +794,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
       {confirmPedido && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
-            <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+            <div className="shrink-0 border-b border-border px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4 flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
                 <p className="text-[11px] text-muted-foreground">
