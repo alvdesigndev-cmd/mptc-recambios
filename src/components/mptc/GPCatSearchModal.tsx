@@ -34,18 +34,40 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
   );
 
 
-  const run = async (opts?: { query?: string; categoria?: string }) => {
+  const run = async (opts?: { query?: string; categoria?: string; forzar?: boolean }) => {
     const q = opts?.query ?? query;
     const cat = opts?.categoria ?? categoria;
-    setLoading(true);
-    try {
-      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
-      setItems(r.articulos);
-      setCriterio(r.criterio ?? null);
+    const claveCache = { query: q, categoria: cat || undefined, marca, modelo, motor };
+
+    const aplicar = (articulos: GpaArticulo[], crit: GpaCriterio | null) => {
+      setItems(articulos);
+      setCriterio(crit);
       setSel({});
       setDispo("todas");
       setMarcasSel([]);
       setOrden("relevancia");
+    };
+
+    if (!opts?.forzar) {
+      const cacheado = gpaCacheGet(claveCache);
+      if (cacheado) {
+        aplicar(cacheado.articulos, cacheado.criterio);
+        setDesdeCache(true);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setDesdeCache(false);
+    setLoading(true);
+    try {
+      const r = await buscar({ data: { query: q, marca, modelo, motor, categoria: cat || undefined } });
+      aplicar(r.articulos, r.criterio ?? null);
+      gpaCacheSet(claveCache, {
+        articulos: r.articulos,
+        criterio: r.criterio ?? null,
+        mock: Boolean((r as { mock?: boolean }).mock),
+      });
 
       if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
     } catch {
@@ -54,6 +76,7 @@ export function GPCatSearchModal({ open, onClose, marca, modelo, motor, averia, 
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (!open) return;
