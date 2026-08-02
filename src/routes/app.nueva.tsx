@@ -500,7 +500,20 @@ function NuevaPage() {
   ]);
 
 
+  const [previewOpen, setPreviewOpen] = useState(true);
+
+  // Resumen de piezas calculado en el paso 4.
+  const resumenPiezas = useMemo(
+    () =>
+      piezas
+        .split("\n")
+        .map((l) => l.replace(/^[-•·]\s*/, "").trim())
+        .filter(Boolean),
+    [piezas],
+  );
+
   const stepRef = useRef<HTMLDivElement | null>(null);
+
 
   // Foco automático al entrar/cambiar de paso: primer campo enfocable visible.
   useEffect(() => {
