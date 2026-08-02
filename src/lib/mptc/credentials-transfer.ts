@@ -4,10 +4,16 @@
 // El fichero exportado NUNCA contiene la contraseña en claro: se cifra con
 // AES-GCM usando una clave derivada (PBKDF2-SHA256, 200k iteraciones) de la
 // frase de paso que elige el usuario en el momento de exportar.
+//
+// En el propio dispositivo la contraseña se guarda también cifrada (AES-GCM con
+// la clave no exportable de `device-crypto`) y se descifra al abrir la app.
+
+import { decryptForDevice, encryptForDevice } from "./device-crypto";
 
 export const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
 export const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
 export const REMEMBER_PROFILE_KEY = "mptc_remember_profile_v1";
+
 
 export type LoginProfile = "taller" | "admin" | "pena";
 
@@ -65,33 +71,56 @@ async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKe
   );
 }
 
-/** Lee las credenciales guardadas en este dispositivo (o null si no hay). */
-export function readSavedCredentials(): SavedCredentials | null {
+/**
+ * Lee y descifra las credenciales guardadas en este dispositivo (o null si no
+ * hay). Si venían del formato antiguo (base64), se reescriben cifradas.
+ */
+export async function readSavedCredentials(): Promise<SavedCredentials | null> {
   if (typeof window === "undefined") return null;
   try {
     const email = window.localStorage.getItem(REMEMBER_EMAIL_KEY);
     const passEnc = window.localStorage.getItem(REMEMBER_PASS_KEY);
     const profile = window.localStorage.getItem(REMEMBER_PROFILE_KEY);
     if (!email || !passEnc) return null;
-    const password = decodeURIComponent(escape(atob(passEnc)));
+    const password = await decryptForDevice(passEnc);
     if (!password) return null;
-    return { email, password, profile: isLoginProfile(profile) ? profile : "taller" };
+    const creds: SavedCredentials = {
+      email,
+      password,
+      profile: isLoginProfile(profile) ? profile : "taller",
+    };
+    // Migración transparente del formato legacy al cifrado del dispositivo.
+    if (!passEnc.startsWith("v2:")) await writeSavedCredentials(creds);
+    return creds;
   } catch {
     return null;
   }
 }
 
-/** Guarda credenciales importadas en este dispositivo. */
-export function writeSavedCredentials(c: SavedCredentials) {
+/** Cifra y guarda las credenciales en este dispositivo. */
+export async function writeSavedCredentials(c: SavedCredentials) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(REMEMBER_EMAIL_KEY, c.email);
-    window.localStorage.setItem(REMEMBER_PASS_KEY, btoa(unescape(encodeURIComponent(c.password))));
+    window.localStorage.setItem(REMEMBER_PASS_KEY, await encryptForDevice(c.password));
     window.localStorage.setItem(REMEMBER_PROFILE_KEY, c.profile);
   } catch {
     /* noop */
   }
 }
+
+/** Borra las credenciales guardadas en este dispositivo. */
+export function clearSavedCredentials() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(REMEMBER_EMAIL_KEY);
+    window.localStorage.removeItem(REMEMBER_PASS_KEY);
+    window.localStorage.removeItem(REMEMBER_PROFILE_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
 
 /** Cifra las credenciales y devuelve el contenido del fichero a descargar. */
 export async function exportCredentials(c: SavedCredentials, passphrase: string): Promise<string> {
