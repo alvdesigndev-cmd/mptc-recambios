@@ -250,13 +250,31 @@ function HistorialPage() {
         </div>
       </div>
 
-
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {feed.length} {feed.length === 1 ? "resultado" : "resultados"}
+        </span>
+        {hayFiltros && (
+          <button
+            onClick={limpiar}
+            className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3" /> Limpiar filtros
+          </button>
+        )}
+      </div>
 
       {feed.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Inbox className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No hay registros que coincidan.</p>
+          {hayFiltros && (
+            <button onClick={limpiar} className="mt-3 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+              Limpiar filtros
+            </button>
+          )}
         </div>
+
       ) : (
         <div className="space-y-2">
           {feed.map((entry) =>
