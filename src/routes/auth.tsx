@@ -226,15 +226,15 @@ function AuthPage() {
       if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        if (remember) saveRemembered(email, password); else clearRemembered();
+        if (remember) saveRemembered(email, password, loginProfile); else clearRemembered();
         const p = await syncProfileToSettings();
         const role = p?.role;
         const isTaller = !!role && role !== "admin" && role !== "pena";
         const matches =
-          loginProfile === "auto" ||
           (loginProfile === "admin" && role === "admin") ||
           (loginProfile === "pena" && role === "pena") ||
           (loginProfile === "taller" && isTaller);
+
         if (!matches) {
           await supabase.auth.signOut();
           const nombre = role === "admin" ? "Administrador" : role === "pena" ? "Grupo Peña" : "Taller";
