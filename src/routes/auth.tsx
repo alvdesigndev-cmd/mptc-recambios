@@ -5,6 +5,7 @@ import { signIn, signUp, syncProfileToSettings } from "@/lib/mptc/auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
+import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
 
 // Guardamos email y contraseña (ofuscada en base64) cuando el usuario marca
 // "Recordar mi usuario" para que en el próximo acceso el formulario ya venga
@@ -370,6 +371,20 @@ function AuthPage() {
             </p>
           </div>
         )}
+
+        {mode === "login" && (
+          <CredentialsTransfer
+            onImported={(c) => {
+              setEmail(c.email);
+              setPassword(c.password);
+              setLoginProfile(c.profile);
+              setRemember(true);
+              setError(null);
+              setInfo("Credenciales importadas. Pulsa “Entrar” para acceder.");
+            }}
+          />
+        )}
+
 
         {autoLogin && (
           <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-muted-foreground">
