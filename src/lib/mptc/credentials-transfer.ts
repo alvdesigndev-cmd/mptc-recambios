@@ -4,10 +4,16 @@
 // El fichero exportado NUNCA contiene la contraseña en claro: se cifra con
 // AES-GCM usando una clave derivada (PBKDF2-SHA256, 200k iteraciones) de la
 // frase de paso que elige el usuario en el momento de exportar.
+//
+// En el propio dispositivo la contraseña se guarda también cifrada (AES-GCM con
+// la clave no exportable de `device-crypto`) y se descifra al abrir la app.
+
+import { decryptForDevice, encryptForDevice } from "./device-crypto";
 
 export const REMEMBER_EMAIL_KEY = "mptc_remember_email_v1";
 export const REMEMBER_PASS_KEY = "mptc_remember_pass_v1";
 export const REMEMBER_PROFILE_KEY = "mptc_remember_profile_v1";
+
 
 export type LoginProfile = "taller" | "admin" | "pena";
 
