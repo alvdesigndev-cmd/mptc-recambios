@@ -12,6 +12,7 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
 import { generarYGuardarPresupuesto } from "@/lib/mptc/presupuesto-storage";
+import { enviarPresupuestoPdfWhatsApp, puedeEnviarPdf } from "@/lib/mptc/presupuesto-whatsapp";
 
 interface Props {
   gestion: Gestion | null;
