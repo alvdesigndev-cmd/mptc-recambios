@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Search, Inbox, Truck, X, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -203,6 +204,32 @@ function HistorialPage() {
   const feedVisible = useMemo(() => feed.slice(0, visibles), [feed, visibles]);
   const hayMas = visibles < feed.length || moreG || moreD;
 
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [montado, setMontado] = useState(false);
+  useEffect(() => { setMontado(true); }, []);
+  const [scrollMargin, setScrollMargin] = useState(0);
+  useEffect(() => {
+    const medirOffset = () => setScrollMargin(listRef.current?.offsetTop ?? 0);
+    medirOffset();
+    window.addEventListener("resize", medirOffset);
+    return () => window.removeEventListener("resize", medirOffset);
+  }, [montado, feedVisible.length]);
+
+  const virtualizer = useWindowVirtualizer({
+    count: montado ? feedVisible.length : 0,
+    estimateSize: () => 168,
+    overscan: 6,
+    scrollMargin,
+    getItemKey: (index) => {
+      const e = feedVisible[index];
+      return e ? e.kind + "-" + e.item.id : index;
+    },
+  });
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize() - scrollMargin > 0 ? virtualizer.getTotalSize() - scrollMargin : undefined;
+  const medir = virtualizer.measureElement;
+
+
   useEffect(() => { setVisibles(PAGE); }, [q, campo, filtro, fase]);
 
   useEffect(() => {
@@ -353,37 +380,51 @@ function HistorialPage() {
         </div>
 
       ) : (
-        <div className="space-y-2">
-          {feedVisible.map((entry) =>
-            entry.kind === "g" ? (
-              <GestionCard
-                key={"g-" + entry.item.id}
-                g={entry.item}
-                onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)}
-                onResume={(x) => navigate({ to: "/app/nueva", search: { resume: x.id } })}
-                onChanged={load}
-                onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
-              />
-            ) : (
-              <PedidoDirectoCard
-                key={"d-" + entry.item.id}
-                p={entry.item}
-                onClick={() => setOpenDirecto(entry.item)}
-              />
-            )
-          )}
+        <div>
+          <div ref={listRef} className="relative" style={{ height: montado ? totalSize : undefined }}>
+            {(montado ? virtualItems : null)
+              ? virtualItems.map((v) => {
+                  const entry = feedVisible[v.index];
+                  if (!entry) return null;
+                  return (
+                    <div
+                      key={entry.kind + "-" + entry.item.id}
+                      data-index={v.index}
+                      ref={medir}
+                      className="absolute left-0 top-0 w-full"
+                      style={{ transform: `translateY(${v.start - scrollMargin}px)` }}
+                    >
+                      <div className="pb-2">
+                        {entry.kind === "g" ? (
+                          <GestionCard
+                            g={entry.item}
+                            onClick={() => entry.item.estado === "borrador" ? navigate({ to: "/app/nueva", search: { resume: entry.item.id } }) : setOpen(entry.item)}
+                            onResume={(x) => navigate({ to: "/app/nueva", search: { resume: x.id } })}
+                            onChanged={load}
+                            onDelete={async (x) => { await supabase.from("gestiones").delete().eq("id", x.id); load(); }}
+                          />
+                        ) : (
+                          <PedidoDirectoCard p={entry.item} onClick={() => setOpenDirecto(entry.item)} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
+          </div>
 
           <div ref={sentinelRef} />
           {hayMas && (
             <button
               onClick={cargarMas}
               disabled={cargando}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
+              className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
               {cargando ? "Cargando…" : "Cargar más"}
             </button>
           )}
         </div>
+
 
       )}
 
