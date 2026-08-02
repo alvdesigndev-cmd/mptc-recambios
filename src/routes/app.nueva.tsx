@@ -485,6 +485,7 @@ function NuevaPage() {
           confirmUrl,
           rejectUrl,
           fotos: fotosUrlsOk,
+          piezas,
         },
         {
           template: sub?.mensaje,
@@ -494,9 +495,10 @@ function NuevaPage() {
       ),
     );
   }, [
-    nombre, vehiculo, matricula, km, sub, fam, importe,
+    nombre, vehiculo, matricula, km, sub, fam, importe, piezas,
     settings, confirmUrl, rejectUrl, fotosUrlsOk, mensajeTouched,
   ]);
+
 
   const stepRef = useRef<HTMLDivElement | null>(null);
 
