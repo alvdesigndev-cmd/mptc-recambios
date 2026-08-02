@@ -156,6 +156,62 @@ function GestionDetallePage() {
     }
   };
 
+  // Reenvía la plantilla al cliente REGENERÁNDOLA con el precio final y las
+  // piezas actuales del paso 4 (por si se editaron después del primer envío).
+  const reenviarPlantilla = async () => {
+    if (!g) return;
+    const tel = (g.cliente_telefono || "").trim();
+    if (!tel) { toast.error("Falta el teléfono del cliente"); return; }
+    if (!g.importe) { toast.error("Falta el importe del paso 4"); return; }
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const token = g.confirm_token || "";
+    const msg = buildMessage(
+      {
+        cliente: g.cliente_nombre || "",
+        vehiculo: g.vehiculo || "",
+        matricula: g.matricula || "",
+        km: g.km ? String(g.km) : "",
+        importe: String(g.importe),
+        taller: settings?.tallerName || "",
+        mecanico: settings?.mecanico || "",
+        confirmUrl: token ? `${origin}/confirmar/${token}` : "",
+        rejectUrl: token ? `${origin}/confirmar/${token}?action=rechazar` : undefined,
+        fotos,
+        piezas: g.piezas || "",
+      },
+      { template: sub?.mensaje, subfamiliaNombre: sub?.name, familiaNombre: fam?.name },
+    );
+
+    const url = buildWAUrl(tel, msg);
+    const win = window.open(url, "_blank");
+    setReenviando(true);
+    try {
+      const nuevoEstado = g.estado === "en-curso" || g.estado === "borrador" ? "enviado" : g.estado;
+      await supabase
+        .from("gestiones")
+        .update({ mensaje: msg, wa_abierto: true, estado: nuevoEstado })
+        .eq("id", g.id);
+      await logEvento({
+        gestionId: g.id,
+        tallerId: g.taller_id,
+        tipo: "plantilla_reenviada",
+        actor: settings?.mecanico || settings?.tallerName || "taller",
+        detalle: `Plantilla reenviada a ${tel} con el precio final ${g.importe} €`,
+        metadata: { importe: g.importe, piezas: g.piezas, telefono: tel, regenerada: true },
+      });
+      toast.success("Plantilla reenviada con el precio final");
+      load();
+    } catch (e: any) {
+      toast.error("No se pudo registrar el reenvío: " + (e?.message || "error"));
+    } finally {
+      setReenviando(false);
+      if (!win) window.location.href = url;
+    }
+  };
+
+
+
   useEffect(() => { if (settings) load(); }, [settings, load]);
 
   useEffect(() => {
