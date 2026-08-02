@@ -509,3 +509,215 @@ export function detectarCriterio(query: string, categoria?: string): GpaCriterio
   }
   return { tipo: "texto", termino: raw, categorias: [] };
 }
+
+// ─────────────────────────────────────────────────────────────
+// Llamada REAL a GPCat (se activa en cuanto existan credenciales)
+// ─────────────────────────────────────────────────────────────
+
+/** Término de búsqueda que se envía a GPCat para cada categoría de avería. */
+const CATEGORIA_TERMINO_API: Record<string, string> = {
+  pastillas: "pastillas de freno",
+  discos: "disco de freno",
+  kitfreno: "kit de freno",
+  filtros: "filtro",
+  aceite: "aceite motor",
+  bateria: "bateria",
+  embrague: "kit de embrague",
+  amortiguadores: "amortiguador",
+  distribucion: "kit distribucion",
+  bujias: "bujia",
+  radiador: "radiador refrigeracion",
+  escape: "escape catalizador",
+  suspension: "rotula suspension",
+  direccion: "rotula direccion",
+  neumaticos: "neumatico",
+};
+
+type Raw = Record<string, unknown>;
+
+function pick(o: Raw, ...keys: string[]): unknown {
+  for (const k of keys) {
+    for (const real of Object.keys(o)) {
+      if (real.toLowerCase() === k.toLowerCase() && o[real] != null && o[real] !== "") return o[real];
+    }
+  }
+  return undefined;
+}
+
+function toNumber(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/\s/g, "").replace(/\.(?=\d{3}\b)/g, "").replace(",", "."));
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
+function textoStock(v: unknown, plazoRaw: unknown): { stock: string; plazo: string } {
+  const plazo = plazoRaw != null && plazoRaw !== "" ? String(plazoRaw) : "";
+  if (typeof v === "number") {
+    if (v > 0) return { stock: `Disponible (${v})`, plazo: plazo || "24h" };
+    return { stock: "Bajo pedido", plazo: plazo || "48h" };
+  }
+  if (typeof v === "boolean") {
+    return v ? { stock: "Disponible", plazo: plazo || "24h" } : { stock: "Bajo pedido", plazo: plazo || "48h" };
+  }
+  const s = v != null ? String(v).trim() : "";
+  if (!s) return { stock: "Consultar", plazo: plazo || "" };
+  const n = Number(s.replace(",", "."));
+  if (Number.isFinite(n)) return textoStock(n, plazo);
+  return { stock: s, plazo };
+}
+
+/** Convierte un artículo tal cual lo devuelve GPCat al modelo interno de la app. */
+export function normalizarArticulo(raw: Raw): GpaArticulo | null {
+  const referencia = pick(raw, "referencia", "ref", "codigo", "codigoArticulo", "articulo", "idArticulo");
+  const descripcion = pick(raw, "descripcion", "denominacion", "nombre", "texto", "descripcionArticulo");
+  if (!referencia && !descripcion) return null;
+  const precio = toNumber(
+    pick(raw, "precioNeto", "precioventa", "precioVenta", "pvp", "precio", "importe", "precioTarifa"),
+  );
+  const { stock, plazo } = textoStock(
+    pick(raw, "stock", "disponibilidad", "existencias", "unidades", "cantidadDisponible"),
+    pick(raw, "plazo", "plazoEntrega", "entrega", "diasEntrega"),
+  );
+  return {
+    referencia: String(referencia ?? "").trim() || "S/REF",
+    descripcion: String(descripcion ?? "").trim() || "Artículo",
+    marca: String(pick(raw, "marca", "fabricante", "brand", "proveedor") ?? "").trim() || "—",
+    precio: Number(precio.toFixed(2)),
+    stock,
+    plazo,
+    imagen: (pick(raw, "imagen", "urlImagen", "foto", "image") as string | undefined) ?? null,
+  };
+}
+
+/** Extrae el array de artículos de cualquiera de las formas de respuesta de GPCat. */
+export function extraerArticulos(json: unknown): GpaArticulo[] {
+  const visto = new Set<string>();
+  const out: GpaArticulo[] = [];
+  const candidatos: unknown[] = [];
+
+  const buscarArrays = (v: unknown, prof = 0) => {
+    if (prof > 4 || v == null) return;
+    if (Array.isArray(v)) {
+      if (v.some((x) => x && typeof x === "object")) candidatos.push(v);
+      return;
+    }
+    if (typeof v === "object") {
+      for (const val of Object.values(v as Raw)) buscarArrays(val, prof + 1);
+    }
+  };
+  buscarArrays(json);
+
+  for (const arr of candidatos) {
+    for (const item of arr as Raw[]) {
+      if (!item || typeof item !== "object") continue;
+      const a = normalizarArticulo(item);
+      if (!a) continue;
+      const k = `${a.referencia}|${a.marca}`.toLowerCase();
+      if (visto.has(k)) continue;
+      visto.add(k);
+      out.push(a);
+    }
+  }
+  return out;
+}
+
+/** Ordena por afinidad con la avería/categoría detectada, luego disponibilidad y precio. */
+export function ordenarPorRelevancia(articulos: GpaArticulo[], criterio: GpaCriterio): GpaArticulo[] {
+  const claves = new Set<string>();
+  for (const c of criterio.categorias) {
+    for (const t of tokens(`${c.label} ${c.sinonimos.join(" ")}`)) claves.add(t);
+  }
+  for (const t of tokens(criterio.termino)) claves.add(t);
+
+  const score = (a: GpaArticulo): number => {
+    const desc = tokens(`${a.descripcion} ${a.marca}`);
+    let s = 0;
+    for (const t of claves) if (desc.some((d) => d.startsWith(t) || t.startsWith(d))) s += 10;
+    if (/dispon/i.test(a.stock)) s += 4;
+    if (a.precio > 0) s += 1;
+    return s;
+  };
+
+  return [...articulos].sort((a, b) => {
+    const d = score(b) - score(a);
+    if (d !== 0) return d;
+    if (a.precio !== b.precio) return (a.precio || Infinity) - (b.precio || Infinity);
+    return a.descripcion.localeCompare(b.descripcion, "es");
+  });
+}
+
+export interface GpaConsultaParams {
+  query: string;
+  categoria?: string | undefined;
+  marca?: string | undefined;
+  modelo?: string | undefined;
+  motor?: string | undefined;
+  matricula?: string | undefined;
+}
+
+/**
+ * Consulta real de precios/stock en GPCat.
+ * 1) Busca con el texto del usuario (o la referencia).
+ * 2) Si no hay resultados, reintenta con el término técnico de la categoría de la avería.
+ * 3) Normaliza y ordena por afinidad con la avería.
+ */
+export async function consultaArticulosReal(
+  params: GpaConsultaParams,
+): Promise<{ ok: boolean; articulos: GpaArticulo[]; criterio: GpaCriterio; error?: string }> {
+  const criterio = detectarCriterio(params.query, params.categoria);
+
+  const terminos: string[] = [];
+  const push = (t?: string) => {
+    const v = (t ?? "").trim();
+    if (v && !terminos.some((x) => x.toLowerCase() === v.toLowerCase())) terminos.push(v);
+  };
+
+  if (criterio.manual) {
+    push(CATEGORIA_TERMINO_API[criterio.categorias[0]?.key ?? ""]);
+    push(criterio.categorias[0]?.label);
+  } else {
+    push(params.query);
+    for (const c of criterio.categorias) {
+      push(CATEGORIA_TERMINO_API[c.key]);
+      push(c.label);
+    }
+  }
+  if (terminos.length === 0) return { ok: true, articulos: [], criterio };
+
+  let ultimoError: string | undefined;
+
+  for (const texto of terminos) {
+    const esReferencia = criterio.tipo === "referencia" && texto === criterio.termino;
+    try {
+      const res = await gpaAuthPost("ConsultaArticulos", {
+        Texto: texto,
+        Descripcion: esReferencia ? undefined : texto,
+        Referencia: esReferencia ? texto.replace(/\s+/g, "") : undefined,
+        Marca: params.marca,
+        Modelo: params.modelo,
+        Motor: params.motor,
+        Matricula: params.matricula,
+        Categoria: params.categoria,
+        ConStock: true,
+        ConPrecio: true,
+      });
+      if (!res.ok) {
+        ultimoError = `Error ${res.status}`;
+        continue;
+      }
+      const json = (await res.json()) as unknown;
+      const articulos = extraerArticulos(json);
+      if (articulos.length > 0) {
+        return { ok: true, articulos: ordenarPorRelevancia(articulos, criterio), criterio };
+      }
+    } catch {
+      ultimoError = "No se pudo consultar el catálogo";
+    }
+  }
+
+  if (ultimoError) return { ok: false, articulos: [], criterio, error: ultimoError };
+  return { ok: true, articulos: [], criterio };
+}
