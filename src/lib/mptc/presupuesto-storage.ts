@@ -11,8 +11,9 @@ export const PRESUPUESTOS_BUCKET = "presupuestos";
 export async function generarYGuardarPresupuesto(
   g: Gestion,
   opts: PresupuestoPdfOpts = {},
+  download = true,
 ): Promise<{ path: string | null; filename: string }> {
-  const { blob, filename } = downloadPresupuestoPdf(g, opts);
+  const { blob, filename } = downloadPresupuestoPdf(g, opts, download);
   const path = `${g.taller_id || "sin-taller"}/${g.id}/${Date.now()}-${filename}`;
   try {
     const { error } = await supabase.storage
@@ -24,7 +25,9 @@ export async function generarYGuardarPresupuesto(
       tallerId: g.taller_id,
       tipo: "presupuesto_generado",
       actor: opts.mecanico || opts.taller || null,
-      detalle: `Presupuesto en PDF generado y archivado (${filename})`,
+      detalle: download
+        ? `Presupuesto en PDF generado y archivado (${filename})`
+        : `Presupuesto en PDF archivado para enviar (${filename})`,
       metadata: { path, filename, importe: g.importe, piezas: g.piezas },
     });
     return { path, filename };
