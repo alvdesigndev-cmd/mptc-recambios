@@ -5,7 +5,7 @@ import { signIn, signUp, syncProfileToSettings, normalizeEmail } from "@/lib/mpt
 import { supabase } from "@/integrations/supabase/client";
 import type { Role } from "@/lib/mptc/profiles";
 import { pickPostLoginPath } from "@/lib/mptc/redirect";
-import { CredentialsTransfer } from "@/components/mptc/CredentialsTransfer";
+
 import {
   clearSavedCredentials,
   readSavedCredentials,
@@ -354,20 +354,6 @@ function AuthPage() {
             </p>
           </div>
         )}
-
-        {mode === "login" && (
-          <CredentialsTransfer
-            onImported={(c) => {
-              setEmail(c.email);
-              setPassword(c.password);
-              setLoginProfile(c.profile);
-              setRemember(true);
-              setError(null);
-              setInfo("Credenciales importadas. Pulsa “Entrar” para acceder.");
-            }}
-          />
-        )}
-
 
         {autoLogin && (
           <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-muted-foreground">
