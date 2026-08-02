@@ -321,7 +321,7 @@ function UsuariosAdminPage() {
                     <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
                       <button
                         onClick={() => openPw(row)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                        className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground"
                         title="Cambiar contraseña"
                       >
                         <KeyRound className="h-3.5 w-3.5" /> Contraseña
@@ -329,7 +329,7 @@ function UsuariosAdminPage() {
                       <button
                         disabled={row.is_self || busyId === row.user_id}
                         onClick={() => onToggleBan(row)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
+                        className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-surface-2 hover:text-foreground disabled:opacity-40"
                         title={row.is_self ? "No puedes desactivar tu propia cuenta" : row.banned ? "Reactivar" : "Desactivar"}
                       >
                         {busyId === row.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
@@ -338,7 +338,7 @@ function UsuariosAdminPage() {
                       <button
                         disabled={row.is_self || busyId === row.user_id}
                         onClick={() => onDelete(row)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/10 disabled:opacity-40"
+                        className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-red-500/30 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/10 disabled:opacity-40"
                         title={row.is_self ? "No puedes eliminar tu propia cuenta" : "Eliminar"}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Eliminar
@@ -347,7 +347,7 @@ function UsuariosAdminPage() {
                   </div>
                   {pwOpenId === row.user_id && (
                     <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div className="relative flex-1">
                           <input
                             type={pwShow ? "text" : "password"}
@@ -465,7 +465,7 @@ function UsuariosAdminPage() {
               {filteredAudit.map((row) => {
                 const details = renderAuditDetails(row);
                 return (
-                  <li key={row.id} className="flex flex-wrap items-center gap-3 p-4">
+                  <li key={row.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold">
