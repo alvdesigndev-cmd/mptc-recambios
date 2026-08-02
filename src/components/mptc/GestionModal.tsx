@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell } from "lucide-react";
+import { X, Send, Check, XCircle, CheckCheck, Truck, Trash2, Phone, Pencil, Save, Plus, Bell , FileDown} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWAUrl } from "@/lib/mptc/wa";
@@ -11,6 +11,7 @@ import { resolveFotoUrls } from "@/lib/mptc/fotos";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { useServerFn } from "@tanstack/react-start";
 import { generarPedidoGPA } from "@/lib/mptc/gpa.functions";
+import { downloadPresupuestoPdf } from "@/lib/mptc/presupuesto-pdf";
 
 interface Props {
   gestion: Gestion | null;
@@ -676,6 +677,19 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
             <>
               <button onClick={() => setEditing(true)} className={btnGhost}>
                 <Pencil className="h-4 w-4" /> Editar
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    downloadPresupuestoPdf(g, { taller: g.taller_nombre });
+                    toast.success("Presupuesto PDF descargado");
+                  } catch {
+                    toast.error("No se pudo generar el PDF");
+                  }
+                }}
+                className={btnGhost}
+              >
+                <FileDown className="h-4 w-4" /> PDF
               </button>
               {g.cliente_telefono && (
                 <a
