@@ -56,7 +56,7 @@ export async function logEvento(opts: {
       actor: opts.actor ?? auth?.user?.email ?? "taller",
       actor_user_id: auth?.user?.id ?? null,
       detalle: opts.detalle ?? null,
-      metadata: opts.metadata ?? {},
+      metadata: (opts.metadata ?? {}) as never,
     });
   } catch (e) {
     console.warn("No se pudo registrar el evento de la gestión", e);
