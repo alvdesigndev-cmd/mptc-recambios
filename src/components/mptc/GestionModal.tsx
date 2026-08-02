@@ -366,8 +366,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
-        <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
+        <div className="mb-3 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className={"rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase " + meta.cls}>
@@ -379,12 +379,12 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 </span>
               )}
             </div>
-            <h2 className="mt-1 truncate text-lg font-bold">{g.cliente_nombre || "Sin cliente"}</h2>
-            <div className="font-mono text-[12px] text-muted-foreground">
+            <h2 className="mt-1 break-words text-base font-bold sm:text-lg">{g.cliente_nombre || "Sin cliente"}</h2>
+            <div className="break-words font-mono text-[11px] text-muted-foreground sm:text-[12px]">
               {g.matricula} · {g.vehiculo}
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2">
+          <button onClick={onClose} className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-surface-2">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -425,7 +425,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
                 rows={8}
                 placeholder="El mensaje original se mantiene. Añade aquí la nueva avería (a mano o con el micro)."
-                className="w-full whitespace-pre-wrap rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+                className="w-full whitespace-pre-wrap rounded-xl bg-surface-2 px-3 py-2 text-[16px] outline-none focus:bg-surface-3"
               />
               <p className="text-[11px] text-muted-foreground">
                 Al guardar, las averías añadidas abajo se anexarán automáticamente al mensaje.
@@ -477,7 +477,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                           arr[idx] = { ...arr[idx], familia_id: e.target.value, subfamilia: "" };
                           setNuevas(arr);
                         }}
-                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-[16px] outline-none"
                       >
                         <option value="">— Familia —</option>
                         {familias.map((f) => (
@@ -492,7 +492,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                           setNuevas(arr);
                         }}
                         disabled={!n.familia_id}
-                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none disabled:opacity-50"
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-[16px] outline-none disabled:opacity-50"
                       >
                         <option value="">— Subfamilia —</option>
                         {subs.map((s) => (
@@ -507,7 +507,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                           arr[idx] = { ...arr[idx], importe: e.target.value };
                           setNuevas(arr);
                         }}
-                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-[16px] outline-none"
                       />
                       <textarea
                         placeholder="Notas (opcional)"
@@ -518,7 +518,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                           arr[idx] = { ...arr[idx], descripcion: e.target.value };
                           setNuevas(arr);
                         }}
-                        className="w-full rounded-xl bg-surface px-3 py-2 text-sm outline-none"
+                        className="w-full rounded-xl bg-surface px-3 py-2 text-[16px] outline-none"
                       />
 
                       {/* Fotos extra */}
@@ -650,7 +650,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               </span>
               . Nuevo importe total: <span className="font-semibold text-foreground">{avisoPendiente.importeTotal || g.importe || "—"} €</span>.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               {g.cliente_telefono && (
                 <button
                   onClick={notificarCliente}
@@ -667,7 +667,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                 <Truck className="h-4 w-4" />
                 {penaNotificado ? "Peña avisada ✓" : g.pedido_pena ? "Avisar a Peña (ampliación)" : "Avisar a Peña"}
               </button>
-              <button onClick={() => { setAvisoPendiente(null); onClose(); }} className={btnGhost + " ml-auto"}>
+              <button onClick={() => { setAvisoPendiente(null); onClose(); }} className={btnGhost + " sm:ml-auto"}>
                 Cerrar
               </button>
             </div>
@@ -675,7 +675,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
         )}
 
         {/* Acciones */}
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {editing ? (
             <>
               <button onClick={guardarEdicion} disabled={saving} className={btnPrimary}>
@@ -747,7 +747,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               {g.cliente_telefono && (
                 <a
                   href={`tel:${g.cliente_telefono}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm hover:bg-surface-2"
+                  className={btnGhost}
                 >
                   <Phone className="h-4 w-4" /> Llamar
                 </a>
@@ -781,7 +781,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
                   <CheckCheck className="h-4 w-4" /> Completar
                 </button>
               )}
-              <button onClick={remove} className={btnGhost + " ml-auto text-destructive"}>
+              <button onClick={remove} className={btnGhost + " text-destructive sm:ml-auto"}>
                 <Trash2 className="h-4 w-4" /> Eliminar
               </button>
             </>
@@ -791,8 +791,8 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
       {confirmPedido && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
-            <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto overflow-x-hidden rounded-t-3xl bg-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5 sm:pb-5 sm:rounded-3xl">
+            <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold">Confirmar pedido a Grupo Peña</h3>
                 <p className="text-[11px] text-muted-foreground">
@@ -830,7 +830,7 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
               <Row label="Dirección de entrega" value="Taller" />
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <button onClick={confirmarPedidoGPA} disabled={enviandoPedido} className={btnAccent + " disabled:opacity-60"}>
                 <Truck className="h-4 w-4" /> {enviandoPedido ? "Enviando…" : "Confirmar pedido"}
               </button>
@@ -847,9 +847,9 @@ export function GestionModal({ gestion, onClose, onChanged }: Props) {
 
 function Row({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border pb-2 last:border-b-0">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
-      <span className={"text-right " + (multiline ? "whitespace-pre-wrap" : "truncate")}>{value}</span>
+    <div className="border-b border-border pb-2 last:border-b-0 sm:flex sm:items-start sm:justify-between sm:gap-3">
+      <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:shrink-0">{label}</span>
+      <span className={"block min-w-0 break-words text-[13px] sm:text-right sm:text-sm " + (multiline ? "whitespace-pre-wrap" : "")}>{value}</span>
     </div>
   );
 }
@@ -873,19 +873,19 @@ function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-[16px] outline-none focus:bg-surface-3"
         />
       ) : (
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-sm outline-none focus:bg-surface-3"
+          className="w-full rounded-xl bg-surface-2 px-3 py-2 text-[16px] outline-none focus:bg-surface-3"
         />
       )}
     </label>
   );
 }
 
-const btnPrimary = "inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground active:scale-95";
-const btnAccent = "inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95";
-const btnGhost = "inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold hover:bg-surface-2";
+const btnPrimary = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold sm:text-sm bg-primary text-primary-foreground active:scale-95";
+const btnAccent = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold sm:text-sm bg-accent text-accent-foreground active:scale-95";
+const btnGhost = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-semibold sm:text-sm border border-border-strong bg-surface hover:bg-surface-2";
