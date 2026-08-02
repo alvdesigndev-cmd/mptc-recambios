@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send } from "lucide-react";
+import { ArrowLeft, Car, User, Wrench, Package, MessageCircle, Truck, Loader2, Phone, Pencil, Check, X, Search, History, Send, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/mptc/useSettings";
@@ -11,6 +11,7 @@ import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { GestionModal } from "@/components/mptc/GestionModal";
 import { GPCatSearchModal, formatPiezaLinea } from "@/components/mptc/GPCatSearchModal";
 import { buildWAUrl } from "@/lib/mptc/wa";
+import { downloadPresupuestoPdf } from "@/lib/mptc/presupuesto-pdf";
 import { logEvento, listEventos, EVENTO_LABEL, EVENTO_ICON, formatEventoFecha, type GestionEvento } from "@/lib/mptc/eventos";
 
 
@@ -174,6 +175,16 @@ function GestionDetallePage() {
 
   const meta = estadoBadge(g.estado);
   const fase = faseDeGestion(g);
+  const descargarPdf = () => {
+    if (!g) return;
+    try {
+      downloadPresupuestoPdf(g, { taller: settings?.tallerName, mecanico: settings?.mecanico });
+      toast.success("Presupuesto PDF descargado");
+    } catch {
+      toast.error("No se pudo generar el PDF");
+    }
+  };
+
   const piezasList = (g.piezas || "")
     .split("\n")
     .map((l) => l.replace(/^[-•·]\s*/, "").trim())
