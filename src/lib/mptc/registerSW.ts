@@ -1,12 +1,23 @@
 /// <reference types="vite-plugin-pwa/client" />
 // Registro protegido del service worker generado por vite-plugin-pwa.
 // - Nunca se registra en dev, iframe, previews de Lovable o con ?sw=off.
-// - Muestra un toast cuando hay una nueva versión disponible; al aceptar,
-//   activa el nuevo SW y recarga la página.
+// - Cuando hay una versión nueva muestra un aviso breve en pantalla con la
+//   versión y una cuenta atrás: se puede recargar ya o cancelar.
 // - En cualquier contexto refusado, desregistra el SW existente.
 import { toast } from "sonner";
 
+declare const __APP_VERSION__: string;
+
 const SW_URL = "/sw.js";
+const AUTO_RELOAD_SECONDS = 8;
+
+function nuevaVersion(): string {
+  try {
+    return typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "";
+  } catch {
+    return "";
+  }
+}
 
 function isRefusedContext(): boolean {
   if (typeof window === "undefined") return true;
@@ -50,18 +61,60 @@ export async function registerServiceWorker() {
   }
   if (!("serviceWorker" in navigator)) return;
 
-  // `virtual:pwa-register` está expuesto por vite-plugin-pwa: gestiona el
-  // ciclo `waiting → SKIP_WAITING → controllerchange → reload` por nosotros.
   const { registerSW } = await import("virtual:pwa-register");
+
+  // Sólo recargamos cuando nosotros lo pedimos (aceptar o fin de cuenta atrás),
+  // así "Cancelar" mantiene al usuario en la pantalla actual.
+  let aplicando = false;
+  let avisoActivo = false;
 
   const updateSW = registerSW({
     immediate: true,
-    // Actualización 100% automática: en cuanto hay una versión nueva se activa
-    // el SW y se recarga la app sola (Android, iOS, tablet o PC).
     onNeedRefresh() {
-      toast("Actualizando a la última versión…", { duration: 2500 });
-      // Pequeño margen para que el toast se vea antes del reload.
-      window.setTimeout(() => { updateSW(true); }, 400);
+      if (avisoActivo) return;
+      avisoActivo = true;
+
+      const version = nuevaVersion();
+      const toastId = "mptc-update";
+      let restantes = AUTO_RELOAD_SECONDS;
+      let timer = 0;
+
+      const cerrar = () => {
+        window.clearInterval(timer);
+        avisoActivo = false;
+        toast.dismiss(toastId);
+      };
+
+      const aplicar = () => {
+        window.clearInterval(timer);
+        aplicando = true;
+        toast.dismiss(toastId);
+        updateSW(true);
+      };
+
+      const pintar = () => {
+        toast(
+          `Actualización lista${version ? ` · versión ${version}` : ""}`,
+          {
+            id: toastId,
+            description: `Se recargará en ${restantes} s para aplicar los cambios.`,
+            duration: Infinity,
+            action: { label: "Recargar ya", onClick: aplicar },
+            cancel: { label: "Cancelar", onClick: cerrar },
+            onDismiss: cerrar,
+          },
+        );
+      };
+
+      pintar();
+      timer = window.setInterval(() => {
+        restantes -= 1;
+        if (restantes <= 0) {
+          aplicar();
+          return;
+        }
+        pintar();
+      }, 1000);
     },
     onRegisteredSW(_swUrl, reg) {
       if (!reg) return;
@@ -69,23 +122,19 @@ export async function registerServiceWorker() {
         if (navigator.onLine === false) return;
         reg.update().catch(() => {});
       };
-      // 1) Sondeo periódico mientras la app está abierta.
       const timer = window.setInterval(check, 60_000);
-      // 2) Al volver a primer plano (cambio de pestaña / app en segundo plano).
       window.addEventListener("focus", check);
       window.addEventListener("online", check);
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") check();
       });
-      // 3) Si otro SW toma el control, recargamos para servir el HTML nuevo.
       let reloading = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (reloading) return;
+        if (!aplicando || reloading) return;
         reloading = true;
         window.location.reload();
       });
       window.addEventListener("pagehide", () => window.clearInterval(timer));
-      // Comprobación inmediata al arrancar.
       check();
     },
     onRegisterError(err) {
@@ -93,4 +142,3 @@ export async function registerServiceWorker() {
     },
   });
 }
-
