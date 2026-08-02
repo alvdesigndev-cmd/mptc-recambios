@@ -164,6 +164,10 @@ function NuevaPage() {
   const [pedirPena, setPedirPena] = useState(draft0.pedirPena ?? false);
   const [busy, setBusy] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [plateBusy, setPlateBusy] = useState(false);
+  const [plateMsg, setPlateMsg] = useState<string | null>(null);
+  const lookupPlateFn = useServerFn(lookupPlate);
+
   // Id en BD del borrador / gestión en curso (para no duplicar al guardar).
   const [gestionId, setGestionId] = useState<string | null>(draft0.gestionId ?? null);
   const [gpcatOpen, setGpcatOpen] = useState(false);
