@@ -22,7 +22,8 @@ import { consultaArticulosGPA, generarPedidoGPA, type GpaArticulo } from "@/lib/
 import { mapApiData } from "@/lib/mptc/plate-map";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { compressImageToDataUrl } from "@/lib/mptc/image";
-import { generateToken } from "@/lib/mptc/wa";
+import { generateToken, buildWAUrl } from "@/lib/mptc/wa";
+import { PENA_PHONE } from "@/lib/mptc/profiles";
 
 interface Props {
   settings: AppSettings;
