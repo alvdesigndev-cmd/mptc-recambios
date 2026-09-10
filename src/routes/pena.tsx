@@ -50,27 +50,6 @@ export const Route = createFileRoute("/pena")({
 
 type Filtro = "todas" | "gestion" | "aceptado" | "directo";
 
-interface PedidoDirecto {
-  id: string;
-  taller_id: string | null;
-  taller_nombre: string | null;
-  matricula: string | null;
-  vehiculo: string | null;
-  piezas: string | null;
-  notas: string | null;
-  estado: string;
-  fotos: string[] | null;
-  audio_url: string | null;
-  transcripcion: string | null;
-  created_at: string;
-  cliente_nombre?: string | null;
-  cliente_telefono?: string | null;
-  importe_total?: number | null;
-  numero_pedido?: string | null;
-  gpa_pedido_numero?: string | null;
-  gpa_pedido_estado?: string | null;
-}
-
 function PenaPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
