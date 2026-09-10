@@ -22,7 +22,8 @@ import { consultaArticulosGPA, generarPedidoGPA, type GpaArticulo } from "@/lib/
 import { mapApiData } from "@/lib/mptc/plate-map";
 import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { compressImageToDataUrl } from "@/lib/mptc/image";
-import { generateToken } from "@/lib/mptc/wa";
+import { generateToken, buildWAUrl } from "@/lib/mptc/wa";
+import { PENA_PHONE } from "@/lib/mptc/profiles";
 
 interface Props {
   settings: AppSettings;
@@ -202,11 +203,31 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     return urls;
   };
 
+  const lineasTexto = () =>
+    piezas
+      .map(
+        (p) =>
+          `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`,
+      )
+      .join("\n");
+
+  /** Mensaje de WhatsApp para Grupo Peña. */
+  const mensajePena = () =>
+    `🔧 *Pedido ${settings.tallerName}*\n\n` +
+    `👤 ${nombre || "—"}${telefono ? ` · ${telefono}` : ""}\n` +
+    `🚗 ${vehiculoTexto || "—"}${matricula ? ` (${matricula})` : ""}${vehiculo.motor ? `\n⚙️ ${vehiculo.motor}` : ""}\n\n` +
+    `📦 Piezas:\n${lineasTexto() || "—"}\n\n` +
+    `💰 Total: *${total.toFixed(2)} €*` +
+    (notas ? `\n\n📝 ${notas}` : "");
+
   const confirmarPedido = async () => {
     if (piezas.length === 0) {
       toast.error("Añade al menos una pieza al pedido.");
       return;
     }
+    // Abrimos WhatsApp en el mismo gesto del clic para que el navegador no lo bloquee.
+    const waUrl = buildWAUrl(PENA_PHONE, mensajePena());
+    const win = window.open(waUrl, "_blank", "noopener,noreferrer");
     setEnviando(true);
     try {
       const fotosUrls = await subirFotos();
@@ -226,12 +247,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         },
       });
 
-      const piezasTexto = piezas
-        .map(
-          (p) =>
-            `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`,
-        )
-        .join("\n");
+      const piezasTexto = lineasTexto();
 
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
@@ -260,10 +276,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
+      if (!win) window.location.href = waUrl;
       toast.success(
         gpa.numeroPedido
-          ? `Pedido enviado a Grupo Peña · Nº ${gpa.numeroPedido}`
-          : "Pedido enviado a Grupo Peña",
+          ? `Pedido enviado por WhatsApp · Nº ${gpa.numeroPedido}`
+          : "Pedido enviado por WhatsApp a Grupo Peña",
         { description: `${piezas.length} pieza(s) · ${total.toFixed(2)} €` },
       );
       onSaved?.();
@@ -695,7 +712,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                Confirmar pedido a Grupo Peña
+                Enviar pedido por WhatsApp
               </button>
             )}
           </div>
