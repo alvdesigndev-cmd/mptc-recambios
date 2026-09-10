@@ -292,15 +292,23 @@ export type Database = {
       pedidos_pena: {
         Row: {
           audio_url: string | null
+          cliente_nombre: string | null
+          cliente_telefono: string | null
           confirm_token: string | null
           created_at: string
           estado: string
           fotos: string[] | null
           id: string
+          importe_total: number | null
+          marca: string | null
           matricula: string | null
+          modelo: string | null
+          motor: string | null
           notas: string | null
+          numero_pedido: string | null
           pedido_numero: number | null
           piezas: string | null
+          piezas_json: Json
           taller_id: string | null
           taller_nombre: string | null
           transcripcion: string | null
@@ -308,15 +316,23 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
           confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
           id?: string
+          importe_total?: number | null
+          marca?: string | null
           matricula?: string | null
+          modelo?: string | null
+          motor?: string | null
           notas?: string | null
+          numero_pedido?: string | null
           pedido_numero?: number | null
           piezas?: string | null
+          piezas_json?: Json
           taller_id?: string | null
           taller_nombre?: string | null
           transcripcion?: string | null
@@ -324,15 +340,23 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
           confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
           id?: string
+          importe_total?: number | null
+          marca?: string | null
           matricula?: string | null
+          modelo?: string | null
+          motor?: string | null
           notas?: string | null
+          numero_pedido?: string | null
           pedido_numero?: number | null
           piezas?: string | null
+          piezas_json?: Json
           taller_id?: string | null
           taller_nombre?: string | null
           transcripcion?: string | null
@@ -579,12 +603,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -608,11 +632,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -633,11 +657,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -658,11 +682,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -675,11 +699,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
