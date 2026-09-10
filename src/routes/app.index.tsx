@@ -136,7 +136,7 @@ function Dashboard() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">Hacer pedido a Grupo Peña</span>
-          <span className="block truncate text-[11px] text-muted-foreground">Pedido directo, sin gestión</span>
+          <span className="block truncate text-[11px] text-muted-foreground">Cliente, vehículo, piezas GPCat y envío</span>
         </span>
       </button>
 
