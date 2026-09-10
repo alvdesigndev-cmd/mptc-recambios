@@ -1,12 +1,28 @@
-import { useEffect, useRef, useState } from "react";
-import { Loader2, X, Truck, Mic, Square, Share2, Download, Trash2, Play, Pause } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Camera,
+  Car,
+  Check,
+  ChevronLeft,
+  Loader2,
+  Package,
+  Search,
+  Trash2,
+  Truck,
+  User,
+  X,
+} from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { type AppSettings } from "@/lib/mptc/profiles";
-import { MicButton } from "@/components/mptc/MicButton";
-import { buildWAUrl, generateToken } from "@/lib/mptc/wa";
-
-const PENA_PHONE = "34634954491";
+import { ocrMatricula } from "@/lib/mptc/ocr.functions";
+import { lookupPlate } from "@/lib/mptc/matriculas.functions";
+import { consultaArticulosGPA, generarPedidoGPA, type GpaArticulo } from "@/lib/mptc/gpa.functions";
+import { mapApiData } from "@/lib/mptc/plate-map";
+import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
+import { compressImageToDataUrl } from "@/lib/mptc/image";
+import { generateToken } from "@/lib/mptc/wa";
 
 interface Props {
   settings: AppSettings;
@@ -14,36 +30,50 @@ interface Props {
   onSaved?: () => void;
 }
 
-type SR = any;
-function getRecognition(): SR | null {
-  if (typeof window === "undefined") return null;
-  const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
+interface PiezaPedido extends GpaArticulo {
+  cantidad: number;
 }
 
+const inputCls =
+  "w-full rounded-xl bg-surface-2 px-3 py-2.5 text-base outline-none placeholder:text-muted-foreground/60 focus:bg-surface-3";
+const primaryBtn =
+  "inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95 disabled:opacity-60";
+const ghostBtn =
+  "inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-4 py-2.5 text-sm font-semibold active:scale-95 disabled:opacity-60";
+
+const PASOS = ["Cliente y vehículo", "Foto de la avería", "Buscar pieza", "Confirmar pedido"];
+
 export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
-  const [f, setF] = useState({ matricula: "", vehiculo: "", piezas: "", notas: "" });
-  const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(1);
 
-  // Grabación de audio
-  const [recording, setRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioMime, setAudioMime] = useState<string>("audio/webm");
-  const [recError, setRecError] = useState<string | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  // Paso 1
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [matricula, setMatricula] = useState("");
+  const [vehiculo, setVehiculo] = useState({ marca: "", modelo: "", motor: "", anio: "" });
+  const [plateBusy, setPlateBusy] = useState(false);
+  const [plateMsg, setPlateMsg] = useState<string | null>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
 
-  // Transcripción del audio grabado
-  const [transcripcionFinal, setTranscripcionFinal] = useState("");
-  const [transcripcionInterim, setTranscripcionInterim] = useState("");
+  // Paso 2
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const audioElRef = useRef<HTMLAudioElement | null>(null);
-  const srRef = useRef<SR | null>(null);
+  // Paso 3
+  const [query, setQuery] = useState("");
+  const [buscando, setBuscando] = useState(false);
+  const [resultados, setResultados] = useState<GpaArticulo[]>([]);
+  const [sel, setSel] = useState<Record<string, number>>({});
+  const [piezas, setPiezas] = useState<PiezaPedido[]>([]);
+
+  // Paso 4
+  const [notas, setNotas] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const lookupPlateFn = useServerFn(lookupPlate);
+  const runOcr = useServerFn(ocrMatricula);
+  const buscarPiezas = useServerFn(consultaArticulosGPA);
+  const generarPedido = useServerFn(generarPedidoGPA);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -51,424 +81,600 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Cleanup al cerrar
+  // Previews de fotos
   useEffect(() => {
-    return () => {
-      try { mediaRef.current?.stop(); } catch {}
-      try { srRef.current?.stop(); } catch {}
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      if (timerRef.current) window.clearInterval(timerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const urls = fotos.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [fotos]);
 
-  const pickMime = (): string => {
-    const candidates = [
-      "audio/mp4;codecs=mp4a.40.2",
-      "audio/mp4",
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-    ];
-    const MR = (window as any).MediaRecorder;
-    if (!MR?.isTypeSupported) return "";
-    for (const c of candidates) if (MR.isTypeSupported(c)) return c;
-    return "";
-  };
+  const vehiculoTexto = useMemo(
+    () => [vehiculo.marca, vehiculo.modelo].filter(Boolean).join(" ").trim(),
+    [vehiculo],
+  );
+  const contexto = useMemo(
+    () => [vehiculo.marca, vehiculo.modelo, vehiculo.motor].filter(Boolean).join(" · "),
+    [vehiculo],
+  );
+  const total = useMemo(
+    () => piezas.reduce((a, p) => a + p.precio * p.cantidad, 0),
+    [piezas],
+  );
 
-  const startSR = () => {
-    const rec = getRecognition();
-    if (!rec) return;
-    rec.lang = "es-ES";
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-    rec.onresult = (e: any) => {
-      let interim = "";
-      let finalChunk = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        const txt = r[0]?.transcript || "";
-        if (r.isFinal) finalChunk += txt;
-        else interim += txt;
-      }
-      if (finalChunk.trim()) {
-        setTranscripcionFinal((prev) => (prev ? prev.trimEnd() + " " : "") + finalChunk.trim());
-      }
-      setTranscripcionInterim(interim.trim());
-    };
-    rec.onend = () => setTranscripcionInterim("");
-    rec.onerror = () => setTranscripcionInterim("");
-    try { rec.start(); srRef.current = rec; } catch {}
-  };
-
-  const stopSR = () => {
-    try { srRef.current?.stop(); } catch {}
-    srRef.current = null;
-    setTranscripcionInterim("");
-  };
-
-  const startRecording = async () => {
-    setRecError(null);
-    if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); setAudioBlob(null); }
-    setTranscripcionFinal("");
-    setTranscripcionInterim("");
+  /** Consulta la API de matrículas y rellena los datos del vehículo. */
+  const consultarMatricula = async (plateRaw: string) => {
+    const plate = normalizeMatricula(plateRaw).replace(/[^A-Z0-9]/g, "");
+    if (plate.length < 4) return;
+    setPlateBusy(true);
+    setPlateMsg(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const mime = pickMime();
-      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-      mediaRef.current = mr;
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onstop = () => {
-        const usedMime = mr.mimeType || mime || "audio/webm";
-        const blob = new Blob(chunksRef.current, { type: usedMime });
-        setAudioBlob(blob);
-        setAudioMime(usedMime);
-        setAudioUrl(URL.createObjectURL(blob));
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      };
-      mr.start();
-      setRecording(true);
-      setElapsed(0);
-      timerRef.current = window.setInterval(() => setElapsed((s) => s + 1), 1000);
-      startSR();
-    } catch (err: any) {
-      setRecError(err?.message || "No se pudo acceder al micrófono.");
-    }
-  };
-
-  const stopRecording = () => {
-    try { mediaRef.current?.stop(); } catch {}
-    if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
-    setRecording(false);
-    stopSR();
-  };
-
-  const discardAudio = () => {
-    if (audioUrl) URL.revokeObjectURL(audioUrl);
-    setAudioUrl(null);
-    setAudioBlob(null);
-    setElapsed(0);
-    setPlaying(false);
-    setTranscripcionFinal("");
-    setTranscripcionInterim("");
-  };
-
-  const extFromMime = (m: string) =>
-    m.includes("mp4") ? "m4a" : m.includes("ogg") ? "ogg" : "webm";
-
-  const audioFileName = () => {
-    const ts = new Date().toISOString().replace(/[:.]/g, "-");
-    return `pedido-${settings.tallerId}-${ts}.${extFromMime(audioMime)}`;
-  };
-
-  const shareAudio = async () => {
-    if (!audioBlob) return;
-    const file = new File([audioBlob], audioFileName(), { type: audioMime });
-    const nav: any = navigator;
-    if (nav.canShare && nav.canShare({ files: [file] })) {
-      try {
-        await nav.share({
-          files: [file],
-          title: "Pedido a Peña",
-          text: `Pedido de ${settings.tallerName}`,
-        });
+      const res = await lookupPlateFn({ data: { plate } });
+      if (!res.ok || !res.data) {
+        setPlateMsg(res.error || "No se encontraron datos para esta matrícula.");
         return;
-      } catch {
-        // usuario canceló — caer a descarga
       }
+      const m = mapApiData(res.data);
+      const anio = (m.fechaMatriculacion.match(/(\d{4})/)?.[1] ?? "").trim();
+      setVehiculo({ marca: m.marca, modelo: m.modelo, motor: m.motor, anio });
+      setPlateMsg(m.vehiculo ? `Datos cargados: ${m.vehiculo}` : "Vehículo localizado.");
+    } catch {
+      setPlateMsg("No se pudo consultar la matrícula.");
+    } finally {
+      setPlateBusy(false);
     }
-    const a = document.createElement("a");
-    a.href = audioUrl!;
-    a.download = audioFileName();
-    a.click();
-    alert("Tu navegador no permite compartir directamente. El audio se ha descargado: adjúntalo en WhatsApp manualmente.");
   };
 
-  const togglePlay = () => {
-    const el = audioElRef.current;
-    if (!el) return;
-    if (el.paused) { el.play(); setPlaying(true); }
-    else { el.pause(); setPlaying(false); }
-  };
-
-  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-
-  const uploadAudio = async (): Promise<string | null> => {
-    if (!audioBlob) return null;
-    const ext = extFromMime(audioMime);
-    const path = `${settings.tallerId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const { error } = await supabase.storage
-      .from("audios-pedidos")
-      .upload(path, audioBlob, { contentType: audioMime, upsert: false });
-    if (error) {
-      console.error("upload audio", error);
-      return null;
+  const escanearMatricula = async (file: File | null) => {
+    if (!file) return;
+    setOcrBusy(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file, 1280, 0.82);
+      const res = await runOcr({ data: { imageDataUrl: dataUrl } });
+      const detected = (res?.matricula || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!detected) {
+        toast.error("No se detectó ninguna matrícula. Prueba con otra foto más nítida.");
+        return;
+      }
+      setMatricula(detected);
+      await consultarMatricula(detected);
+    } catch {
+      toast.error("Error al escanear la matrícula.");
+    } finally {
+      setOcrBusy(false);
     }
-    const { data } = supabase.storage.from("audios-pedidos").getPublicUrl(path);
-    return data.publicUrl;
   };
 
-  const save = async () => {
-    const tieneAudio = !!audioBlob;
-    if (!f.piezas.trim() && !tieneAudio) {
-      alert("Indica las piezas (puedes dictarlas) o graba un audio para el pedido.");
+  const buscar = async () => {
+    setBuscando(true);
+    try {
+      const r = await buscarPiezas({
+        data: {
+          query,
+          marca: vehiculo.marca || undefined,
+          modelo: vehiculo.modelo || undefined,
+          motor: vehiculo.motor || undefined,
+          matricula: matricula || undefined,
+        },
+      });
+      setResultados(r.articulos);
+      setSel({});
+      if (r.articulos.length === 0) toast.info("Sin resultados en GPCat");
+    } catch {
+      toast.error("No se pudo buscar en GPCat");
+    } finally {
+      setBuscando(false);
+    }
+  };
+
+  const anadirAlPedido = () => {
+    const nuevas = resultados
+      .filter((a) => sel[a.referencia])
+      .map((a) => ({ ...a, cantidad: sel[a.referencia] || 1 }));
+    if (nuevas.length === 0) return;
+    setPiezas((prev) => {
+      const map = new Map(prev.map((p) => [p.referencia, p]));
+      for (const n of nuevas) {
+        const existente = map.get(n.referencia);
+        map.set(n.referencia, existente ? { ...existente, cantidad: existente.cantidad + n.cantidad } : n);
+      }
+      return [...map.values()];
+    });
+    setSel({});
+    toast.success(`${nuevas.length} pieza(s) añadidas al pedido`);
+    setStep(4);
+  };
+
+  const subirFotos = async (): Promise<string[]> => {
+    if (fotos.length === 0) return [];
+    const folder = `${settings.tallerId}/pedidos/${generateToken()}`;
+    const urls: string[] = [];
+    for (let i = 0; i < fotos.length; i++) {
+      const f = fotos[i]!;
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${folder}/${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage
+        .from("fotos-gestiones")
+        .upload(path, f, { contentType: f.type, upsert: false });
+      if (error) continue;
+      const { data } = supabase.storage.from("fotos-gestiones").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  };
+
+  const confirmarPedido = async () => {
+    if (piezas.length === 0) {
+      toast.error("Añade al menos una pieza al pedido.");
       return;
     }
-
-    // Generamos el token de confirmación y construimos el enlace.
-    const confirmToken = generateToken();
-    const confirmUrl = `${window.location.origin}/pedido-pena/${confirmToken}`;
-
-    // 1) Abrimos WhatsApp INMEDIATAMENTE (gesto del usuario, sin await previo)
-    //    para que el navegador no lo bloquee como popup.
-    const transcripcion = (transcripcionFinal + " " + transcripcionInterim).trim() || null;
-    const piezasFinal = f.piezas.trim() || transcripcion || "(pedido por audio)";
-    const lineas = [
-      `*Pedido directo · ${settings.tallerName}*`,
-      f.matricula ? `Matrícula: ${f.matricula}` : null,
-      f.vehiculo ? `Vehículo: ${f.vehiculo}` : null,
-      `Piezas: ${piezasFinal}`,
-      f.notas ? `Notas: ${f.notas}` : null,
-      tieneAudio ? `(audio adjunto en el panel)` : null,
-      ``,
-      `Actualizar estado del pedido:`,
-      confirmUrl,
-    ].filter((x) => x !== null) as string[];
-    window.open(buildWAUrl(PENA_PHONE, lineas.join("\n")), "_blank", "noopener,noreferrer");
-
-    // 2) Guardamos en segundo plano
-    setSaving(true);
+    setEnviando(true);
     try {
-      const uploadedAudio = tieneAudio ? await uploadAudio() : null;
+      const fotosUrls = await subirFotos();
+      const confirmToken = generateToken();
+
+      const gpa = await generarPedido({
+        data: {
+          matricula: matricula || undefined,
+          direccion: settings.tallerName,
+          lineas: piezas.map((p) => ({
+            referencia: p.referencia,
+            descripcion: p.descripcion,
+            marca: p.marca,
+            cantidad: p.cantidad,
+            precio: p.precio,
+          })),
+        },
+      });
+
+      const piezasTexto = piezas
+        .map((p) => `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`)
+        .join("\n");
 
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
         taller_nombre: settings.tallerName,
-        matricula: f.matricula || null,
-        vehiculo: f.vehiculo || null,
-        piezas: piezasFinal,
-        notas: f.notas || null,
+        cliente_nombre: nombre || null,
+        cliente_telefono: telefono || null,
+        matricula: matricula || null,
+        vehiculo: vehiculoTexto || null,
+        marca: vehiculo.marca || null,
+        modelo: vehiculo.modelo || null,
+        motor: vehiculo.motor || null,
+        piezas: piezasTexto,
+        piezas_json: piezas.map((p) => ({
+          referencia: p.referencia,
+          descripcion: p.descripcion,
+          marca: p.marca,
+          cantidad: p.cantidad,
+          precio: p.precio,
+        })),
+        importe_total: Number(total.toFixed(2)),
+        numero_pedido: gpa.numeroPedido || null,
+        notas: notas || null,
+        fotos: fotosUrls,
         estado: "pendiente",
-        audio_url: uploadedAudio,
-        transcripcion,
         confirm_token: confirmToken,
       });
       if (error) throw error;
 
-      toast.success("El pedido se ha realizado correctamente");
+      toast.success(
+        gpa.numeroPedido
+          ? `Pedido enviado a Grupo Peña · Nº ${gpa.numeroPedido}`
+          : "Pedido enviado a Grupo Peña",
+        { description: `${piezas.length} pieza(s) · ${total.toFixed(2)} €` },
+      );
       onSaved?.();
       onClose();
-    } catch (e: any) {
-      console.error("pedidos_pena insert", e);
-      toast.error("No se pudo guardar el pedido. Inténtalo de nuevo.", {
-        description: e?.message || "Error de conexión con el servidor",
+    } catch (e: unknown) {
+      console.error("pedido directo", e);
+      toast.error("No se pudo enviar el pedido. Inténtalo de nuevo.", {
+        description: e instanceof Error ? e.message : undefined,
       });
-      // El modal se mantiene abierto para reintentar
     } finally {
-      setSaving(false);
+      setEnviando(false);
     }
   };
 
-
-  const previewTrans = (transcripcionFinal + (transcripcionInterim ? " " + transcripcionInterim : "")).trim();
+  const paso1Ok = nombre.trim().length > 0 && matricula.trim().length >= 4;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 sm:rounded-3xl">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
+      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface sm:rounded-3xl">
+        {/* Cabecera */}
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Truck className="h-5 w-5" />
             </span>
-            <div>
-              <h2 className="text-lg font-bold leading-tight">Pedido directo a Peña</h2>
-              <div className="text-[11px] text-muted-foreground">El audio y su transcripción se guardarán en el historial.</div>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-bold leading-tight">Pedido a Grupo Peña</h2>
+              <p className="truncate text-[11px] text-muted-foreground">
+                Paso {step} de 4 · {PASOS[step - 1]}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2">
+          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Cerrar">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Grabadora de audio */}
-        <div className="mb-4 rounded-2xl border border-border bg-surface-2 p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-sm font-semibold">Pedido por voz</div>
-            <span className="text-[11px] text-muted-foreground">
-              {recording ? `Grabando · ${fmt(elapsed)}` : audioBlob ? `Listo · ${fmt(elapsed)}` : "Habla el pedido y elige cómo enviarlo"}
-            </span>
-          </div>
+        {/* Progreso */}
+        <div className="flex gap-1 px-4 pt-3">
+          {PASOS.map((_, i) => (
+            <span
+              key={i}
+              className={"h-1.5 flex-1 rounded-full " + (i < step ? "bg-primary" : "bg-surface-3")}
+            />
+          ))}
+        </div>
 
-          {!audioBlob ? (
-            <button
-              type="button"
-              onClick={recording ? stopRecording : startRecording}
-              className={
-                "inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition " +
-                (recording
-                  ? "bg-destructive text-destructive-foreground animate-pulse"
-                  : "bg-accent text-accent-foreground active:scale-95")
-              }
-            >
-              {recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              {recording ? "Detener grabación" : "Empezar a grabar"}
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {step === 1 && (
+            <div className="space-y-3">
+              <Field label="Nombre del cliente" icon={<User className="h-3.5 w-3.5" />}>
+                <input
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder="Nombre y apellidos"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Teléfono del cliente">
+                <input
+                  value={telefono}
+                  onChange={(e) => setTelefono(normalizeTelefono(e.target.value))}
+                  inputMode="tel"
+                  placeholder="600000000"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Matrícula">
+                <div className="flex gap-2">
+                  <input
+                    value={matricula}
+                    onChange={(e) => setMatricula(normalizeMatricula(e.target.value))}
+                    onBlur={(e) => void consultarMatricula(e.target.value)}
+                    placeholder="1234ABC"
+                    className={inputCls + " font-mono uppercase"}
+                  />
+                  <label className={ghostBtn + " shrink-0 cursor-pointer"}>
+                    {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        void escanearMatricula(e.target.files?.[0] ?? null);
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </Field>
+
+              <div className="rounded-2xl border border-border bg-surface-2 p-3">
+                <div className="flex items-center gap-2 text-[12px] font-semibold">
+                  <Car className="h-3.5 w-3.5 text-accent" /> Datos del vehículo
+                  {plateBusy && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                </div>
+                {vehiculo.marca || vehiculo.modelo || vehiculo.motor ? (
+                  <div className="mt-2 space-y-0.5 text-sm">
+                    <div className="font-semibold">{vehiculoTexto || "—"}</div>
+                    <div className="text-[12px] text-muted-foreground">
+                      {vehiculo.motor || "Motor n/d"}
+                      {vehiculo.anio ? ` · ${vehiculo.anio}` : ""}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Escribe o escanea la matrícula: los datos se rellenan automáticamente.
+                  </p>
+                )}
+                {plateMsg && <p className="mt-1.5 text-[11px] text-muted-foreground">{plateMsg}</p>}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-3">
+              <p className="text-[12px] text-muted-foreground">
+                Añade una foto de la avería (opcional). Ayuda a Grupo Peña a identificar la pieza.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className={ghostBtn + " cursor-pointer justify-center"}>
+                  <Camera className="h-4 w-4" /> Hacer foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const fs = Array.from(e.target.files ?? []);
+                      if (fs.length) setFotos((p) => [...p, ...fs]);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <label className={ghostBtn + " cursor-pointer justify-center"}>
+                  <Package className="h-4 w-4" /> Galería
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const fs = Array.from(e.target.files ?? []);
+                      if (fs.length) setFotos((p) => [...p, ...fs]);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              {previews.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {previews.map((src, i) => (
+                    <div key={src} className="relative overflow-hidden rounded-xl border border-border">
+                      <img src={src} alt={`Foto ${i + 1}`} className="h-24 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFotos((p) => p.filter((_, j) => j !== i))}
+                        className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white"
+                        aria-label="Quitar foto"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-border bg-surface-2 p-3 text-[12px]">
+                <span className="font-semibold">{matricula || "Sin matrícula"}</span>
+                <span className="text-muted-foreground"> · {contexto || "Vehículo sin datos"}</span>
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void buscar();
+                      }
+                    }}
+                    placeholder="Descripción o referencia…"
+                    className={inputCls + " pl-9"}
+                  />
+                </div>
+                <button type="button" onClick={() => void buscar()} disabled={buscando} className={primaryBtn}>
+                  {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Buscar
+                </button>
+              </div>
+
+              {buscando ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
+              ) : resultados.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  Busca la pieza que necesitas para este vehículo.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {resultados.map((p) => {
+                    const checked = !!sel[p.referencia];
+                    return (
+                      <label
+                        key={p.referencia}
+                        className={
+                          "flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition " +
+                          (checked ? "border-primary bg-primary/10" : "border-border bg-surface-2")
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) =>
+                            setSel((prev) => {
+                              const next = { ...prev };
+                              if (e.target.checked) next[p.referencia] = 1;
+                              else delete next[p.referencia];
+                              return next;
+                            })
+                          }
+                          className="mt-1 h-4 w-4 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold">{p.descripcion}</div>
+                          <div className="font-mono text-[11px] text-muted-foreground">
+                            REF: {p.referencia} · {p.marca}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                            <span
+                              className={
+                                "rounded-full px-2 py-0.5 font-semibold " +
+                                (p.stock.toLowerCase().includes("disponible")
+                                  ? "bg-success/15 text-success"
+                                  : "bg-warning/15 text-warning")
+                              }
+                            >
+                              {p.stock}
+                            </span>
+                            <span className="text-muted-foreground">Plazo {p.plazo}</span>
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="font-mono text-sm font-bold">{p.precio.toFixed(2)} €</div>
+                          {checked && (
+                            <input
+                              type="number"
+                              min={1}
+                              value={sel[p.referencia]}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                setSel((prev) => ({
+                                  ...prev,
+                                  [p.referencia]: Math.max(1, parseInt(e.target.value || "1", 10)),
+                                }))
+                              }
+                              className="mt-1 w-16 rounded-lg bg-surface px-2 py-1 text-right text-[12px] outline-none"
+                            />
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-3">
+              <Resumen titulo="Cliente">
+                <div className="text-sm font-semibold">{nombre || "—"}</div>
+                <div className="text-[12px] text-muted-foreground">{telefono || "Sin teléfono"}</div>
+              </Resumen>
+              <Resumen titulo="Vehículo">
+                <div className="font-mono text-sm font-semibold">{matricula || "—"}</div>
+                <div className="text-[12px] text-muted-foreground">{contexto || "Sin datos del vehículo"}</div>
+              </Resumen>
+              <Resumen titulo={`Piezas (${piezas.length})`}>
+                {piezas.length === 0 ? (
+                  <p className="text-[12px] text-muted-foreground">Aún no has añadido piezas.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {piezas.map((p) => (
+                      <div key={p.referencia} className="flex items-start gap-2 text-[12px]">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold">{p.descripcion}</div>
+                          <div className="font-mono text-[11px] text-muted-foreground">
+                            REF: {p.referencia} · {p.marca} · x{p.cantidad}
+                          </div>
+                        </div>
+                        <span className="font-mono font-semibold">{(p.precio * p.cantidad).toFixed(2)} €</span>
+                        <button
+                          type="button"
+                          onClick={() => setPiezas((prev) => prev.filter((x) => x.referencia !== p.referencia))}
+                          className="rounded-md p-1 text-muted-foreground hover:bg-surface-3"
+                          aria-label="Quitar pieza"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex justify-between border-t border-border pt-2 text-sm font-bold">
+                      <span>Total</span>
+                      <span className="font-mono">{total.toFixed(2)} €</span>
+                    </div>
+                  </div>
+                )}
+              </Resumen>
+              {previews.length > 0 && (
+                <Resumen titulo={`Fotos (${previews.length})`}>
+                  <div className="flex gap-2 overflow-x-auto">
+                    {previews.map((src, i) => (
+                      <img key={src} src={src} alt={`Foto ${i + 1}`} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                    ))}
+                  </div>
+                </Resumen>
+              )}
+              <Field label="Notas para Grupo Peña">
+                <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className={inputCls} />
+              </Field>
+            </div>
+          )}
+        </div>
+
+        {/* Pie de navegación */}
+        <div
+          className="flex items-center gap-2 border-t border-border p-4"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          {step > 1 ? (
+            <button type="button" onClick={() => setStep(step - 1)} className={ghostBtn}>
+              <ChevronLeft className="h-4 w-4" /> Atrás
             </button>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2">
-                <button
-                  type="button"
-                  onClick={togglePlay}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                  aria-label={playing ? "Pausar" : "Reproducir"}
-                >
-                  {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </button>
-                <audio
-                  ref={audioElRef}
-                  src={audioUrl ?? undefined}
-                  onEnded={() => setPlaying(false)}
-                  onPause={() => setPlaying(false)}
-                  className="flex-1"
-                  controls
-                />
-                <button
-                  type="button"
-                  onClick={discardAudio}
-                  className="rounded-md p-2 text-muted-foreground hover:bg-surface-2"
-                  title="Descartar audio"
-                  aria-label="Descartar"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={shareAudio}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95"
-                >
-                  <Share2 className="h-4 w-4" /> Enviar audio
-                </button>
-                <a
-                  href={audioUrl ?? "#"}
-                  download={audioFileName()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm font-semibold text-foreground"
-                >
-                  <Download className="h-4 w-4" /> Descargar
-                </a>
-              </div>
-            </div>
+            <button type="button" onClick={onClose} className={ghostBtn}>
+              Cancelar
+            </button>
           )}
 
-          {/* Transcripción en vivo / final */}
-          {(previewTrans || recording) && (
-            <div className="mt-2 rounded-xl bg-surface px-3 py-2 text-[12px] text-foreground">
-              <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Transcripción {recording && <span className="text-destructive">· en vivo</span>}
-              </div>
-              <div className="whitespace-pre-wrap">
-                {transcripcionFinal}
-                {transcripcionInterim && (
-                  <span className="text-muted-foreground"> {transcripcionInterim}</span>
-                )}
-                {!previewTrans && recording && (
-                  <span className="text-muted-foreground italic">Escuchando…</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {recError && (
-            <p className="mt-2 text-[11px] font-semibold text-destructive">{recError}</p>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <Label k="Matrícula (opcional)">
-            <input
-              value={f.matricula}
-              onChange={(e) => setF({ ...f, matricula: e.target.value.toUpperCase() })}
-              placeholder="1234 ABC"
-              className={inputCls + " font-mono uppercase"}
-            />
-          </Label>
-          <Label k="Vehículo (opcional)">
-            <input
-              value={f.vehiculo}
-              onChange={(e) => setF({ ...f, vehiculo: e.target.value })}
-              placeholder="Marca y modelo"
-              className={inputCls}
-            />
-          </Label>
-          <Label k="Piezas" action={
-            <MicButton
-              size="sm"
-              title="Dictar piezas"
-              onResult={(t) => setF((prev) => ({ ...prev, piezas: prev.piezas ? prev.piezas.trimEnd() + " " + t : t }))}
-            />
-          }>
-            <textarea
-              value={f.piezas}
-              onChange={(e) => setF({ ...f, piezas: e.target.value })}
-              rows={3}
-              placeholder={audioBlob ? "Opcional — el audio y su transcripción ya quedan guardados" : "Ej. 2x pastillas delanteras OEM"}
-              className={inputCls}
-            />
-          </Label>
-          <Label k="Notas" action={
-            <MicButton
-              size="sm"
-              title="Dictar notas"
-              onResult={(t) => setF((prev) => ({ ...prev, notas: prev.notas ? prev.notas.trimEnd() + " " + t : t }))}
-            />
-          }>
-            <textarea
-              value={f.notas}
-              onChange={(e) => setF({ ...f, notas: e.target.value })}
-              rows={2}
-              className={inputCls}
-            />
-          </Label>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-border-strong bg-surface px-4 py-2 text-sm font-semibold"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={save}
-            disabled={saving || (!f.piezas.trim() && !audioBlob)}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground active:scale-95 disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
-            Enviar a Peña
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {step === 2 && (
+              <button type="button" onClick={() => setStep(3)} className={ghostBtn}>
+                Saltar
+              </button>
+            )}
+            {step === 1 && (
+              <button type="button" onClick={() => setStep(2)} disabled={!paso1Ok} className={primaryBtn}>
+                Siguiente
+              </button>
+            )}
+            {step === 2 && (
+              <button type="button" onClick={() => setStep(3)} className={primaryBtn}>
+                Siguiente
+              </button>
+            )}
+            {step === 3 && (
+              <button
+                type="button"
+                onClick={anadirAlPedido}
+                disabled={Object.keys(sel).length === 0}
+                className={primaryBtn}
+              >
+                <Package className="h-4 w-4" /> Añadir al pedido
+              </button>
+            )}
+            {step === 4 && (
+              <button
+                type="button"
+                onClick={() => void confirmarPedido()}
+                disabled={enviando || piezas.length === 0}
+                className={primaryBtn}
+              >
+                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Confirmar pedido a Grupo Peña
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function Label({ k, children, action }: { k: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Field({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block space-y-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase text-muted-foreground">{k}</span>
-        {action}
-      </div>
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon} {label}
+      </span>
       {children}
     </label>
   );
 }
 
-const inputCls =
-  "w-full rounded-xl bg-surface-2 px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/60 focus:bg-surface-3";
+function Resumen({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface-2 p-3">
+      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</div>
+      {children}
+    </div>
+  );
+}
