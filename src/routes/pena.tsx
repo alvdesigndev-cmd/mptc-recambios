@@ -218,6 +218,11 @@ function PenaPage() {
           </div>
         </div>
 
+        <PendientesTabla
+          pedidos={filteredDirectos.filter((d) => d.estado === "pendiente")}
+          onOpen={(d) => setOpen({ kind: "d", item: d })}
+        />
+
         {filteredGestiones.length === 0 && filteredDirectos.length === 0 && (
           <div className="rounded-2xl border border-border bg-surface p-8 text-center">
             <Inbox className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
