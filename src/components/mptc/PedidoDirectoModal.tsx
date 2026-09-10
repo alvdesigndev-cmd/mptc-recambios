@@ -203,11 +203,31 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     return urls;
   };
 
+  const lineasTexto = () =>
+    piezas
+      .map(
+        (p) =>
+          `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`,
+      )
+      .join("\n");
+
+  /** Mensaje de WhatsApp para Grupo Peña. */
+  const mensajePena = () =>
+    `🔧 *Pedido ${settings.tallerName}*\n\n` +
+    `👤 ${nombre || "—"}${telefono ? ` · ${telefono}` : ""}\n` +
+    `🚗 ${vehiculoTexto || "—"}${matricula ? ` (${matricula})` : ""}${vehiculo.motor ? `\n⚙️ ${vehiculo.motor}` : ""}\n\n` +
+    `📦 Piezas:\n${lineasTexto() || "—"}\n\n` +
+    `💰 Total: *${total.toFixed(2)} €*` +
+    (notas ? `\n\n📝 ${notas}` : "");
+
   const confirmarPedido = async () => {
     if (piezas.length === 0) {
       toast.error("Añade al menos una pieza al pedido.");
       return;
     }
+    // Abrimos WhatsApp en el mismo gesto del clic para que el navegador no lo bloquee.
+    const waUrl = buildWAUrl(PENA_PHONE, mensajePena());
+    const win = window.open(waUrl, "_blank", "noopener,noreferrer");
     setEnviando(true);
     try {
       const fotosUrls = await subirFotos();
