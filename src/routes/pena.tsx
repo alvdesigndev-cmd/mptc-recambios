@@ -147,6 +147,12 @@ function PenaPage() {
             <div className="truncate text-sm font-semibold leading-tight">Grupo Peña</div>
             <div className="truncate text-[11px] text-muted-foreground leading-tight">Panel de pedidos</div>
           </div>
+          <Link
+            to="/pena/pendientes"
+            className="shrink-0 whitespace-nowrap rounded-xl bg-surface-2 px-3 py-2 text-xs font-semibold text-foreground active:scale-95 sm:text-sm"
+          >
+            Pendientes
+          </Link>
           <button
             onClick={() => setCreating(true)}
             className="hidden shrink-0 whitespace-nowrap sm:inline-flex items-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground active:scale-95"
