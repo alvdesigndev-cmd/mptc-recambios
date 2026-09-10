@@ -712,7 +712,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                Confirmar pedido a Grupo Peña
+                Enviar pedido por WhatsApp
               </button>
             )}
           </div>
