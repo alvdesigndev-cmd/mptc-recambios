@@ -269,6 +269,12 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         })),
         importe_total: Number(total.toFixed(2)),
         numero_pedido: gpa.numeroPedido || null,
+        gpa_pedido_numero: gpa.ok && !gpa.mock ? gpa.numeroPedido || null : null,
+        gpa_pedido_estado: gpa.ok
+          ? gpa.mock
+            ? "simulado"
+            : gpa.estado || "registrado"
+          : "error",
         notas: notas || null,
         fotos: fotosUrls,
         estado: "pendiente",
@@ -277,12 +283,23 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       if (error) throw error;
 
       if (!win) window.location.href = waUrl;
-      toast.success(
-        gpa.numeroPedido
-          ? `Pedido enviado por WhatsApp · Nº ${gpa.numeroPedido}`
-          : "Pedido enviado por WhatsApp a Grupo Peña",
-        { description: `${piezas.length} pieza(s) · ${total.toFixed(2)} €` },
-      );
+      const detalle = `${piezas.length} pieza(s) · ${total.toFixed(2)} €`;
+      if (gpa.ok && !gpa.mock) {
+        toast.success(
+          gpa.numeroPedido
+            ? `Pedido registrado en Grupo Peña · Nº ${gpa.numeroPedido}`
+            : "Pedido registrado en Grupo Peña",
+          { description: `${detalle} · enviado también por WhatsApp` },
+        );
+      } else if (gpa.ok) {
+        toast.success("Pedido enviado por WhatsApp a Grupo Peña", {
+          description: `${detalle} · sistema de pedidos en modo prueba`,
+        });
+      } else {
+        toast.warning("Pedido enviado por WhatsApp, pero el sistema de Grupo Peña no respondió", {
+          description: `${detalle} · queda como pendiente en el panel`,
+        });
+      }
       onSaved?.();
       onClose();
     } catch (e: unknown) {
