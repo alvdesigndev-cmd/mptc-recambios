@@ -12,6 +12,7 @@ import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionA
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import { PhotoLightbox } from "@/components/mptc/PhotoLightbox";
 import { resolveFotoUrls } from "@/lib/mptc/fotos";
+import { PendientesTabla, type PedidoDirecto } from "@/components/mptc/PendientesTabla";
 
 import { redirect } from "@tanstack/react-router";
 import { syncProfileToSettings } from "@/lib/mptc/auth";
