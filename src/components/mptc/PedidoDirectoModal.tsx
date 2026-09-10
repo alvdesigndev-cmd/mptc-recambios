@@ -276,10 +276,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
+      if (!win) window.location.href = waUrl;
       toast.success(
         gpa.numeroPedido
-          ? `Pedido enviado a Grupo Peña · Nº ${gpa.numeroPedido}`
-          : "Pedido enviado a Grupo Peña",
+          ? `Pedido enviado por WhatsApp · Nº ${gpa.numeroPedido}`
+          : "Pedido enviado por WhatsApp a Grupo Peña",
         { description: `${piezas.length} pieza(s) · ${total.toFixed(2)} €` },
       );
       onSaved?.();
