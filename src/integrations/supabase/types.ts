@@ -298,6 +298,8 @@ export type Database = {
           created_at: string
           estado: string
           fotos: string[] | null
+          gpa_pedido_estado: string | null
+          gpa_pedido_numero: string | null
           id: string
           importe_total: number | null
           marca: string | null
@@ -322,6 +324,8 @@ export type Database = {
           created_at?: string
           estado?: string
           fotos?: string[] | null
+          gpa_pedido_estado?: string | null
+          gpa_pedido_numero?: string | null
           id?: string
           importe_total?: number | null
           marca?: string | null
@@ -346,6 +350,8 @@ export type Database = {
           created_at?: string
           estado?: string
           fotos?: string[] | null
+          gpa_pedido_estado?: string | null
+          gpa_pedido_numero?: string | null
           id?: string
           importe_total?: number | null
           marca?: string | null
