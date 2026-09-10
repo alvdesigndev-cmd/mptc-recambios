@@ -62,6 +62,12 @@ interface PedidoDirecto {
   audio_url: string | null;
   transcripcion: string | null;
   created_at: string;
+  cliente_nombre?: string | null;
+  cliente_telefono?: string | null;
+  importe_total?: number | null;
+  numero_pedido?: string | null;
+  gpa_pedido_numero?: string | null;
+  gpa_pedido_estado?: string | null;
 }
 
 function PenaPage() {
