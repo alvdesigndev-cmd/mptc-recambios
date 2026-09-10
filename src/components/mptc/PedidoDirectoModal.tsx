@@ -96,10 +96,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
     () => [vehiculo.marca, vehiculo.modelo, vehiculo.motor].filter(Boolean).join(" · "),
     [vehiculo],
   );
-  const total = useMemo(
-    () => piezas.reduce((a, p) => a + p.precio * p.cantidad, 0),
-    [piezas],
-  );
+  const total = useMemo(() => piezas.reduce((a, p) => a + p.precio * p.cantidad, 0), [piezas]);
 
   /** Consulta la API de matrículas y rellena los datos del vehículo. */
   const consultarMatricula = async (plateRaw: string) => {
@@ -175,7 +172,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       const map = new Map(prev.map((p) => [p.referencia, p]));
       for (const n of nuevas) {
         const existente = map.get(n.referencia);
-        map.set(n.referencia, existente ? { ...existente, cantidad: existente.cantidad + n.cantidad } : n);
+        map.set(
+          n.referencia,
+          existente ? { ...existente, cantidad: existente.cantidad + n.cantidad } : n,
+        );
       }
       return [...map.values()];
     });
@@ -227,7 +227,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
 
       const piezasTexto = piezas
-        .map((p) => `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`)
+        .map(
+          (p) =>
+            `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`,
+        )
         .join("\n");
 
       const { error } = await supabase.from("pedidos_pena").insert({
@@ -293,7 +296,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2" aria-label="Cerrar">
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-muted-foreground hover:bg-surface-2"
+            aria-label="Cerrar"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -338,7 +345,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                     className={inputCls + " font-mono uppercase"}
                   />
                   <label className={ghostBtn + " shrink-0 cursor-pointer"}>
-                    {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                    {ocrBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
                     <input
                       type="file"
                       accept="image/*"
@@ -356,7 +367,9 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
               <div className="rounded-2xl border border-border bg-surface-2 p-3">
                 <div className="flex items-center gap-2 text-[12px] font-semibold">
                   <Car className="h-3.5 w-3.5 text-accent" /> Datos del vehículo
-                  {plateBusy && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                  {plateBusy && (
+                    <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 {vehiculo.marca || vehiculo.modelo || vehiculo.motor ? (
                   <div className="mt-2 space-y-0.5 text-sm">
@@ -414,7 +427,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
               {previews.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
                   {previews.map((src, i) => (
-                    <div key={src} className="relative overflow-hidden rounded-xl border border-border">
+                    <div
+                      key={src}
+                      className="relative overflow-hidden rounded-xl border border-border"
+                    >
                       <img src={src} alt={`Foto ${i + 1}`} className="h-24 w-full object-cover" />
                       <button
                         type="button"
@@ -453,14 +469,25 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                     className={inputCls + " pl-9"}
                   />
                 </div>
-                <button type="button" onClick={() => void buscar()} disabled={buscando} className={primaryBtn}>
-                  {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <button
+                  type="button"
+                  onClick={() => void buscar()}
+                  disabled={buscando}
+                  className={primaryBtn}
+                >
+                  {buscando ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
                   Buscar
                 </button>
               </div>
 
               {buscando ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">Buscando piezas…</div>
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  Buscando piezas…
+                </div>
               ) : resultados.length === 0 ? (
                 <div className="py-10 text-center text-sm text-muted-foreground">
                   Busca la pieza que necesitas para este vehículo.
@@ -539,11 +566,15 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
             <div className="space-y-3">
               <Resumen titulo="Cliente">
                 <div className="text-sm font-semibold">{nombre || "—"}</div>
-                <div className="text-[12px] text-muted-foreground">{telefono || "Sin teléfono"}</div>
+                <div className="text-[12px] text-muted-foreground">
+                  {telefono || "Sin teléfono"}
+                </div>
               </Resumen>
               <Resumen titulo="Vehículo">
                 <div className="font-mono text-sm font-semibold">{matricula || "—"}</div>
-                <div className="text-[12px] text-muted-foreground">{contexto || "Sin datos del vehículo"}</div>
+                <div className="text-[12px] text-muted-foreground">
+                  {contexto || "Sin datos del vehículo"}
+                </div>
               </Resumen>
               <Resumen titulo={`Piezas (${piezas.length})`}>
                 {piezas.length === 0 ? (
@@ -558,10 +589,14 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                             REF: {p.referencia} · {p.marca} · x{p.cantidad}
                           </div>
                         </div>
-                        <span className="font-mono font-semibold">{(p.precio * p.cantidad).toFixed(2)} €</span>
+                        <span className="font-mono font-semibold">
+                          {(p.precio * p.cantidad).toFixed(2)} €
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setPiezas((prev) => prev.filter((x) => x.referencia !== p.referencia))}
+                          onClick={() =>
+                            setPiezas((prev) => prev.filter((x) => x.referencia !== p.referencia))
+                          }
                           className="rounded-md p-1 text-muted-foreground hover:bg-surface-3"
                           aria-label="Quitar pieza"
                         >
@@ -580,13 +615,23 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                 <Resumen titulo={`Fotos (${previews.length})`}>
                   <div className="flex gap-2 overflow-x-auto">
                     {previews.map((src, i) => (
-                      <img key={src} src={src} alt={`Foto ${i + 1}`} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                      <img
+                        key={src}
+                        src={src}
+                        alt={`Foto ${i + 1}`}
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                      />
                     ))}
                   </div>
                 </Resumen>
               )}
               <Field label="Notas para Grupo Peña">
-                <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} className={inputCls} />
+                <textarea
+                  value={notas}
+                  onChange={(e) => setNotas(e.target.value)}
+                  rows={2}
+                  className={inputCls}
+                />
               </Field>
             </div>
           )}
@@ -614,7 +659,12 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
               </button>
             )}
             {step === 1 && (
-              <button type="button" onClick={() => setStep(2)} disabled={!paso1Ok} className={primaryBtn}>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                disabled={!paso1Ok}
+                className={primaryBtn}
+              >
                 Siguiente
               </button>
             )}
@@ -640,7 +690,11 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
                 disabled={enviando || piezas.length === 0}
                 className={primaryBtn}
               >
-                {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {enviando ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
                 Confirmar pedido a Grupo Peña
               </button>
             )}
@@ -673,7 +727,9 @@ function Field({
 function Resumen({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-border bg-surface-2 p-3">
-      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</div>
+      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {titulo}
+      </div>
       {children}
     </div>
   );
