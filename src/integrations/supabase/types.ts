@@ -292,15 +292,23 @@ export type Database = {
       pedidos_pena: {
         Row: {
           audio_url: string | null
+          cliente_nombre: string | null
+          cliente_telefono: string | null
           confirm_token: string | null
           created_at: string
           estado: string
           fotos: string[] | null
           id: string
+          importe_total: number | null
+          marca: string | null
           matricula: string | null
+          modelo: string | null
+          motor: string | null
           notas: string | null
+          numero_pedido: string | null
           pedido_numero: number | null
           piezas: string | null
+          piezas_json: Json
           taller_id: string | null
           taller_nombre: string | null
           transcripcion: string | null
@@ -308,15 +316,23 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
           confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
           id?: string
+          importe_total?: number | null
+          marca?: string | null
           matricula?: string | null
+          modelo?: string | null
+          motor?: string | null
           notas?: string | null
+          numero_pedido?: string | null
           pedido_numero?: number | null
           piezas?: string | null
+          piezas_json?: Json
           taller_id?: string | null
           taller_nombre?: string | null
           transcripcion?: string | null
@@ -324,15 +340,23 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          cliente_nombre?: string | null
+          cliente_telefono?: string | null
           confirm_token?: string | null
           created_at?: string
           estado?: string
           fotos?: string[] | null
           id?: string
+          importe_total?: number | null
+          marca?: string | null
           matricula?: string | null
+          modelo?: string | null
+          motor?: string | null
           notas?: string | null
+          numero_pedido?: string | null
           pedido_numero?: number | null
           piezas?: string | null
+          piezas_json?: Json
           taller_id?: string | null
           taller_nombre?: string | null
           transcripcion?: string | null
