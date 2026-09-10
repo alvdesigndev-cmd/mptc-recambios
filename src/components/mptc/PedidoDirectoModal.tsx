@@ -247,12 +247,7 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
         },
       });
 
-      const piezasTexto = piezas
-        .map(
-          (p) =>
-            `${p.cantidad}x ${p.referencia} · ${p.descripcion} (${p.marca}) – ${(p.precio * p.cantidad).toFixed(2)}€`,
-        )
-        .join("\n");
+      const piezasTexto = lineasTexto();
 
       const { error } = await supabase.from("pedidos_pena").insert({
         taller_id: settings.tallerId,
