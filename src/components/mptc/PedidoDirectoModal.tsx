@@ -70,17 +70,27 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
   // Paso 4
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // ¿Está activo el envío automático al WhatsApp de Grupo Peña?
+  const [waAuto, setWaAuto] = useState(false);
 
   const lookupPlateFn = useServerFn(lookupPlate);
   const runOcr = useServerFn(ocrMatricula);
   const buscarPiezas = useServerFn(consultaArticulosGPA);
   const generarPedido = useServerFn(generarPedidoGPA);
+  const waEstado = useServerFn(waNotifyEstado);
+  const waEnviar = useServerFn(waNotifyPedido);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    waEstado()
+      .then((r) => setWaAuto(!!r.configurado))
+      .catch(() => setWaAuto(false));
+  }, [waEstado]);
 
   // Previews de fotos
   useEffect(() => {
