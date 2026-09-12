@@ -149,7 +149,7 @@ export const lookupPlate = createServerFn({ method: "POST" })
       try {
         await supabaseAdmin
           .from("plate_lookups_cache")
-          .upsert({ plate, data: finalData, fetched_at: fetchedAt }, { onConflict: "plate" });
+          .upsert({ plate, data: finalData as never, fetched_at: fetchedAt }, { onConflict: "plate" });
       } catch {
         /* la caché es opcional */
       }
