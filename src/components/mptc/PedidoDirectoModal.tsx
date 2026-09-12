@@ -225,9 +225,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       toast.error("Añade al menos una pieza al pedido.");
       return;
     }
-    // Abrimos WhatsApp en el mismo gesto del clic para que el navegador no lo bloquee.
+    // Si el envío automático a WhatsApp no está configurado, abrimos WhatsApp
+    // en el mismo gesto del clic para que el navegador no lo bloquee.
     const waUrl = buildWAUrl(PENA_PHONE, mensajePena());
-    const win = window.open(waUrl, "_blank", "noopener,noreferrer");
+    const win = waAuto ? null : window.open(waUrl, "_blank", "noopener,noreferrer");
     setEnviando(true);
     try {
       const fotosUrls = await subirFotos();
