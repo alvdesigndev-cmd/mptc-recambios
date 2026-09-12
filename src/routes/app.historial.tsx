@@ -10,6 +10,8 @@ import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionA
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import type { Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion, type FaseKey } from "@/lib/mptc/fases";
+import { PedidoChat } from "@/components/mptc/PedidoChat";
+import { loadSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/app/historial")({
   validateSearch: (s: Record<string, unknown>): { q?: string } => ({
