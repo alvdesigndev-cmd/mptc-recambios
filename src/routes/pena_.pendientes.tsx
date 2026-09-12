@@ -9,7 +9,7 @@ import { saveRedirectPath } from "@/lib/mptc/redirect";
 import { checkAuthResilient } from "@/lib/mptc/authCheck";
 import { PendientesTabla, type PedidoDirecto } from "@/components/mptc/PendientesTabla";
 
-export const Route = createFileRoute("/pena/pendientes")({
+export const Route = createFileRoute("/pena_/pendientes")({
   ssr: false,
   beforeLoad: async ({ location }) => {
     const auth = await checkAuthResilient();
