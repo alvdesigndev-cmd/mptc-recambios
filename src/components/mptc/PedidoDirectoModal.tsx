@@ -24,6 +24,7 @@ import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { compressImageToDataUrl } from "@/lib/mptc/image";
 import { generateToken, buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
+import { waNotifyEstado, waNotifyPedido } from "@/lib/mptc/wa-notify.functions";
 
 interface Props {
   settings: AppSettings;
