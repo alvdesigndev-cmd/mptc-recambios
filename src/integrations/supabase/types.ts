@@ -289,6 +289,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pedido_mensajes: {
+        Row: {
+          autor_nombre: string
+          autor_rol: string
+          autor_user_id: string | null
+          created_at: string
+          id: string
+          leido_pena: boolean
+          leido_taller: boolean
+          pedido_id: string
+          taller_id: string | null
+          texto: string
+        }
+        Insert: {
+          autor_nombre?: string
+          autor_rol: string
+          autor_user_id?: string | null
+          created_at?: string
+          id?: string
+          leido_pena?: boolean
+          leido_taller?: boolean
+          pedido_id: string
+          taller_id?: string | null
+          texto: string
+        }
+        Update: {
+          autor_nombre?: string
+          autor_rol?: string
+          autor_user_id?: string | null
+          created_at?: string
+          id?: string
+          leido_pena?: boolean
+          leido_taller?: boolean
+          pedido_id?: string
+          taller_id?: string | null
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_mensajes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos_pena"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos_pena: {
         Row: {
           audio_url: string | null
