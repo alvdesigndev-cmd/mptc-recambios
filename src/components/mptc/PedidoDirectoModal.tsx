@@ -294,7 +294,16 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
-      if (!win) window.location.href = waUrl;
+      // Envío automático al móvil de Grupo Peña cuando está configurado;
+      // si falla, caemos al aviso manual por WhatsApp.
+      let avisoAuto = false;
+      if (waAuto) {
+        const r = await waEnviar({ data: { texto: mensajePena() } }).catch(() => null);
+        avisoAuto = !!r?.sent;
+        if (!avisoAuto) window.location.href = waUrl;
+      } else if (!win) {
+        window.location.href = waUrl;
+      }
       const detalle = `${piezas.length} pieza(s) · ${total.toFixed(2)} €`;
       if (gpa.ok && !gpa.mock) {
         toast.success(
