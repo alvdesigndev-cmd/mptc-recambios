@@ -8,6 +8,7 @@ import { clearSettings, loadSettings } from "@/lib/mptc/profiles";
 import { saveRedirectPath } from "@/lib/mptc/redirect";
 import { checkAuthResilient } from "@/lib/mptc/authCheck";
 import { PendientesTabla, type PedidoDirecto } from "@/components/mptc/PendientesTabla";
+import { PedidoChat } from "@/components/mptc/PedidoChat";
 
 export const Route = createFileRoute("/pena_/pendientes")({
   ssr: false,
