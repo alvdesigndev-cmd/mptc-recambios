@@ -1,0 +1,1 @@
+DELETE FROM public.pedidos_pena WHERE cliente_nombre = 'Cliente Prueba E2E';
