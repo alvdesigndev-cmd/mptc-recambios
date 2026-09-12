@@ -10,6 +10,8 @@ import { AudioTranscripcionActions } from "@/components/mptc/AudioTranscripcionA
 import { AudioPlayer } from "@/components/mptc/AudioPlayer";
 import type { Gestion } from "@/lib/mptc/types";
 import { FASES, faseDeGestion, type FaseKey } from "@/lib/mptc/fases";
+import { PedidoChat } from "@/components/mptc/PedidoChat";
+import { loadSettings } from "@/lib/mptc/profiles";
 
 export const Route = createFileRoute("/app/historial")({
   validateSearch: (s: Record<string, unknown>): { q?: string } => ({
@@ -556,6 +558,15 @@ function PedidoDirectoModal({
             <span>Estado: <span className="font-semibold text-foreground">{p.estado}</span></span>
             <span>{new Date(p.created_at).toLocaleString("es-ES")}</span>
           </div>
+        </div>
+
+        <div className="mt-4">
+          <PedidoChat
+            pedidoId={p.id}
+            tallerId={p.taller_id ?? null}
+            rol="taller"
+            autorNombre={loadSettings()?.mecanico || loadSettings()?.tallerName || "Taller"}
+          />
         </div>
 
         <div className="mt-5 flex justify-end gap-2">

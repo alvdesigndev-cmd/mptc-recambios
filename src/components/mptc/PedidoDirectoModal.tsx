@@ -24,6 +24,7 @@ import { normalizeMatricula, normalizeTelefono } from "@/lib/mptc/normalize";
 import { compressImageToDataUrl } from "@/lib/mptc/image";
 import { generateToken, buildWAUrl } from "@/lib/mptc/wa";
 import { PENA_PHONE } from "@/lib/mptc/profiles";
+import { waNotifyEstado, waNotifyPedido } from "@/lib/mptc/wa-notify.functions";
 
 interface Props {
   settings: AppSettings;
@@ -70,17 +71,27 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
   // Paso 4
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // ¿Está activo el envío automático al WhatsApp de Grupo Peña?
+  const [waAuto, setWaAuto] = useState(false);
 
   const lookupPlateFn = useServerFn(lookupPlate);
   const runOcr = useServerFn(ocrMatricula);
   const buscarPiezas = useServerFn(consultaArticulosGPA);
   const generarPedido = useServerFn(generarPedidoGPA);
+  const waEstado = useServerFn(waNotifyEstado);
+  const waEnviar = useServerFn(waNotifyPedido);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    waEstado()
+      .then((r) => setWaAuto(!!r.configurado))
+      .catch(() => setWaAuto(false));
+  }, [waEstado]);
 
   // Previews de fotos
   useEffect(() => {
@@ -225,9 +236,10 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       toast.error("Añade al menos una pieza al pedido.");
       return;
     }
-    // Abrimos WhatsApp en el mismo gesto del clic para que el navegador no lo bloquee.
+    // Si el envío automático a WhatsApp no está configurado, abrimos WhatsApp
+    // en el mismo gesto del clic para que el navegador no lo bloquee.
     const waUrl = buildWAUrl(PENA_PHONE, mensajePena());
-    const win = window.open(waUrl, "_blank", "noopener,noreferrer");
+    const win = waAuto ? null : window.open(waUrl, "_blank", "noopener,noreferrer");
     setEnviando(true);
     try {
       const fotosUrls = await subirFotos();
@@ -282,7 +294,16 @@ export function PedidoDirectoModal({ settings, onClose, onSaved }: Props) {
       });
       if (error) throw error;
 
-      if (!win) window.location.href = waUrl;
+      // Envío automático al móvil de Grupo Peña cuando está configurado;
+      // si falla, caemos al aviso manual por WhatsApp.
+      let avisoAuto = false;
+      if (waAuto) {
+        const r = await waEnviar({ data: { texto: mensajePena() } }).catch(() => null);
+        avisoAuto = !!r?.sent;
+        if (!avisoAuto) window.location.href = waUrl;
+      } else if (!win) {
+        window.location.href = waUrl;
+      }
       const detalle = `${piezas.length} pieza(s) · ${total.toFixed(2)} €`;
       if (gpa.ok && !gpa.mock) {
         toast.success(
