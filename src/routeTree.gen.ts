@@ -19,7 +19,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as PenaPendientesRouteImport } from './routes/pena.pendientes'
+import { Route as PenaPendientesRouteImport } from './routes/pena_.pendientes'
 import { Route as PedidoPenaTokenRouteImport } from './routes/pedido-pena.$token'
 import { Route as ConfirmarTokenRouteImport } from './routes/confirmar.$token'
 import { Route as AppNuevaRouteImport } from './routes/app.nueva'
@@ -92,9 +92,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   getParentRoute: () => AdminRoute,
 } as any)
 const PenaPendientesRoute = PenaPendientesRouteImport.update({
-  id: '/pendientes',
-  path: '/pendientes',
-  getParentRoute: () => PenaRoute,
+  id: '/pena_/pendientes',
+  path: '/pena/pendientes',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PedidoPenaTokenRoute = PedidoPenaTokenRouteImport.update({
   id: '/pedido-pena/$token',
@@ -208,7 +208,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/connect': typeof ConnectRoute
   '/mcp': typeof McpRoute
-  '/pena': typeof PenaRouteWithChildren
+  '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -239,7 +239,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/connect': typeof ConnectRoute
   '/mcp': typeof McpRoute
-  '/pena': typeof PenaRouteWithChildren
+  '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -273,7 +273,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/connect': typeof ConnectRoute
   '/mcp': typeof McpRoute
-  '/pena': typeof PenaRouteWithChildren
+  '/pena': typeof PenaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -288,7 +288,7 @@ export interface FileRoutesById {
   '/app/nueva': typeof AppNuevaRoute
   '/confirmar/$token': typeof ConfirmarTokenRoute
   '/pedido-pena/$token': typeof PedidoPenaTokenRoute
-  '/pena/pendientes': typeof PenaPendientesRoute
+  '/pena_/pendientes': typeof PenaPendientesRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -387,7 +387,7 @@ export interface FileRouteTypes {
     | '/app/nueva'
     | '/confirmar/$token'
     | '/pedido-pena/$token'
-    | '/pena/pendientes'
+    | '/pena_/pendientes'
     | '/admin/'
     | '/app/'
     | '/.lovable/oauth/consent'
@@ -406,12 +406,13 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ConnectRoute: typeof ConnectRoute
   McpRoute: typeof McpRoute
-  PenaRoute: typeof PenaRouteWithChildren
+  PenaRoute: typeof PenaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ConfirmarTokenRoute: typeof ConfirmarTokenRoute
   PedidoPenaTokenRoute: typeof PedidoPenaTokenRoute
+  PenaPendientesRoute: typeof PenaPendientesRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicFotoSplatRoute: typeof ApiPublicFotoSplatRoute
@@ -490,12 +491,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/pena/pendientes': {
-      id: '/pena/pendientes'
-      path: '/pendientes'
+    '/pena_/pendientes': {
+      id: '/pena_/pendientes'
+      path: '/pena/pendientes'
       fullPath: '/pena/pendientes'
       preLoaderRoute: typeof PenaPendientesRouteImport
-      parentRoute: typeof PenaRoute
+      parentRoute: typeof rootRouteImport
     }
     '/pedido-pena/$token': {
       id: '/pedido-pena/$token'
@@ -694,16 +695,6 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
-interface PenaRouteChildren {
-  PenaPendientesRoute: typeof PenaPendientesRoute
-}
-
-const PenaRouteChildren: PenaRouteChildren = {
-  PenaPendientesRoute: PenaPendientesRoute,
-}
-
-const PenaRouteWithChildren = PenaRoute._addFileChildren(PenaRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -711,13 +702,14 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ConnectRoute: ConnectRoute,
   McpRoute: McpRoute,
-  PenaRoute: PenaRouteWithChildren,
+  PenaRoute: PenaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ConfirmarTokenRoute: ConfirmarTokenRoute,
   PedidoPenaTokenRoute: PedidoPenaTokenRoute,
+  PenaPendientesRoute: PenaPendientesRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicFotoSplatRoute: ApiPublicFotoSplatRoute,
